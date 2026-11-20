@@ -1,7 +1,7 @@
 {
   "id": "tacompton",
   "name": "Tacompton",
-  "description": "A salmon guide's season out of Tacoma: a fishing-guide game.",
+  "description": "A life game about two weeks on Hilltop in Tacoma, WA.",
   "site": ".",
   "app": ".",
   "prebuild": [

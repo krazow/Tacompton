@@ -57,9 +57,9 @@ function fireHook(hook,ctx={}){
 }
 // ---- OK pop-up for events (on by default; Settings → Event pop-ups) ----
 const POPUP_KEY=KEY('popups');
-// (1.12.0: off unless you turn it on. The morning report and a trip's own decisions still pop up; the rest is a tile and a log line.)
+// (1.12.0: off unless you turn it on. The morning report and decisions still pop up; the rest is a tile and a log line.)
 function popupsOn(){try{return localStorage.getItem(POPUP_KEY)==='on'}catch(e){return false}}
-// At most INFO_POP_CAP of these information-only pop-ups a day (decisions, trips and the night summary are never counted or held back).
+// At most INFO_POP_CAP of these information-only pop-ups a day (decisions and the night summary are never counted or held back).
 const INFO_POP_CAP=1;
 function infoPopsToday(){const p=S&&S.ev&&S.ev.pop;return p&&p.d===day()?p.n:0}
 function eventPopup(hook,items,capped){

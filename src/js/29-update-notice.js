@@ -6,7 +6,7 @@
 // The full list, every version, opens from the title screen's 🆕 What’s new, ⚙️ Settings and Help (whatsNewModal below).
 // Add a line list here for each release (newest last). Unknown versions get the generic line below.
 const CHANGELOG={
-  '0.1.0':['🎣 First release: two weeks guiding salmon out of Tacoma, Aug 3–16, 2026. Book parties, run trips from the Point Defiance Marina, keep it legal and keep the boat afloat.'],
+  '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
 const LASTVER_KEY=KEY('lastVersion');
@@ -64,7 +64,7 @@ function maybeUpdateNotice(){
 // the newest few open and the rest folded under "Show older updates". With {from:'1.12.1'} (from the update pop-up) every version
 // since that one is open and the older ones are folded. {back:fn} adds a Back button (Settings, Help); otherwise Close.
 // Opening it from inside another sheet (Help's link) replaces that sheet: still one pop-up.
-const WN_DATES={};   // version → release date (YYYY-MM-DD) from CHANGELOG.md; no date is made up
+const WN_DATES={'0.1.0':'2026-11-19'};   // version → release date (YYYY-MM-DD) from CHANGELOG.md; no date is made up
 const WN_OPEN=3;   // versions shown before "Show older"
 function wnDate(v){const d=WN_DATES[v];if(!d)return '';const [y,m,dd]=d.split('-').map(Number);
   return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]} ${dd}, ${y}`}

@@ -1,7 +1,7 @@
 {
   "name": "Tacompton",
   "short_name": "Tacompton",
-  "description": "Run a Puget Sound salmon guide business out of Tacoma, WA: clients, Commencement Bay, Point Defiance and the WDFW regulations.",
+  "description": "A life game about two weeks on Hilltop in Tacoma, WA: a job, rent, groceries, and neighbors who start to know your name.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

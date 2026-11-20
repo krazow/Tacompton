@@ -4,23 +4,23 @@ module.exports = [
   { name: 'save, reload, continue', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);
-    await page.evaluate(() => { S.money = 1234; S.gear = 2; pass(60); saveGame(); render(); });
+    await page.evaluate(() => { S.money = 1234; S.community = 42; pass(60); saveGame(); render(); });
     const t = await page.evaluate(() => S.t);
     await reload(page);
     await page.click('text=Continue as T');
     await page.waitForSelector('.hud');
-    assert.deepStrictEqual(await page.evaluate(() => [S.money, S.gear, S.t]), [1234, 2, t]);
+    assert.deepStrictEqual(await page.evaluate(() => [S.money, S.community, S.t]), [1234, 42, t]);
     noErrors(errors);
   } },
-  { name: 'bookings and stats survive a reload', fn: async ctx => {
+  { name: 'job, rent and stats survive a reload', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);
-    await page.evaluate(() => { S.book.push({ id: S.nextId++, day: 3, start: 3 * 1440 + 360, type: 'chinook', party: { name: 'Testers', n: 2, want: 'fish', mood: 70 }, price: 400, status: 'booked' }); S.stats.trips = 4; saveGame(); });
+    await page.evaluate(() => { S.job = 'kitchen'; S.standing = 66; S.rent.paid = true; S.stats.shifts = 4; S.visited.mlk = true; saveGame(); });
     await reload(page);
     await page.click('text=Continue as T');
     await page.waitForSelector('.hud');
-    const r = await page.evaluate(() => [S.book.length >= 1, S.book.some(b => b.party && b.party.name === 'Testers'), S.stats.trips]);
-    assert.deepStrictEqual(r, [true, true, 4]);
+    const r = await page.evaluate(() => [S.job, S.standing, S.rent.paid, S.rent.amt, S.stats.shifts, !!S.visited.mlk]);
+    assert.deepStrictEqual(r, ['kitchen', 66, true, 1150, 4, true]);
     noErrors(errors);
   } },
   { name: 'migrate fills in fields an older save is missing', fn: async ctx => {
