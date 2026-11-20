@@ -3,7 +3,7 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
-## Unreleased
+## 0.2.0 (2026-11-19)
 
 ### Added
 - 🎒 Growing Up (new), a second mode on the start page: you're 12, your family just moved to Hilltop, and Chapter 1 is the week before middle school (Mon Aug 24 to Sun Aug 30, 2026), ending with the first day of seventh grade on Mon Aug 31 and a "Chapter 1 complete" grade with a look at the next chapter.

@@ -27,7 +27,7 @@ const GAME={
   title:'Tacompton',
   tagline:'Two weeks on Hilltop',
   codePrefix:'TACOMPTON',   // transfer codes start with this, e.g. POCKETWEEK:eyJ…
-  version:'0.1.1',           // bump on every release: shown in Settings, stamped into saves and sw.js
+  version:'0.2.0',           // bump on every release: shown in Settings, stamped into saves and sw.js
   schema:1,                  // bump when the shape of S changes, and add a MIGRATIONS entry (21-story.js)
   days:14,                   // two weeks: Mon Aug 3 – Sun Aug 16, 2026, your first two weeks on Hilltop
   wake:330,                  // 5:30 AM on day one (the job you pick sets your own alarm after that)
