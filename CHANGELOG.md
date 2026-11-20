@@ -3,7 +3,7 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
-## Unreleased
+## 0.1.1 (2026-11-19)
 
 ### Added
 - A redesigned start page: the title art and name, the big Start/Continue button, then a clear ❓ Help button with 📲 Install app right under it. Save slots, feedback, What's new and transfer are still there as smaller buttons below.
