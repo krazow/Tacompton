@@ -3,6 +3,13 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+### Added
+- A redesigned start page: the title art and name, the big Start/Continue button, then a clear ❓ Help button with 📲 Install app right under it. Save slots, feedback, What's new and transfer are still there as smaller buttons below.
+- 📲 Install app is always on the start page (except in the single-file offline copy): it opens your browser's install prompt, the menu steps for your browser, or the iPhone/iPad how-to.
+- A full player's guide under Help, laid out as a document: a table of contents with jump links and 16 numbered chapters, from your first day step by step to the score, tips and an FAQ, with the game's real prices, shift times, pay, rent and grade cutoffs, small drawings and tip boxes. It opens from the start page and from ⚙️ Settings → Help, closes with Esc, and has a 📄 Print / save as PDF button.
+
 ## 0.1.0 (2026-11-19)
 
 First release.

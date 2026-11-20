@@ -136,10 +136,101 @@ module.exports = [
     assert.strictEqual(await page.$('#mbg'), null);
     noErrors(errors);
   } },
-  { name: 'title screen: Help! opens how to play', fn: async ctx => {
+  { name: 'start page: the big button, then Help, then Install app right under it', only: 'index.html', fn: async ctx => {
     const { page, errors } = await open(ctx);
-    await page.click('.title button >> text=Help!');
-    assert.match(await page.textContent('#mbg'), /How to play/i);
+    const order = await page.$$eval('.title .body button', bs => bs.map(b => b.id || b.className));
+    const big = order.findIndex(c => /\bbig\b/.test(c)), help = order.indexOf('helpBtn'), inst = order.indexOf('installBtn');
+    assert.ok(big >= 0 && help === big + 1 && inst === help + 1, 'order: ' + order.join(', '));
+    assert.match(await page.textContent('#helpBtn'), /Help/);
+    assert.match(await page.textContent('#installBtn'), /Install app/);
+    const [h, i] = await Promise.all(['#helpBtn', '#installBtn'].map(s => page.$eval(s, b => b.getBoundingClientRect().toJSON())));
+    assert.ok(h.height >= 44 && i.height >= 44, '44px targets');
+    assert.ok(i.top >= h.bottom, 'Install sits directly beneath Help');
+    // the other buttons are still there
+    const txt = await page.textContent('.title .tgrid');
+    for (const t of ['Save slots', 'Send feedback', 'What’s new', 'Transfer']) assert.ok(txt.includes(t), t);
+    // Install with no browser offer shows the install steps
+    await page.click('#installBtn');
+    assert.match(await page.textContent('#mbg'), /Install Tacompton/);
+    noErrors(errors);
+  } },
+  { name: 'start page: no Install app in the single-file offline build', only: 'offline', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    assert.ok(await page.$('#helpBtn'), 'Help is there');
+    assert.strictEqual(await page.$('#installBtn'), null);
+    noErrors(errors);
+  } },
+  { name: 'Help opens the guide: a document with every chapter and a working table of contents', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await page.click('#helpBtn');
+    await page.waitForSelector('#tut');
+    assert.strictEqual(await page.$('#mbg'), null, 'a full-screen document, not a pop-up');
+    const r = await page.evaluate(() => {
+      const t = document.getElementById('tut'), b = t.getBoundingClientRect();
+      return { w: b.width, h: b.height, vw: innerWidth, vh: innerHeight, role: t.getAttribute('role'), title: document.getElementById('tut-h').textContent,
+        toc: [...t.querySelectorAll('.tut-toc a')].map(a => a.textContent.replace(/^\d+/, '').trim()),
+        heads: [...t.querySelectorAll('.tut-ch > h2')].map(h => h.textContent.replace(/^\d+/, '').trim()),
+        hrefs: [...t.querySelectorAll('.tut-toc a')].map(a => a.getAttribute('href')),
+        inert: document.getElementById('app').hasAttribute('inert') };
+    });
+    assert.ok(r.w >= r.vw - 1 && r.h >= r.vh - 1, 'fills the screen');
+    assert.strictEqual(r.role, 'dialog'); assert.match(r.title, /How to play/); assert.ok(r.inert, 'the game behind is inert');
+    const want = ['Getting started', 'Your first day step by step', 'The HUD stats explained', 'Places on Hilltop', 'Your job and shifts', 'Food and the fridge',
+      'Energy and stress', 'Rent', 'Neighbors and community', 'Events', 'The Week and Neighbors tabs', 'Winning, losing and the score', 'Tips and strategy',
+      'Settings, accessibility and saving', 'Installing the app', 'FAQ'];
+    assert.deepStrictEqual(r.toc, want); assert.deepStrictEqual(r.heads, want);
+    for (const h of r.hrefs) assert.ok(await page.$(h), 'TOC target ' + h);
+    // real numbers from the game
+    const txt = await page.textContent('#tut');
+    for (const s of ['$1,150', '$172', '$104', '$138', '7:00 AM', '6:30 AM', '2:00 PM', '$42', '3,300', '2,500', '× 15', '× 60']) assert.ok(txt.includes(s), 'mentions ' + s);
+    assert.doesNotMatch(txt, /\b(fish\w*|salmon|marina|charters?|wdfw)\b/i);
+    // a TOC link jumps to its chapter and moves focus to the heading
+    await page.click('.tut-toc a[href="#tut-score"]');
+    await page.waitForFunction(() => { const h = document.getElementById('tut-score'); return h && Math.abs(h.getBoundingClientRect().top) < 120; });
+    assert.strictEqual(await page.evaluate(() => document.activeElement.id), 'tut-score-h');
+    // every control in it is at least 44px tall
+    const small = await page.$$eval('#tut button, #tut .tut-toc a, #tut .tut-up', els => els.filter(e => e.getBoundingClientRect().height < 43.5).map(e => e.textContent));
+    assert.deepStrictEqual(small, []);
+    // print / save as PDF opens the print dialog
+    await page.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+    await page.click('.tut-pr');
+    assert.strictEqual(await page.evaluate(() => window.__printed), 1);
+    noErrors(errors);
+  } },
+  { name: 'the guide: Esc closes it, Tab stays inside, and the close button works', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await page.focus('#helpBtn');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#tut');
+    await page.waitForFunction(() => document.activeElement && document.activeElement.classList.contains('tut-x'));
+    for (let i = 0; i < 5; i++) await page.keyboard.press('Shift+Tab');
+    assert.ok(await page.evaluate(() => document.getElementById('tut').contains(document.activeElement)), 'focus stays in the guide');
+    await page.keyboard.press('Escape');
+    assert.strictEqual(await page.$('#tut'), null);
+    assert.strictEqual(await page.$('#mbg'), null, 'Esc does not open anything else');
+    assert.strictEqual(await page.evaluate(() => document.activeElement.id), 'helpBtn', 'focus goes back to Help');
+    assert.ok(!(await page.evaluate(() => document.getElementById('app').hasAttribute('inert'))));
+    await page.click('#helpBtn');
+    await page.click('.tut-x');
+    assert.strictEqual(await page.$('#tut'), null);
+    noErrors(errors);
+  } },
+  { name: 'the guide opens from ⚙️ Settings → Help in a game, and closes back to the game', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await newGame(page);
+    await page.evaluate(() => openSettings());
+    const labels = await page.$$eval('#mbg .modal > button.act', bs => bs.map(b => b.textContent));
+    const i = labels.findIndex(t => /Help/.test(t));
+    assert.ok(i >= 0, 'Settings has Help');
+    await page.evaluate(i => MBTN(i), i);
+    await page.waitForSelector('#tut');
+    await page.waitForTimeout(80);
+    assert.ok(await page.evaluate(() => document.getElementById('app').hasAttribute('inert')), 'the game behind is inert');
+    await page.keyboard.press('1');   // game shortcuts don't fire behind the guide
+    assert.strictEqual(await page.evaluate(() => S.t), await page.evaluate(() => GAME.wake));
+    await page.keyboard.press('Escape');
+    assert.strictEqual(await page.$('#tut'), null);
+    assert.ok(await page.$('.hud'), 'back in the game');
     noErrors(errors);
   } },
   { name: 'no fishing, Guide Master or Alaska leftovers in the visible text (all tabs and Help)', fn: async ctx => {

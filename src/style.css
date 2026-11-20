@@ -37,8 +37,20 @@ button{font:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select
 .title details.about>ul{margin-left:14px;padding:0 14px 12px 18px}
 /* the other buttons: two columns; an odd one out spans both */
 .title .big{text-wrap:balance}
-.title .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.title .tgrid .ghost{min-height:48px;padding:8px 6px;font-size:15px;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center}
+.title .t-main{display:flex;flex-direction:column;gap:8px}
+.title .t-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:8px 14px;border-radius:14px;text-align:left;font-weight:400}
+.title .t-ic{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:10px}
+.title .t-tx{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.title .t-tx b{font-family:var(--serif);font-size:19px;font-weight:700}
+.title .t-tx span{font-size:13px;opacity:.8}
+.title .t-help{background:var(--paper);color:var(--brand-dark);border:0;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.title .t-help .t-ic{background:var(--surface)}
+.title .t-help:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.title .t-inst{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+.title .t-inst .t-ic{background:rgba(255,255,255,.14)}
+.title .t-btn:focus-visible{outline:3px solid #ffd27a;outline-offset:2px}
+.title .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px}
+.title .tgrid .ghost{min-height:44px;padding:6px;font-size:14px;font-weight:500;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;background:transparent;border-color:rgba(255,255,255,.22);border-radius:12px}
 .title .tgrid .wide{grid-column:1/-1}
 /* the install bar (41-install.js) at the very top */
 .inst-bar{display:flex;align-items:center;gap:2px;background:#0a2a2d;color:#fff;padding:0 0 0 12px;font-size:14px;line-height:1.25;border-bottom:1px solid rgba(255,255,255,.18)}
@@ -250,23 +262,81 @@ button.act,.ghost,.big{min-height:44px}
 .scene:has(>.art-fig:not([data-err])) .place h2{font-size:16px}.scene:has(>.art-fig:not([data-err])) .place div{display:none}
 @media (prefers-reduced-motion:reduce){.art-fig img{transition:none}}
 @media (prefers-color-scheme:dark){.art-fig{background:#22313a;filter:brightness(.86) saturate(.95)}}
-/* the Help sheet (26-help.js): contents with tap-to-jump links, then one short section per topic */
-.help-toc{background:var(--surface);border-radius:12px;padding:10px 12px 6px;margin:0 0 6px}
-.help-toc:focus{outline:none}
-.help-toc>b{display:block;font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-.help-toc ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;column-gap:10px}
-.help-toc a{display:flex;align-items:center;min-height:44px;font-size:14px;line-height:1.25;color:var(--brand);text-decoration:none;border-bottom:1px solid var(--line)}
-.help-toc a:hover{text-decoration:underline}
-.help-sec{padding:4px 0 10px;border-bottom:1px solid var(--line);scroll-margin-top:4px}
-.help-sec h3{display:flex;align-items:center;gap:6px;font-family:var(--serif);font-size:18px;margin:8px 0 2px}
-.help-sec h3:focus{outline:none}.help-sec h3:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.help-up{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:17px;color:var(--mute);text-decoration:none;border-radius:10px}
-.help-up:hover{background:var(--surface)}
-.help-sum{font-weight:600;font-size:15px;margin:0 0 4px!important}
-.help-sec ul{margin:0;padding-left:20px;font-size:14px;line-height:1.45}
-.help-sec li{margin:0 0 5px}
-.help-note{font-size:12px;color:var(--mute);margin-top:10px!important}
-@media (max-width:360px){.help-toc ul{grid-template-columns:1fr}}
+/* ❓ Help: the player's guide (26-help.js), a full-screen document over the game */
+html.tut-open,html.tut-open body{overflow:hidden}
+.tut{position:fixed;inset:0;z-index:18;overflow-y:auto;overscroll-behavior:contain;background:var(--paper);color:var(--ink);-webkit-overflow-scrolling:touch}
+.tut:focus{outline:none}
+.tut-bar{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:var(--brand-dark);color:#fff}
+.tut-bar button{min-height:44px;padding:0 14px;border-radius:12px;font-weight:700;font-size:15px}
+.tut-x{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+.tut-pr{background:var(--paper);color:var(--brand-dark);border:0}
+.tut-bar button:focus-visible{outline:3px solid #ffd27a;outline-offset:2px}
+.tut-doc{max-width:640px;margin:0 auto;padding:22px 20px calc(env(safe-area-inset-bottom) + 40px);font-size:16px;line-height:1.6}
+.tut-cover svg{display:block;width:100%;height:auto;margin-bottom:16px}
+.tut-cover h1{font-size:34px;line-height:1.05;letter-spacing:-.4px;color:var(--brand-dark);margin:0 0 10px;text-wrap:balance}
+.tut-lede{font-size:18px;line-height:1.5;margin:0 0 6px;color:#33403f}
+.tut-small{font-size:13.5px;color:var(--mute);line-height:1.5}
+.tut-doc p{margin:0 0 12px}
+.tut-toc{margin:22px 0 8px;padding:16px 16px 8px;background:var(--surface);border-radius:14px}
+.tut-toc:focus{outline:none}.tut-toc:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+.tut-toc h2{font-size:20px;margin:0 0 4px;color:var(--brand-dark)}
+.tut-toc ol{list-style:none;margin:0;padding:0}
+.tut-toc a{display:flex;align-items:center;gap:12px;min-height:44px;color:var(--ink);text-decoration:none;font-weight:500;border-bottom:1px solid var(--line);line-height:1.25}
+.tut-toc li:last-child a{border-bottom:0}
+.tut-toc a:hover{color:var(--brand)}
+.tut-toc a:focus-visible,.tut-up:focus-visible,.tut-doc .linkbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+.tut-tn{flex:none;width:28px;font-family:var(--serif);font-weight:700;font-size:17px;color:var(--cta-dark);text-align:right;font-variant-numeric:tabular-nums}
+.tut-ch{padding:26px 0 8px;border-top:2px solid var(--brand-dark);margin-top:26px;scroll-margin-top:calc(env(safe-area-inset-top) + 64px)}
+.tut-ch>h2{display:flex;align-items:baseline;gap:12px;font-size:26px;line-height:1.15;color:var(--brand-dark);margin:0 0 14px}
+.tut-ch>h2:focus{outline:none}.tut-ch>h2:focus-visible{outline:2px solid var(--brand);outline-offset:4px}
+.tut-n{flex:none;font-size:40px;line-height:.9;color:var(--cta);font-variant-numeric:tabular-nums}
+.tut-ch h3{font-size:18px;margin:20px 0 8px;color:var(--brand-dark)}
+.tut-ch ul,.tut-ch ol{margin:0 0 12px;padding-left:22px}
+.tut-ch li{margin:0 0 6px}
+.tut-steps{counter-reset:st;list-style:none;padding-left:0!important}
+.tut-steps li{counter-increment:st;position:relative;padding-left:40px;margin-bottom:10px}
+.tut-steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.tut-place{padding-left:12px;border-left:3px solid var(--line)}
+.tut-box{margin:16px 0;padding:12px 14px;border-radius:12px;background:#eaf1ea;border-left:5px solid var(--good)}
+.tut-box.warn{background:#f8e9e2;border-left-color:var(--bad)}
+.tut-box b{display:block;font-family:var(--serif);font-size:16px;margin-bottom:2px}
+.tut-box p{margin:0!important;font-size:15px;line-height:1.5}
+.tut-fig{margin:14px 0 18px}
+.tut-fig svg{display:block;width:100%;height:auto}
+.tut-fig figcaption{font-size:13px;color:var(--mute);margin-top:6px}
+.tut-tw{overflow-x:auto;margin:0 0 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.tut-t{border-collapse:collapse;width:100%;font-size:14px;line-height:1.4}
+.tut-t th,.tut-t td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.tut-t thead th{background:var(--surface);font-size:13px;color:#4a5457;font-weight:700;white-space:nowrap}
+.tut-t tbody th{font-weight:700}
+.tut-t tbody:last-child tr:last-child>*{border-bottom:0}
+.tut-t .tut-grp th{background:#eef1ea;color:var(--brand-dark);font-family:var(--serif);font-size:15px}
+.tut-acts td:nth-child(2){white-space:nowrap}
+.tut-acts tbody th{font-weight:500}
+.tut-formula{font-family:var(--serif);font-size:18px;line-height:1.4;padding:14px 16px;margin:0 0 14px;background:var(--brand-dark);color:#fff;border-radius:12px;text-align:center}
+.tut-cols{columns:2;column-gap:20px;font-size:14.5px}.tut-cols li{break-inside:avoid}
+@media (max-width:420px){.tut-cols{columns:1}}
+.tut-faq dt{font-weight:700;font-family:var(--serif);font-size:17px;margin:14px 0 4px}
+.tut-faq dd{margin:0 0 8px}
+.tut-up{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;color:var(--brand);text-decoration:none}
+.tut-foot{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
+@media (prefers-color-scheme:dark){.tut-t{background:#fff}}
+@media print{
+  @page{margin:16mm 14mm}
+  html,body{background:#fff!important;overflow:visible!important;height:auto!important}
+  html.tut-open #app,html.tut-open .modal-bg,html.tut-open #tiles,html.tut-open .inst-toast{display:none!important}
+  .tut{position:static;overflow:visible;inset:auto;background:#fff}
+  .tut-bar,.tut-up,.tut-doc .linkbtn{display:none!important}
+  .tut-doc{max-width:none;padding:0;font-size:11pt;line-height:1.45}
+  .tut-toc{background:none;border:1px solid #bbb}
+  .tut-toc a{min-height:0;padding:3px 0}
+  .tut-ch{break-before:auto;margin-top:14pt;padding-top:10pt}
+  .tut-ch>h2,.tut-ch h3{break-after:avoid}
+  .tut-box,.tut-fig,.tut-tw,.tut-formula,tr{break-inside:avoid}
+  .tut-tw{overflow:visible}
+  .tut-formula{background:none;color:#000;border:1.5px solid #000}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 /* Install app (41-install.js): the steps sheet and the thank-you note */
 .inst-steps{margin:8px 0 10px;padding-left:22px;line-height:1.5;font-size:15px}.inst-steps li{margin:4px 0}
 .inst-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);max-width:min(440px,calc(100% - 28px));background:var(--ink);color:#fff;border-radius:12px;padding:12px 16px;font-size:14.5px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.3);z-index:60}
