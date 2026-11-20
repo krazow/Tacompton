@@ -1,217 +1,301 @@
 // ============================================================
 //  TACOMPTON, part 1: the world.
-//  One two-week August season (Mon Aug 3 – Sun Aug 16, 2026) running a small salmon-guide boat out of Tacoma, WA.
-//  The shared state, the HUD, the scenery, the six places, travel, the Here-tab actions, status tags, the alert bar
-//  and the extra tabs. Trips, bookings, fish and regs live in 22-trips.js (TRIPS); events and the story in 21-story.js.
-//  Every call into another file is guarded with typeof, so this file runs (and parses) on its own.
+//  Two weeks (Mon Aug 3 – Sun Aug 16, 2026) living on Hilltop in Tacoma, WA: a new apartment, a new job,
+//  rent due on the last day, a fridge that keeps emptying and a neighborhood that's glad to meet you if you show up.
+//  The shared state, the HUD, the jobs, the scenery, the six places, travel, the Here-tab actions, status tags,
+//  the alert bar and the extra tabs. Events, tips, goals and scoring live in 21-story.js.
 // ============================================================
 
 // ---- the game-specific part of the save (merged over the engine's fields in baseState()) ----
-// The SPEC.md fields first, then WORLD's own small trackers (documented on each line).
+// Add a field here and old saves get it automatically (fillDefaults in 06-save.js).
 function newState(){
   return {
-    money:1500,rep:50,energy:90,boat:85,cites:0,warns:0,
-    fuel:20,                 // gallons in the boat's tank (TANK = 40)
-    gear:3,                  // trips' worth of tackle: herring hooks, flashers, hoochies, leaders
-    bait:0,                  // trays of herring on ice (1 per trip)
-    baitDay:-1,              // WORLD: day index the newest tray was bought (TRIPS spoils trays at the end of baitDay+1)
-    book:[],nextId:1,
-    reqs:[],                 // booking requests waiting: {id, r:{...}, exp:dayIndex}
-    trip:null,               // TRIPS owns its shape
-    reviews:[],
-    dil:{},
-    unlogged:0,
-    licensed:{guide:true,boat:true,crc:true},
-    stats:{trips:0,clients:0,fish:0,chinook:0,coho:0,earned:0,spent:0,tips:0,viol:0,fines:0,noshow:0,fuelGal:0,seen:{},
-      tolls:0,walks:0,bar:0}, // WORLD adds: tolls paid ($), Ruston Way walks, bar evenings
+    money:900,               // replaced by DF().money at new game
+    energy:85,stress:25,
+    food:3,                  // meals in the fridge (you eat one every night)
+    job:'cafe',              // a JOBS key; picked in the welcome pop-up (21-story.js)
+    jobPicked:false,
+    standing:65,             // 0–100: how work feels about you. 0 = fired
+    community:5,             // 0–100: how many neighbors know you, and how well
+    rent:{due:13,amt:1150,paid:false,paidDay:-1},
+    worked:{},               // day → minutes late (0 = on time)
+    extra:{},                // day → picked up extra hours
+    met:{},                  // NEIGHBORS id → day you met
     visited:{home:true},
-    water:{},                // TRIPS: per-day spot conditions
-    // ---- WORLD's own per-day trackers (day index → value) ----
-    scout:-1,                // day index whose water read is improved (scouting the Slag Pile today sets it to tomorrow)
-    diner:{},coffee:{},walk:{},pier:{},bar:{},museum:{},meet:{},urgent:{},
+    fair:false,              // went to the Hilltop Street Fair (Sat Aug 8)
+    // per-day trackers (day index → true / count)
+    cooked:{},called:{},chat:{},coffee:{},plate:{},swim:{},hoops:{},volunteer:{},sunset:{},ride:{},unpack:{},breakroom:{},
+    unpacked:0,              // boxes unpacked, out of BOXES
+    haircut:false,
+    stats:{shifts:0,late:0,missed:0,earned:0,spent:0,meals:0,neighbors:0,walks:0,swims:0,hungry:0,rides:0,sunsets:0,extra:0,tips:0},
   };
 }
 
-// ---- small shared helpers (TRIPS and STORY may use these; please don't redeclare them with const/let) ----
-const TANK=40;                                             // boat fuel tank, gallons
-const TOLL=5;                                              // Tacoma Narrows Bridge, eastbound only (Gig Harbor → Tacoma), Good To Go pass
-const rp=c=>Math.round(c*DF().cost);                       // a price scaled by the difficulty's cost multiplier
+// ---- small shared helpers (21-story.js uses these too) ----
+const BOXES=6;                                             // moving boxes still taped shut on day one
+const rp=c=>Math.round(c*(DF().cost||1));                  // a price scaled by the difficulty
 function canAfford(c){return S.money>=c}
 function spend(c){money(-c);S.stats.spent+=c}
 const augDate=d=>`${dayName(d).slice(0,3)} Aug ${3+d}`;   // day index → "Mon Aug 3"
-const todaysTrips=(d=day())=>(S.book||[]).filter(b=>b.day===d&&b.status==='booked').sort((x,y)=>x.start-y.start);
-const TACOMA_LORE=[
-  'Somebody at the counter swears the Tacoma Aroma is “mostly gone now.” Somebody else laughs for a full minute.',
-  'Talk turns to Galloping Gertie, the first Narrows bridge, which twisted itself into the Sound in November 1940. The only fatality was a dog named Tubby.',
-  '“The mountain is out,” says the cook, and the whole counter turns to look at Rainier like it might leave.',
-  'A guy in a Rainiers cap says the kings are stacked on the Clay Banks at the top of the tide. He says that every day.',
-  'Someone remembers when the Asarco smelter stack at Ruston came down in 1993. “The whole town came out to watch.”',
-  'The Puyallup Tribe’s fishers are out on the river this week. The old-timers nod at that. It’s their fishery first, and has been forever.',
-  'A debate breaks out: Frisko Freeze or Dick’s? Nobody wins. Everyone gets fries.',
-  'A retired longshoreman says the Port of Tacoma cranes look like giraffes at sunset. He’s not wrong.',
+const FAIR_DAY=5;                                          // Sat Aug 8: the Hilltop Street Fair
+const FAIR_HOURS=[600,1080];                               // 10 AM – 6 PM
+const SUNSET=1220;                                         // about 8:20 PM in mid-August
+
+// ---- jobs: the player picks one on day one ----
+// days: which weekdays (0 = Monday) have a shift. pay: a full shift's take-home. tips: [lo, hi] cash tips (the café).
+const JOBS={
+  hospital:{n:'CNA at Tacoma General',short:'the hospital',ic:'🏥',place:'Tacoma General',role:'certified nursing assistant',
+    start:420,end:930,pay:172,days:[0,1,2,3,4],stress:12,energy:32,alarm:360,open:()=>[0,1440],
+    blurb:'Early shift, 7:00 AM to 3:30 PM, Monday to Friday. The best pay of the three, and the hardest days: call lights, lifts, vitals and people at their worst and bravest.'},
+  cafe:{n:'Barista at a Hilltop café',short:'the café',ic:'☕',place:'the café',role:'barista',
+    start:390,end:870,pay:104,tips:[14,40],days:[0,1,2,3,4],stress:6,energy:24,alarm:330,open:d=>d%7<5?[360,1080]:[420,900],
+    blurb:'Opening shift, 6:30 AM to 2:30 PM, Monday to Friday. Less pay, cash tips, and the whole neighborhood comes through your line before nine.'},
+  kitchen:{n:'Line cook at a soul-food spot on MLK',short:'the kitchen',ic:'🍳',place:'Mama’s Kitchen',role:'line cook',
+    start:840,end:1320,pay:138,days:[2,3,4,5,6],stress:10,energy:28,alarm:480,staffMeal:true,open:()=>[660,1380],
+    blurb:'Evenings, 2:00 to 10:00 PM, Wednesday to Sunday. Hot, loud and fast, with a staff meal every shift. Your mornings are your own.'},
+};
+const job=()=>JOBS[(typeof S!=='undefined'&&S&&S.job)]||JOBS.cafe;
+const isShiftDay=(d=day())=>job().days.includes(((d%7)+7)%7);
+const shiftsTotal=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay).length;
+const shiftDays=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay);
+
+// ---- the neighbors you can meet (21-story.js lists them on the Neighbors tab) ----
+// at: the places you're likely to meet them
+const NEIGHBORS=[
+  {id:'lorraine',n:'Ms. Lorraine',ic:'🪴',at:['home'],d:'On her porch across the street since 1968. Knows every house on the block, who built it and who painted it last.'},
+  {id:'kim',n:'Mr. Kim',ic:'🛒',at:['mlk'],d:'Runs the corner market. Saves you the last ripe avocado without being asked, and asks about your mother.'},
+  {id:'dre',n:'Dre',ic:'💈',at:['mlk'],d:'Has the chair by the window at the barbershop. Opinions on everything, mostly right, delivered with a straight razor.'},
+  {id:'marisol',n:'Marisol',ic:'🎨',at:['mlk','view'],d:'Painting a mural on the side wall by the bus stop. Let you fill in a patch of sky. You will point at it for years.'},
+  {id:'tasha',n:'Tasha',ic:'🏀',at:['peoples'],d:'Runs the evening pickup game at People’s. Calls fouls fairly, which makes her the most powerful person on the court.'},
+  {id:'ron',n:'Big Ron',ic:'🍖',at:['home','mlk'],d:'Two doors down. His smoker runs every weekend and his ribs are a neighborhood institution. Soft-spoken. Huge.'},
+  {id:'jaylen',n:'Jaylen',ic:'🚲',at:['peoples','home','link'],d:'Eleven, owns the sidewalk on a BMX, and has questions. So many questions. Good ones, mostly.'},
+  {id:'bev',n:'Auntie Bev',ic:'🧺',at:['mlk','peoples'],d:'Keeps the little free community fridge stocked and the block fed. Everybody’s auntie, including yours now.'},
+  {id:'harris',n:'Deacon Harris',ic:'🎶',at:['mlk','link','view'],d:'Sings bass in the choir on Sundays. Thirty-one years at the Port. Sits on the overlook bench most evenings.'},
+  {id:'priya',n:'Priya',ic:'🩺',at:['home','link','work'],d:'Night-shift nurse who lives down your hall. Waves good night at 7 AM and good morning at dusk.'},
 ];
+// Meet someone new here (or anyone not met yet). Returns the neighbor, or null when you know everybody.
+function meetHere(loc=S.loc){
+  const left=NEIGHBORS.filter(x=>!S.met[x.id]),here=left.filter(x=>x.at.includes(loc)),p=here.length?here:left;
+  if(!p.length) return null;
+  const x=pick(p);S.met[x.id]=day()+1;S.stats.neighbors=Object.keys(S.met).length;adj('community',3);
+  return x;
+}
+const metCount=()=>Object.keys(S.met||{}).length;
 
 // ---- HUD ----
 const STATS=[
-  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<0,get title(){return 'Cash: '+$(Math.round(S.money))}},
-  {l:'Rep',   v:()=>S.rep,m:()=>S.rep,warn:()=>S.rep<20,title:'Reputation: reviews and word of mouth around the Sound. At 0, nobody books you.'},
+  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=10,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by Sunday night, Aug 16.`)}},
   {l:'Energy',v:()=>S.energy,m:()=>S.energy,warn:()=>S.energy<20},
-  {l:'Boat',  v:()=>S.boat,m:()=>S.boat,warn:()=>S.boat<25,title:'Your 22-foot aluminum sled. Below 40 it breaks down more. The marine repair shop is in Gig Harbor.'},
-  {l:'Record',v:()=>S.cites?`${S.cites}/3`:'Clean',warn:()=>S.cites>0,title:'Citations from WDFW. Three and your charter license is gone.'},
+  {l:'Stress',v:()=>S.stress,m:()=>S.stress,good:false,warn:()=>S.stress>=75,title:'Stress. High is bad: at 100 you burn out.'},
+  {l:'Food',  v:()=>S.food,m:()=>Math.min(100,S.food*20),warn:()=>S.food<1,title:'Meals in the fridge. You eat one every night.'},
+  {l:'Job',   v:()=>S.standing,m:()=>S.standing,warn:()=>S.standing<25,get title(){return `How ${job().short} feels about you. At 0 you’re let go.`}},
 ];
 
 // ---- scenery ----
-// August in Tacoma: sunrise about 6:10 AM, sunset about 8:20 PM.
-const SCENE={sun:[370,1220],skyDay:['#93bcd6','#e4edf0'],skyDusk:['#5f6596','#f3b68a'],skyNight:['#0b1828','#1d3047'],ground:'#5c7d52',groundNight:'#1c2a22'};
-const TC={
-  sea:n=>n?'#162f43':'#3f7f9e',sea2:n=>n?'#24465c':'#7fb6cc',fir:n=>n?'#0f2219':'#24513a',fir2:n=>n?'#14291f':'#2f6247',
-  hill:n=>n?'#1b2c2a':'#56786a',hill2:n=>n?'#22362f':'#6f8f7c',mtn:n=>n?'#25334a':'#a7b8cb',snow:n=>n?.35:.96,
+// August on Hilltop: sunrise about 6:10 AM, sunset about 8:20 PM. The engine draws the sky (y 0–140) and the ground (140–170).
+const SCENE={sun:[370,SUNSET],skyDay:['#8fbbd9','#e6eef0'],skyDusk:['#5d5f97','#f4b183'],skyNight:['#0c1729','#1f2f4a'],ground:'#6f7a6c',groundNight:'#1f2526'};
+const HC={
+  bay:n=>n?'#13263a':'#4f8fae',bay2:n=>n?'#22405a':'#9ccbdd',mtn:n=>n?'#26344c':'#a9b9cc',snow:n=>n?.32:.96,
+  hill:n=>n?'#1a2a28':'#5b7d68',hill2:n=>n?'#223530':'#77957f',leaf:n=>n?'#13261d':'#3d7a4e',leaf2:n=>n?'#18301f':'#58955f',
+  street:n=>n?'#22272b':'#5a5f63',walk:n=>n?'#3a3c3a':'#b9b4a6',trunk:n=>n?'#2a1e16':'#5e4630',
 };
-const win=n=>n?'#f7d77a':'#cfe0e6';
+const win=(n,lit=true)=>n?(lit?'#f7d77a':'#2b3442'):'#cfe0e6';
 const SVGF='font-family="DM Sans, system-ui, sans-serif" font-weight="700"';
-// Mount Rainier: base at y, centered on x, scaled by s
-const rainier=(n,x=340,s=1,y=118)=>`<g transform="translate(${x},${y}) scale(${s})"><polygon points="-130,0 -70,-40 -45,-62 -18,-80 0,-86 20,-80 48,-60 80,-36 130,0" fill="${TC.mtn(n)}"/>
-  <polygon points="-45,-62 -18,-80 0,-86 20,-80 48,-60 34,-58 24,-66 12,-56 0,-68 -10,-58 -24,-66 -34,-56" fill="#f5f8fa" opacity="${TC.snow(n)}"/></g>`;
-const hills=(n,y=118)=>`<path d="M0 ${y-14} Q60 ${y-26} 130 ${y-12} T260 ${y-10} T400 ${y-16} T480 ${y-8} L480 ${y} L0 ${y} Z" fill="${TC.hill(n)}"/>`;
-const sea=(n,y=118)=>`<rect y="${y}" width="480" height="${170-y}" fill="${TC.sea(n)}"/><path d="M30 ${y+12} q24 -4 48 0 M160 ${y+22} q24 -4 48 0 M300 ${y+10} q24 -4 48 0 M390 ${y+30} q24 -4 48 0 M90 ${y+38} q24 -4 48 0" stroke="${TC.sea2(n)}" stroke-width="2" fill="none" opacity=".7"/>`;
-const fir=(x,h,n,c,b=140)=>{const w=h*.3;return `<g fill="${c||TC.fir(n)}"><polygon points="${x-w},${b} ${x},${b-h*.55} ${x+w},${b}"/><polygon points="${x-w*.8},${b-h*.3} ${x},${b-h*.8} ${x+w*.8},${b-h*.3}"/><polygon points="${x-w*.55},${b-h*.6} ${x},${b-h} ${x+w*.55},${b-h*.6}"/></g>`};
-const firs=(xs,n,b=140)=>xs.map((x,i)=>fir(x,30+((x*7)%24),n,i%2?TC.fir2(n):TC.fir(n),b)).join('');
-const gull=(x,y)=>`<path d="M${x} ${y} q5 -5 10 0 q5 -5 10 0" stroke="#fff" stroke-width="1.6" fill="none"/>`;
-// a container crane: legs at x and x+26 standing on y, boom out over the water
-const crane=(x,n,y=118)=>{const c=n?'#3b2b2b':'#c8452f';return `<g stroke="${c}" stroke-width="3" fill="none"><path d="M${x} ${y} V${y-46} M${x+26} ${y} V${y-46} M${x} ${y-24} H${x+26} M${x} ${y-46} L${x+26} ${y-24} M${x-34} ${y-46} H${x+44} M${x+13} ${y-46} V${y-60} L${x-34} ${y-46} M${x+13} ${y-60} L${x+44} ${y-46}"/></g><rect x="${x+2}" y="${y-52}" width="14" height="8" fill="${c}"/>${n?`<circle cx="${x+13}" cy="${y-61}" r="2" fill="#ff4a3a"/>`:''}`};
-// the twin Tacoma Narrows bridges: towers at x1, x2; deck at y
-function narrows(n,o={}){
-  const x1=o.x1||150,x2=o.x2||330,top=o.top||46,deck=o.deck||96,base=o.base||118,sag=deck-14,c=n?'#4a5a66':'#7d8f99',cab=n?'#5d6d78':'#56656e';
-  const ctrl=2*sag-top,mid=(x1+x2)/2,hy=x=>{const t=(x-x1)/(x2-x1);return (1-t)*(1-t)*top+2*(1-t)*t*ctrl+t*t*top};
-  let hang='';for(let x=x1+12;x<x2;x+=14)hang+=`M${x} ${hy(x).toFixed(1)} V${deck}`;
-  for(let x=x1-14;x>0;x-=14)hang+=`M${x} ${(top+(deck-top)*(x1-x)/x1).toFixed(1)} V${deck}`;
-  for(let x=x2+14;x<480;x+=14)hang+=`M${x} ${(top+(deck-top)*(x-x2)/(480-x2)).toFixed(1)} V${deck}`;
-  return `<g><rect x="0" y="${deck}" width="480" height="4" fill="${c}"/><rect x="0" y="${deck+6}" width="480" height="3" fill="${c}" opacity=".7"/>
-  ${[x1,x2].map(x=>`<rect x="${x-4}" y="${top}" width="8" height="${base-top}" fill="${c}"/><rect x="${x-6}" y="${top+12}" width="12" height="3" fill="${c}"/><rect x="${x-6}" y="${top+30}" width="12" height="3" fill="${c}"/>`).join('')}
-  <path d="M0 ${deck} L${x1} ${top} Q${mid} ${ctrl} ${x2} ${top} L480 ${deck}" stroke="${cab}" stroke-width="2" fill="none"/><path d="${hang}" stroke="${cab}" stroke-width=".8"/>
-  ${n?Array.from({length:16},(_,i)=>`<circle cx="${15+i*30}" cy="${deck-1}" r="1.3" fill="#f7d77a"/>`).join('')+[x1,x2].map(x=>`<circle cx="${x}" cy="${top-2}" r="2" fill="#ff4a3a"/>`).join(''):''}</g>`;
-}
-// boats
-const sled=(x,y,c)=>`<path d="M${x} ${y} h70 l12 -12 h-86 z" fill="${c||'#a9b4ba'}"/><rect x="${x+26}" y="${y-24}" width="22" height="12" fill="#e8eef0"/><rect x="${x+28}" y="${y-22}" width="18" height="6" fill="#5b7c8c"/><rect x="${x-2}" y="${y-16}" width="7" height="8" fill="#2b3338"/>`;
-const sailboat=(x,y,n,c)=>`<path d="M${x} ${y} q30 8 60 0 l-6 -8 h-50 z" fill="${c||'#f2f2f2'}"/><path d="M${x+28} ${y-8} V${y-56}" stroke="#666" stroke-width="1.5"/><polygon points="${x+30},${y-54} ${x+30},${y-12} ${x+56},${y-12}" fill="${n?'#9aa7b0':'#fbfbf6'}"/><polygon points="${x+26},${y-48} ${x+26},${y-12} ${x+8},${y-12}" fill="${n?'#7f8c95':'#e9ecef'}"/>${n?`<circle cx="${x+28}" cy="${y-57}" r="1.5" fill="#fff"/>`:''}`;
-const angler=(x,y,c)=>`<circle cx="${x}" cy="${y-16}" r="4" fill="#e8c9a0"/><rect x="${x-4}" y="${y-12}" width="8" height="12" rx="2" fill="${c||'#c0392b'}"/><path d="M${x+3} ${y-10} l20 -20" stroke="#333" stroke-width="1.2"/><path d="M${x+23} ${y-30} q4 14 -2 34" stroke="#999" stroke-width=".6" fill="none"/>`;
+// Mount Rainier, base at y, centered on x, scaled by s
+const rainier=(n,x=360,s=1,y=110)=>`<g transform="translate(${x},${y}) scale(${s})"><polygon points="-130,0 -70,-40 -45,-62 -18,-80 0,-86 20,-80 48,-60 80,-36 130,0" fill="${HC.mtn(n)}"/>
+  <polygon points="-45,-62 -18,-80 0,-86 20,-80 48,-60 34,-58 24,-66 12,-56 0,-68 -10,-58 -24,-66 -34,-56" fill="#f5f8fa" opacity="${HC.snow(n)}"/></g>`;
+// a round street tree standing on b
+const tree=(x,n,r=16,b=140)=>`<rect x="${x-2}" y="${b-r-8}" width="4" height="${r+8}" fill="${HC.trunk(n)}"/><circle cx="${x}" cy="${b-r-14}" r="${r}" fill="${HC.leaf(n)}"/><circle cx="${x-r*.45}" cy="${b-r-8}" r="${r*.7}" fill="${HC.leaf2(n)}"/><circle cx="${x+r*.5}" cy="${b-r-10}" r="${r*.6}" fill="${HC.leaf(n)}"/>`;
+// a streetlight that glows at night
+const lamp=(x,n,b=150)=>`<rect x="${x}" y="${b-44}" width="2.5" height="44" fill="${n?'#4a4f55':'#3c4248'}"/><path d="M${x+1} ${b-44} q8 -4 14 0" stroke="${n?'#4a4f55':'#3c4248'}" stroke-width="2.5" fill="none"/><rect x="${x+11}" y="${b-44}" width="7" height="3" fill="${n?'#f7d77a':'#cfd5d8'}"/>${n?`<polygon points="${x+11},${b-41} ${x+18},${b-41} ${x+30},${b} ${x-2},${b}" fill="#f7d77a" opacity=".12"/>`:''}`;
+// an old Hilltop craftsman: porch, gable, two windows up
+const craftsman=(x,n,c,b=140,lit=[1,0,1])=>`<g><rect x="${x}" y="${b-52}" width="76" height="52" fill="${c}"/><polygon points="${x-6},${b-50} ${x+38},${b-80} ${x+82},${b-50}" fill="${n?'#2a2224':'#6a3f35'}"/>
+  <rect x="${x+30}" y="${b-70}" width="16" height="12" fill="${win(n,lit[0])}"/><rect x="${x+8}" y="${b-44}" width="18" height="16" fill="${win(n,lit[1])}"/><rect x="${x+50}" y="${b-44}" width="18" height="16" fill="${win(n,lit[2])}"/>
+  <rect x="${x-4}" y="${b-24}" width="84" height="4" fill="${n?'#3a3434':'#efe6d6'}"/>${[0,1,2,3].map(i=>`<rect x="${x-2+i*26}" y="${b-21}" width="4" height="21" fill="${n?'#3a3434':'#efe6d6'}"/>`).join('')}<rect x="${x+32}" y="${b-20}" width="12" height="20" fill="${n?'#1e1616':'#4a3226'}"/></g>`;
+// the T Line streetcar: two linked cars on the rails at y
+const linkTrain=(x,n,y=134,s=1)=>`<g transform="translate(${x},${y}) scale(${s})"><rect x="0" y="-30" width="150" height="26" rx="7" fill="${n?'#c9ced2':'#f4f5f2'}"/><rect x="0" y="-12" width="150" height="5" fill="#2f8f6a"/><rect x="0" y="-7" width="150" height="3" fill="#2a6fa8"/>
+  ${[0,1,2,3,4,5].map(i=>`<rect x="${10+i*22}" y="-26" width="16" height="11" rx="2" fill="${n?'#f2d58a':'#5d7f93'}"/>`).join('')}<path d="M74 -30 v26" stroke="${n?'#8a9096':'#b9bfc3'}" stroke-width="2"/>
+  <path d="M60 -30 l14 -12 l14 12" stroke="#555" stroke-width="1.5" fill="none"/>${[18,58,92,132].map(c=>`<circle cx="${c}" cy="-2" r="4" fill="#2b2f33"/>`).join('')}${n?'<circle cx="147" cy="-14" r="2.5" fill="#fff6c8"/>':''}</g>`;
+// the catenary wire over MLK, and the rails
+const wire=(n,y=86)=>`<path d="M0 ${y} H480" stroke="${n?'#3a3f45':'#4a4f55'}" stroke-width="1"/>${[40,200,360].map(x=>`<rect x="${x}" y="${y}" width="3" height="${150-y}" fill="${n?'#3a3f45':'#5a6066'}"/>`).join('')}`;
+const rails=(n,y=146)=>`<rect y="${y-6}" width="480" height="12" fill="${HC.street(n)}"/><path d="M0 ${y-2} H480 M0 ${y+3} H480" stroke="${n?'#5a5f63':'#9a9ea2'}" stroke-width="1.2"/>`;
+const bird=(x,y)=>`<path d="M${x} ${y} q5 -5 10 0 q5 -5 10 0" stroke="#fff" stroke-width="1.6" fill="none"/>`;
+const starsSky=n=>n?[[30,20],[96,34],[150,14],[214,28],[290,12],[340,30],[420,18],[460,40]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1" fill="#fff" opacity=".7"/>`).join(''):'';
+// a person: head, body (c), standing on b
+const person=(x,n,c,b=146,h=1)=>`<circle cx="${x}" cy="${b-22*h}" r="${4*h}" fill="${['#6b4430','#a26c48','#e3b892','#3e2a20'][Math.abs(Math.round(x))%4]}"/><rect x="${x-4*h}" y="${b-18*h}" width="${8*h}" height="${12*h}" rx="2" fill="${c}"/><rect x="${x-3*h}" y="${b-6*h}" width="${2.5*h}" height="${6*h}" fill="${n?'#222':'#333'}"/><rect x="${x+.5*h}" y="${b-6*h}" width="${2.5*h}" height="${6*h}" fill="${n?'#222':'#333'}"/>`;
 
 // ---- places ----
-// L keys are fixed by SPEC.md. hours: d=>[open,close] minutes (or null = closed that day).
+// L keys are fixed by SPEC.md. hours: d=>[open,close] minutes (or null = closed that day). art: ({night,dusk,m})=>svg
 const L={
-  home:{name:'Apartment, Hilltop',ic:'🏠',desc:'Your place on Hilltop. Bed, logbook, a view of the mountain, and the boat on its trailer out back',
-    art:({night:n})=>`${rainier(n,370,.85)}${hills(n,124)}${firs([16,40,456],n)}
-      <rect x="60" y="54" width="150" height="86" fill="${n?'#4a2e26':'#9a5a44'}"/><rect x="56" y="48" width="158" height="8" fill="${n?'#2e1d18':'#5e3328'}"/>
-      ${[0,1,2].map(r=>[0,1,2,3].map(c=>`<rect x="${72+c*34}" y="${64+r*22}" width="18" height="13" fill="${(r+c)%3===1&&!n?'#9db8c4':win(n)}"${n&&(r*4+c)%4===2?' opacity=".35"':''}/>`).join('')).join('')}
-      <rect x="124" y="118" width="22" height="22" fill="${n?'#2a1a14':'#4a2e22'}"/><text x="135" y="46" text-anchor="middle" font-size="8" ${SVGF} fill="${n?'#8a7a70':'#5e3328'}">HILLTOP</text>
-      <path d="M240 152 h130" stroke="#555" stroke-width="3"/><circle cx="300" cy="156" r="6" fill="#222"/><circle cx="320" cy="156" r="6" fill="#222"/><path d="M370 152 l18 0" stroke="#555" stroke-width="2"/>${sled(262,148,n?'#6f7a80':'#b9c4ca')}`},
-  downtown:{name:'Downtown Tacoma',ic:'🏙️',desc:'6th Ave and downtown: the tackle shop, a diner and urgent care',hours:()=>[360,1260],
-    art:({night:n})=>`${rainier(n,250,1.1)}<rect x="0" y="96" width="480" height="44" fill="${n?'#1d2630':'#7d8a92'}"/>
-      ${[['TACKLE','#2f5d4a',20],['DINER','#9a3b2a',170],['URGENT CARE','#2c6e9e',320]].map(([t,c,x])=>`<rect x="${x}" y="84" width="140" height="56" fill="${n?'#4a4136':'#d8ccb2'}"/><rect x="${x-4}" y="76" width="148" height="13" fill="${c}"/><text x="${x+70}" y="86" text-anchor="middle" font-size="9" ${SVGF} fill="#fff">${t}</text><rect x="${x+14}" y="98" width="44" height="22" fill="${win(n)}"/><rect x="${x+82}" y="98" width="44" height="22" fill="${win(n)}"/><rect x="${x+62}" y="112" width="16" height="28" fill="#3a2e24"/>`).join('')}
-      ${n?'':gull(60,40)+gull(84,30)}`},
-  marina:{name:'Point Defiance Marina',ic:'⛽',desc:'The boathouse, the launch and the fuel dock at Ruston. Trips start here',
-    art:({night:n})=>`${rainier(n,430,.55,112)}<path d="M0 112 Q40 96 110 100 T220 106 L220 112 Z" fill="${TC.hill(n)}"/>${firs([10,28,46,64,82],n,110)}${sea(n,112)}
-      ${[150,180,210,240,270,300,330].map(x=>`<rect x="${x}" y="108" width="4" height="28" fill="${n?'#3a2e24':'#6b4f33'}"/>`).join('')}
-      <rect x="140" y="80" width="200" height="30" fill="${n?'#4a4036':'#e9e2d2'}"/><polygon points="132,82 240,58 348,82" fill="${n?'#4a1f1a':'#a8322a'}"/>
-      ${[0,1,2,3,4,5].map(i=>`<rect x="${152+i*31}" y="88" width="16" height="12" fill="${win(n)}"/>`).join('')}<text x="240" y="76" text-anchor="middle" font-size="8" ${SVGF} fill="#fff">BOATHOUSE</text>
-      <rect x="340" y="128" width="130" height="5" fill="${n?'#4a3a2a':'#8a6b48'}"/>${sled(360,140)}<rect x="440" y="116" width="10" height="12" fill="${n?'#555':'#d9d9d9'}"/><text x="445" y="114" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#aaa':'#333'}">GAS</text>
-      ${n?'':gull(380,30)+gull(404,40)}`},
-  ruston:{name:'Ruston Way',ic:'🌊',desc:'The waterfront path along Commencement Bay: Les Davis Pier, the Slag Pile, the port cranes across the water',
-    art:({night:n})=>`${rainier(n,330,1.05,114)}<rect x="160" y="108" width="320" height="8" fill="${n?'#1f2a2a':'#76877c'}"/>${[220,262,304,346,388].map(x=>crane(x,n,114)).join('')}${sea(n,114)}
-      <rect x="10" y="112" width="160" height="5" fill="${n?'#3a2e24':'#8a6b48'}"/>${[18,48,78,108,138,164].map(x=>`<rect x="${x}" y="117" width="3" height="24" fill="${n?'#2e241c':'#6b4f33'}"/>`).join('')}
-      ${angler(40,112,'#2c6e9e')}${angler(96,112,'#e6a21a')}${angler(146,112,'#6b8e23')}
-      <rect x="0" y="146" width="480" height="24" fill="${n?SCENE.groundNight:SCENE.ground}"/><rect x="0" y="146" width="480" height="5" fill="${n?'#4a4a44':'#c9c3b0'}"/>${n?[60,180,300,420].map(x=>`<rect x="${x}" y="128" width="2" height="18" fill="#555"/><circle cx="${x+1}" cy="127" r="3" fill="#f7d77a"/>`).join(''):''}`},
-  foss:{name:'Thea Foss Waterway',ic:'🍸',desc:'The Foss marina, the Museum of Glass and its cone, and a waterfront bar with the evening crowd',
-    art:({night:n})=>`${rainier(n,140,.9,112)}<rect x="0" y="104" width="480" height="20" fill="${n?'#1d2630':'#8a959b'}"/>${sea(n,124)}
-      <rect x="236" y="92" width="190" height="32" fill="${n?'#3a4148':'#c8cdd0'}"/><rect x="236" y="88" width="190" height="5" fill="${n?'#2a3036':'#9aa2a7'}"/>
-      <polygon points="300,124 372,124 352,38 338,36" fill="${n?'#5a646c':'#b9c3cb'}"/>${[0,1,2,3,4].map(i=>`<path d="M${304+i*4} ${108-i*16} L${368-i*4} ${108-i*16}" stroke="${n?'#4a535a':'#9aa6ae'}" stroke-width="1.5"/>`).join('')}
-      <text x="270" y="112" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#aaa':'#3a4148'}">GLASS</text>
-      <path d="M120 104 Q170 84 230 100" stroke="${n?'#5aa0c0':'#3a8fb7'}" stroke-width="4" fill="none"/>${[140,160,180,200].map((x,i)=>`<circle cx="${x}" cy="${96-i%2*3}" r="3" fill="${['#e6642e','#f4d27a','#8fd19e','#c0392b'][i]}"/>`).join('')}
-      <rect x="12" y="76" width="96" height="34" fill="${n?'#3a2a24':'#6b4a3a'}"/><text x="60" y="88" text-anchor="middle" font-size="9" ${SVGF} fill="${n?'#ff7aa8':'#f4d27a'}">TAPROOM</text><rect x="22" y="94" width="76" height="12" fill="${win(n)}"/>
-      ${sailboat(400,140,n)}${sled(40,144,n?'#5f6a70':'#c9d2d6')}`},
-  gigharbor:{name:'Gig Harbor',ic:'⛵',desc:`Across the Narrows Bridge: money, moorage and the marine repair shop. Coming back to Tacoma costs the ${$(TOLL)} toll`,hours:()=>[420,1260],
-    art:({night:n})=>`${hills(n,110)}${narrows(n,{x1:110,x2:370,top:40,deck:86,base:110})}<path d="M0 110 Q60 92 140 100 L140 110 Z" fill="${TC.hill2(n)}"/>${firs([8,26,44,62],n,108)}${sea(n,110)}
-      <rect x="380" y="98" width="96" height="28" fill="${n?'#3a3a36':'#dcd3bf'}"/><rect x="376" y="92" width="104" height="8" fill="${n?'#22324a':'#2c4a6e'}"/><text x="428" y="99" text-anchor="middle" font-size="7" ${SVGF} fill="#fff">MARINE REPAIR</text><rect x="392" y="106" width="22" height="12" fill="${win(n)}"/><rect x="430" y="106" width="34" height="20" fill="${n?'#2a2a26':'#7a7468'}"/>
-      ${sailboat(90,146,n)}${sailboat(190,152,n,'#e9e2d2')}${sailboat(290,144,n,'#d8e4ea')}${n?'':gull(240,24)+gull(262,30)}`},
+  home:{name:'Your apartment',ic:'🏠',desc:'Third floor of an old brick walk-up on Hilltop. Boxes, a bed, a fridge, a window that looks at the mountain',
+    art:({night:n})=>`${starsSky(n)}${rainier(n,400,.7,112)}
+      <rect x="40" y="38" width="170" height="102" fill="${n?'#3e2621':'#94503c'}"/><rect x="36" y="32" width="178" height="8" fill="${n?'#271714':'#5c2f25'}"/>
+      ${[0,1,2,3].map(r=>[0,1,2,3].map(c=>{const lit=(r*5+c*3)%4!==1;return `<rect x="${54+c*38}" y="${48+r*22}" width="20" height="14" fill="${r===0&&c===1?(n?'#f9c86a':'#e9f1f4'):win(n,lit)}"/><rect x="${52+c*38}" y="${62+r*22}" width="24" height="2" fill="${n?'#5a3a30':'#d8c3a8'}"/>`}).join('')).join('')}
+      <rect x="110" y="114" width="30" height="26" fill="${n?'#1f1410':'#43291f'}"/><rect x="104" y="110" width="42" height="5" fill="${n?'#271714':'#5c2f25'}"/><text x="125" y="30" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#7a6a62':'#5c2f25'}">THE ALDER · 1924</text>
+      <rect x="73" y="45" width="6" height="7" fill="${n?'#c97f3a':'#c8a06a'}" opacity=".9"/>${tree(240,n,18)}${craftsman(280,n,n?'#2e3a40':'#7ea0a8',140,[0,1,0])}${tree(380,n,14)}${lamp(20,n)}${lamp(440,n)}
+      <rect x="0" y="146" width="480" height="4" fill="${HC.walk(n)}"/>`},
+  mlk:{name:'MLK Jr Way',ic:'🛒',desc:'Hilltop’s main street: the corner market, the teriyaki spot, the barbershop, murals and the Link rails down the middle',
+    art:({night:n})=>`${starsSky(n)}${wire(n,80)}
+      ${[['CORNER MARKET','#2f6b4a',6,'#e4d6b6'],['TERIYAKI','#b8402a',128,'#e8ddc4'],['BARBER','#24507a',250,'#d9cfc0']].map(([t,c,x,w])=>`<rect x="${x}" y="70" width="114" height="70" fill="${n?'#3a3530':w}"/><rect x="${x-3}" y="62" width="120" height="12" fill="${c}"/><text x="${x+57}" y="71" text-anchor="middle" font-size="8" ${SVGF} fill="#fff">${t}</text>
+        <path d="M${x} 78 h114 l-8 10 h-98 z" fill="${c}" opacity=".85"/>${[0,1,2,3,4,5].map(i=>`<rect x="${x+6+i*18}" y="78" width="9" height="10" fill="#fff" opacity=".25"/>`).join('')}<rect x="${x+10}" y="96" width="40" height="28" fill="${win(n)}"/><rect x="${x+62}" y="96" width="20" height="44" fill="${n?'#241c16':'#4a3a2c'}"/><rect x="${x+88}" y="96" width="20" height="28" fill="${win(n)}"/>`).join('')}
+      <g transform="translate(341,50)"><rect width="18" height="90" fill="${n?'#2c2c34':'#e3d5bc'}"/><rect x="5" y="0" width="8" height="90" fill="#fff" opacity=".2"/></g>
+      <rect x="362" y="44" width="118" height="96" fill="${n?'#2a2830':'#d0c2a8'}"/>
+      <g opacity="${n?.55:1}"><circle cx="420" cy="76" r="22" fill="#f2b630"/><path d="M366 120 Q400 92 440 112 T480 104 V140 H366 Z" fill="#2f8f6a"/><path d="M366 136 Q410 118 480 128 V140 H366 Z" fill="#24507a"/><circle cx="398" cy="104" r="7" fill="#6b4430"/><path d="M391 112 q7 10 14 0 v22 h-14 z" fill="#b8402a"/><path d="M440 60 q10 -8 20 0" stroke="#b8402a" stroke-width="4" fill="none"/></g>
+      <text x="421" y="54" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#888':'#5a4a3a'}">HILLTOP PROUD</text>
+      ${person(150,n,'#2a6fa8')}${person(196,n,'#c98a12',146,.9)}${person(300,n,'#8e44ad')}${lamp(120,n)}${lamp(352,n)}${rails(n,154)}`},
+  work:{get name(){return job().place},get ic(){return job().ic},get desc(){const j=job();return `Where you work: ${j.role}, ${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Monday to Friday':'Wednesday to Sunday'}`},
+    hours:d=>job().open(d),
+    art:o=>(WORK_ART[(typeof S!=='undefined'&&S&&S.job)]||WORK_ART.cafe)(o)},
+  link:{name:'Hilltop Link: St Joseph',ic:'🚋',desc:'The T Line stop on MLK, a few blocks from your door. Free to ride, every few minutes, and the best people-watching on the hill',
+    art:({night:n})=>`${starsSky(n)}${rainier(n,110,.6,104)}<path d="M0 104 Q120 92 240 100 T480 96 V112 H0 Z" fill="${HC.hill(n)}"/>${wire(n,70)}
+      <rect x="0" y="104" width="480" height="36" fill="${n?'#2a2c30':'#9a978c'}"/>${tree(30,n,13,112)}${tree(456,n,15,112)}
+      <rect x="250" y="88" width="210" height="6" fill="${n?'#3a4a5a':'#2a6fa8'}"/>${[260,330,400,450].map(x=>`<rect x="${x}" y="94" width="4" height="38" fill="${n?'#4a4f55':'#6a7076'}"/>`).join('')}
+      <rect x="272" y="96" width="60" height="16" rx="2" fill="${n?'#1a2a3a':'#16324d'}"/><text x="302" y="107" text-anchor="middle" font-size="7" ${SVGF} fill="#7fe0a0">T · 3 MIN</text>
+      <rect x="370" y="112" width="60" height="5" fill="${n?'#4a3e34':'#8a6b48'}"/><rect x="374" y="117" width="3" height="12" fill="#555"/><rect x="423" y="117" width="3" height="12" fill="#555"/>
+      ${person(392,n,'#c0392b',112,.9)}${person(410,n,'#2f8f6a',112,.9)}${person(350,n,'#f2b630',132)}
+      <rect x="0" y="132" width="480" height="4" fill="${n?'#d9c84a':'#f2d04a'}" opacity=".8"/>${rails(n,146)}${linkTrain(36,n,144)}${lamp(240,n,132)}`},
+  peoples:{name:'People’s Center & Park',ic:'🏊',desc:'People’s Community Center on MLK: the pool, the gym, the programs, and People’s Park next door with the courts',hours:()=>[360,1260],
+    art:({night:n})=>`${starsSky(n)}${tree(20,n,18)}${tree(70,n,22)}
+      <rect x="100" y="60" width="200" height="80" fill="${n?'#3a3f46':'#d8d2c2'}"/><rect x="96" y="54" width="208" height="8" fill="${n?'#2a2f36':'#8a3b22'}"/>
+      <text x="200" y="76" text-anchor="middle" font-size="9" ${SVGF} fill="${n?'#b9b2a6':'#8a3b22'}">PEOPLE’S COMMUNITY CENTER</text>
+      ${[0,1,2,3,4,5].map(i=>`<rect x="${112+i*30}" y="84" width="20" height="22" fill="${win(n,i!==2)}"/>`).join('')}<rect x="186" y="112" width="28" height="28" fill="${n?'#1e2a36':'#2a6fa8'}"/><rect x="199" y="112" width="2" height="28" fill="#ddd"/>
+      <path d="M104 132 q30 -16 60 0" stroke="#f2b630" stroke-width="3" fill="none" opacity=".9"/><path d="M236 132 q30 -16 60 0" stroke="#2f8f6a" stroke-width="3" fill="none" opacity=".9"/>
+      <rect x="318" y="118" width="150" height="26" fill="${n?'#2a3e34':'#5f9a6e'}"/><path d="M393 118 v26 M318 131 h150" stroke="#fff" stroke-width="1" opacity=".6"/><circle cx="393" cy="131" r="7" stroke="#fff" stroke-width="1" fill="none" opacity=".6"/>
+      <rect x="456" y="82" width="3" height="40" fill="#555"/><rect x="444" y="80" width="18" height="12" fill="${n?'#888':'#fff'}" stroke="#555"/><path d="M444 94 h10" stroke="#e3642e" stroke-width="2"/>
+      ${person(360,n,'#c0392b',140)}${person(420,n,'#2a6fa8',140)}<circle cx="388" cy="108" r="4" fill="#e3642e"/>${lamp(306,n)}`},
+  view:{name:'The overlook',ic:'🌄',desc:'The bench at the edge of the hill: Commencement Bay, the port, Vashon off to the right, and Rainier when the mountain is out',
+    art:({night:n,dusk})=>`${starsSky(n)}${rainier(n,330,1.25,104)}<rect y="96" width="480" height="44" fill="${HC.bay(n)}"/>
+      ${dusk&&!n?'<rect y="96" width="480" height="10" fill="#f4b183" opacity=".35"/>':''}<path d="M30 108 q24 -4 48 0 M200 118 q24 -4 48 0 M320 104 q24 -4 48 0 M120 128 q24 -4 48 0 M390 124 q24 -4 48 0" stroke="${HC.bay2(n)}" stroke-width="2" fill="none" opacity=".7"/>
+      <path d="M380 96 Q420 86 480 90 V100 H380 Z" fill="${HC.hill2(n)}"/>${[150,180,210].map(x=>`<g stroke="${n?'#4a3434':'#c8452f'}" stroke-width="2" fill="none" opacity=".8"><path d="M${x} 98 V74 M${x+14} 98 V74 M${x-14} 74 H${x+26}"/></g>`).join('')}
+      ${n?[60,160,200,240,300,350,420].map((x,i)=>`<circle cx="${x}" cy="${98+i%3*3}" r="1.3" fill="#f7d77a"/>`).join(''):bird(80,40)+bird(102,30)}
+      <path d="M0 132 Q90 118 180 128 T340 126 T480 132 V140 H0 Z" fill="${HC.hill(n)}"/>${tree(36,n,20,142)}${tree(450,n,17,142)}
+      <rect x="196" y="130" width="90" height="5" fill="${n?'#3e3228':'#8a6b48'}"/><rect x="196" y="122" width="90" height="4" fill="${n?'#3e3228':'#8a6b48'}"/><rect x="202" y="135" width="4" height="10" fill="#444"/><rect x="276" y="135" width="4" height="10" fill="#444"/>
+      ${person(226,n,'#24507a',134,.9)}${lamp(320,n,146)}`},
 };
-// Minutes between places by truck (symmetric). GAME.travelAnim (20) or more plays the full-screen transition.
-const TRAVEL={'home|downtown':8,'home|marina':15,'home|ruston':12,'home|foss':10,'home|gigharbor':22,
-  'downtown|marina':15,'downtown|ruston':10,'downtown|foss':8,'downtown|gigharbor':22,
-  'marina|ruston':8,'marina|foss':18,'marina|gigharbor':18,
-  'ruston|foss':12,'ruston|gigharbor':22,'foss|gigharbor':25};
-function travelMins(a,b){return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??15}
-// The Narrows Bridge toll: eastbound only, so leaving Gig Harbor for anywhere in Tacoma costs TOLL.
-function tollFor(from,to){return from==='gigharbor'&&to!=='gigharbor'?TOLL:0}
-// STORY's onArrive(dest,from) calls this. It charges the toll (if any), logs it and returns what it charged.
-function payToll(from,to){
-  const t=tollFor(from,to);if(!t) return 0;
-  spend(t);S.stats.tolls=(S.stats.tolls||0)+t;
-  say(`🌉 ${$(t)} toll on the Narrows Bridge, eastbound. ${pick(['Galloping Gertie never charged a toll. Look how that went.','The Good To Go pass beeps. Your wallet sighs.','Free going out, five bucks coming home. Tacoma’s way of saying “welcome back.”'])}`);
-  return t;
-}
+// Each job's workplace, drawn on its own
+const WORK_ART={
+  hospital:({night:n})=>`${starsSky(n)}<rect x="150" y="18" width="180" height="122" fill="${n?'#3a4048':'#dfe3e4'}"/><rect x="146" y="14" width="188" height="6" fill="${n?'#2a3038':'#9aa6ae'}"/>
+    ${[0,1,2,3,4].map(r=>[0,1,2,3,4,5,6].map(c=>`<rect x="${160+c*24}" y="${28+r*18}" width="14" height="10" fill="${win(n,(r+c*2)%5!==3)}"/>`).join('')).join('')}
+    <rect x="60" y="64" width="90" height="76" fill="${n?'#363b42':'#cfd4d6'}"/>${[0,1,2].map(r=>[0,1,2].map(c=>`<rect x="${70+c*26}" y="${74+r*18}" width="16" height="10" fill="${win(n,(r+c)%3!==1)}"/>`).join('')).join('')}
+    <rect x="200" y="112" width="80" height="28" fill="${n?'#1e2a36':'#2a6fa8'}"/><text x="240" y="108" text-anchor="middle" font-size="8" ${SVGF} fill="${n?'#ff6a5a':'#c0392b'}">EMERGENCY · ENTRANCE</text>
+    <rect x="318" y="6" width="24" height="10" fill="${n?'#c0392b':'#e74c3c'}"/><rect x="328" y="2" width="4" height="18" fill="#fff"/><rect x="322" y="9" width="16" height="4" fill="#fff"/>
+    ${tree(30,n,16)}${tree(380,n,18)}${tree(440,n,14)}${person(290,n,'#5aa0c0',146)}${person(304,n,'#5aa0c0',146)}${lamp(352,n)}`,
+  cafe:({night:n})=>`${starsSky(n)}${tree(30,n,16)}<rect x="90" y="56" width="280" height="84" fill="${n?'#3a3026':'#e8dcc0'}"/><rect x="84" y="48" width="292" height="10" fill="${n?'#2a2018':'#3a2a1e'}"/>
+    <path d="M90 58 h280 l-12 16 h-256 z" fill="${n?'#4a2a20':'#b8402a'}"/>${Array.from({length:14},(_,i)=>`<rect x="${92+i*20}" y="58" width="10" height="14" fill="#fff" opacity=".35"/>`).join('')}
+    <rect x="104" y="84" width="92" height="44" fill="${win(n)}"/><rect x="264" y="84" width="92" height="44" fill="${win(n)}"/><rect x="214" y="84" width="32" height="56" fill="${n?'#20160f':'#4a3226'}"/>
+    <rect x="190" y="26" width="80" height="20" rx="4" fill="#3a2a1e"/><text x="230" y="40" text-anchor="middle" font-size="11" ${SVGF} fill="#f4d27a">☕ CAFÉ</text>
+    ${person(140,n,'#2f8f6a',128,.8)}${person(310,n,'#8e44ad',128,.8)}<rect x="392" y="122" width="30" height="4" fill="#555"/><rect x="405" y="126" width="3" height="18" fill="#555"/><rect x="430" y="114" width="12" height="30" fill="${n?'#555':'#222'}"/><text x="436" y="132" text-anchor="middle" font-size="6" fill="#fff">OPEN</text>${lamp(450,n)}`,
+  kitchen:({night:n})=>`${starsSky(n)}<rect x="70" y="50" width="320" height="90" fill="${n?'#3a2420':'#c76a3a'}"/><rect x="64" y="42" width="332" height="10" fill="${n?'#2a1814':'#6a2f1e'}"/>
+    <rect x="150" y="18" width="160" height="26" rx="5" fill="#2a1a14"/><text x="230" y="36" text-anchor="middle" font-size="12" ${SVGF} fill="#f2b630">MAMA’S KITCHEN</text>
+    <rect x="90" y="68" width="110" height="52" fill="${win(n)}"/><rect x="260" y="68" width="110" height="52" fill="${win(n)}"/><rect x="214" y="80" width="32" height="60" fill="${n?'#1a100c':'#3a2218'}"/>
+    <text x="145" y="64" text-anchor="middle" font-size="7" ${SVGF} fill="#fff">FRIED CHICKEN · GREENS</text><text x="315" y="64" text-anchor="middle" font-size="7" ${SVGF} fill="#fff">MAC · CORNBREAD · PIE</text>
+    <rect x="370" y="20" width="10" height="24" fill="#555"/>${[0,1,2].map(i=>`<circle cx="${376+i*6}" cy="${12-i*6}" r="${5+i*2}" fill="#ddd" opacity="${.5-i*.12}"/>`).join('')}
+    ${person(120,n,'#fff',118,.8)}${person(300,n,'#2a6fa8',118,.8)}${tree(30,n,16)}${tree(440,n,18)}${lamp(406,n)}`,
+};
+// Minutes between places, on foot or by Link (symmetric). All short: Hilltop is a walking neighborhood.
+const TRAVEL={'home|mlk':6,'home|work':12,'home|link':8,'home|peoples':10,'home|view':12,
+  'mlk|work':8,'mlk|link':4,'mlk|peoples':5,'mlk|view':10,
+  'work|link':4,'work|peoples':10,'work|view':14,
+  'link|peoples':6,'link|view':12,'peoples|view':12};
+function travelMins(a,b){return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??10}
 
 // ---- actions ----
 // Each: {ic, l, s, fn, cat (an ACT_CATS key), cls:'primary'|'danger', dis:true}. fn changes S, calls pass(min) and say('…').
-const ACT_CATS={trip:'🛶 Today’s trips',work:'🧰 Business & boat',town:'🏙️ Around town',fish:'🐟 On the water',rest:'🛏️ Rest & recharge',here:'📍 Around here'};
-const tryReq=src=>typeof queueRequest==='function'?queueRequest(src):null;   // TRIPS: maybe add a booking request; truthy if one came in
+const ACT_CATS={work:'💼 Work',money:'🧾 Bills & money',food:'🛒 Food',people:'🤝 Neighbors',rest:'🛋️ Rest & recharge',here:'📍 Around here'};
 function actionsHere(){
-  const d=day(),m=tod(),a=[],last=d+1>=GAME.days;
-  const at=(lo,hi)=>m>=lo&&m<hi;
+  const d=day(),m=tod(),a=[],J=job(),at=(lo,hi)=>m>=lo&&m<hi;
   if(S.loc==='home'){
-    const logs=S.unlogged||0,trips=todaysTrips(d+1);
-    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. Alarm ${fmt(S.alarm)}.${!last&&trips.length?` Tomorrow: ${trips.length} trip${trips.length>1?'s':''}, first at ${fmt(trips[0].start)}.`:''}${logs?` 📓 ${logs} catch record${logs>1?'s':''} still to fill in.`:''}`,cat:'rest',cls:m>=1260?'primary':'',fn:()=>endDay('home')});
-    a.push({ic:'⏰',l:`Alarm: ${fmt(S.alarm)}`,s:'Tap to cycle 4:00 → 4:30 → 5:00 → 5:30 → 6:00. Salmon bite at first light.',cat:'rest',fn:()=>{const o=[240,270,300,330,360];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Alarm set for ${fmt(S.alarm)}.`)}});
-    a.push({ic:'😴',l:'Rest for an hour',s:'Energy +10. Blinds down, phone face down.',cat:'rest',dis:S.energy>=100,fn:()=>{pass(60);adj('energy',10);say(pick(['😴 An hour on the couch. A neighbor’s bass line, then nothing.','😴 You close your eyes “for a second.” It’s an hour. It helps.','😴 The ferry horns drift up the hill. You drift off.']))}});
-    if(typeof homeTripActions==='function') a.push(...(homeTripActions()||[]));
+    const tomorrow=d+1<GAME.days&&isShiftDay(d+1);
+    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. You eat dinner from the fridge (${S.food} meal${S.food===1?'':'s'}). Alarm ${fmt(S.alarm)}.${tomorrow?` Tomorrow: work at ${fmt(J.start)}.`:''}`,cat:'rest',cls:m>=1290?'primary':'',fn:()=>endDay('home')});
+    a.push({ic:'⏰',l:`Alarm: ${fmt(S.alarm)}`,s:'Tap to cycle 5:00 → 5:30 → 6:00 → 6:30 → 7:00 → 8:00 → 9:00.',cat:'rest',fn:()=>{const o=[300,330,360,390,420,480,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Alarm set for ${fmt(S.alarm)}.`)}});
+    a.push({ic:'😴',l:'Rest for an hour',s:'Energy +10, stress −5.',cat:'rest',dis:S.energy>=100&&S.stress<=0,fn:()=>{pass(60);adj('energy',10);adj('stress',-5);say(pick(['😴 An hour on the couch with the window open. A bus sighs at the corner, somebody laughs on a porch, then nothing.','😴 You close your eyes “for a second.” It’s an hour. It helps.','😴 Blinds down, phone face down. The radiator ticks even in August.']))}});
+    if(!S.cooked[d]) a.push({ic:'🍲',l:'Cook something proper',s:S.food>0?'45 min. Uses 1 extra meal from the fridge. Energy +14, stress −6. Once a day.':'The fridge is empty. The corner market is on MLK.',cat:'food',dis:S.food<1,
+      fn:()=>{S.food--;S.cooked[d]=true;S.stats.meals++;pass(45);adj('energy',14);adj('stress',-6);say(pick(['🍲 Rice, beans, an onion and whatever’s green. The whole hallway smells like home.','🍲 Your grandmother’s recipe, mostly from memory. Close enough to count.','🍲 Eggs, toast, hot sauce. Not fancy. Exactly right.']))}});
+    if(!S.called[d]) a.push({ic:'📞',l:'Call home',s:'30 min. Stress −12. Once a day.',cat:'rest',fn:()=>{pass(30);S.called[d]=true;adj('stress',-12);say(pick(['📞 Your mom asks if you’re eating. You lie a little. She knows.','📞 Your cousin wants to hear everything about Tacoma. You tell her the mountain thing. She doesn’t believe you.','📞 Your dad reads you the weather back home like it’s news. It is, kind of.']))}});
+    if(S.unpacked<BOXES&&!S.unpack[d]) a.push({ic:'📦',l:`Unpack a box (${S.unpacked} of ${BOXES} done)`,s:'45 min. Energy −4, stress −5. The place feels more like yours. Once a day.',cat:'here',
+      fn:()=>{pass(45);S.unpack[d]=true;S.unpacked++;adj('energy',-4);adj('stress',-5);say(S.unpacked>=BOXES?'📦 The last box. Your books are on a shelf, your photos are on the wall, and the apartment finally looks like somebody lives here. You do.':pick(['📦 Kitchen stuff. You find the good knife and the mug you thought you’d lost.','📦 Books. You line them up on the windowsill, spines toward the mountain.','📦 Winter clothes in August. You put the box in the closet, still mostly packed. Progress.','📦 Photos. You hang two and lean the rest against the wall “for now.”']))}});
+    if(!S.rent.paid){const r=S.rent.amt;
+      a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by Sunday night, Aug 16. ${d<=6?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by Sunday night, Aug 16 (${GAME.days-1-d} day${GAME.days-1-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=10?'primary':'',dis:!canAfford(r),
+        fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',d<=6?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${d<=6?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
   }
-  if(S.loc==='downtown'){
-    const open=isOpen('downtown'),g=rp(45),h=rp(12),meal=rp(16),uc=rp(85);
-    a.push({ic:'🪝',l:`Restock tackle — ${$(g)}`,s:`Flashers, hoochies, barbless mooching rigs, leader. Gear +2 trips (you have ${S.gear}).`,cat:'town',cls:S.gear<=1?'primary':'',dis:!open||!canAfford(g),
-      fn:()=>{spend(g);S.gear+=2;pass(25);say('🪝 Two trips’ worth: green-glow flashers, a handful of hoochies, a spool of 25-pound leader and barbless hooks. The shop guy pinches a barb on principle when you ask.')}});
-    a.push({ic:'🐟',l:`Herring tray on ice — ${$(h)}`,s:`For mooching. One tray per trip, good today and tomorrow only (you have ${S.bait}).`,cat:'town',dis:!open||!canAfford(h),
-      fn:()=>{spend(h);S.bait++;S.baitDay=d;pass(10);say('🐟 A tray of blue-label herring, packed in ice. Cut-plug them in the morning and they’ll spin just right.')}});
-    if(!S.diner[d]) a.push({ic:'🍳',l:`Eat at the diner — ${$(meal)}`,s:'40 min. Energy +12. Once a day. The counter crowd talks.',cat:'town',dis:!open||!canAfford(meal),
-      fn:()=>{spend(meal);S.diner[d]=true;pass(40);adj('energy',12);say('🍳 Eggs, hash browns and a burger for later. '+pick(TACOMA_LORE))}});
-    if(!S.urgent[d]) a.push({ic:'🩺',l:`Urgent care — ${$(uc)} copay`,s:S.energy<40?'90 min. Hooks in thumbs, sunburn, a back that won’t: energy +22. Once a day.':'90 min. Energy +22. Once a day. You’re not that beat up yet.',cat:'town',cls:S.energy<25?'primary':'',dis:!open||!canAfford(uc)||m>=1170,
-      fn:()=>{spend(uc);S.urgent[d]=true;pass(90);adj('energy',22);say('🩺 A nurse pulls a hook out of your thumb, tapes your wrist and tells you to drink water. “You guides are all the same.”')}});
-    if(!open) a.push({ic:'🔒',l:'Downtown is closed',s:hoursTxt('downtown'),cat:'town',dis:true,fn:()=>{}});
+  if(S.loc==='mlk'){
+    const mk=at(420,1320),g=rp(42),sn=rp(5),pl=rp(14),cut=rp(25);
+    a.push({ic:'🧺',l:`Groceries at the corner market — ${$(g)}`,s:mk?`4 meals for the fridge (you have ${S.food}).`:'The market is open 7 AM to 10 PM.',cat:'food',cls:S.food<=1&&mk?'primary':'',dis:!mk||!canAfford(g),
+      fn:()=>{spend(g);S.food+=4;pass(25);say(pick(['🧺 Rice, eggs, greens, a chicken, tortillas, hot sauce. Mr. Kim rings it up and throws in a peach. “For the new neighbor.”','🧺 A basket of the basics. The guy behind you in line recommends the frozen dumplings. He’s right.','🧺 Four dinners, if you’re careful. You are learning to be careful.']));if(!S.met.kim&&Math.random()<.5){S.met.kim=d+1;S.stats.neighbors=metCount();adj('community',3);say('🛒 You meet <b>Mr. Kim</b>, who owns the market. He remembers your name the second time. Nobody remembers your name the second time.')}}});
+    a.push({ic:'🥤',l:`A cold drink and chips — ${$(sn)}`,s:mk?'Energy +6.':'The market is closed.',cat:'food',dis:!mk||!canAfford(sn),fn:()=>{spend(sn);adj('energy',6);pass(10);say('🥤 A cold can from the back of the cooler and a bag of chips on the curb. August, perfected.')}});
+    if(!S.plate[d]) a.push({ic:'🍱',l:`A plate at the teriyaki spot — ${$(pl)}`,s:at(660,1260)?'30 min. Energy +15, stress −5. Once a day. Chicken, rice, that sauce.':'Open 11 AM to 9 PM.',cat:'food',dis:!at(660,1260)||!canAfford(pl),
+      fn:()=>{spend(pl);S.plate[d]=true;S.stats.meals++;pass(30);adj('energy',15);adj('stress',-5);say(pick(['🍱 Chicken teriyaki, rice, that little salad with the orange dressing. Tacoma runs on this plate.','🍱 Spicy chicken, extra sauce. The owner nods at you like you passed a test.','🍱 You eat at the window counter and watch the Link slide by. Better than TV.']))}});
+    if(!S.haircut) a.push({ic:'💈',l:`A cut at the barbershop — ${$(cut)}`,s:at(540,1140)?'1 hour. Community +6, stress −6. The chair is where the neighborhood talks.':'Open 9 AM to 7 PM.',cat:'people',dis:!at(540,1140)||!canAfford(cut),
+      fn:()=>{spend(cut);S.haircut=true;pass(60);adj('community',6);adj('stress',-6);if(!S.met.dre){S.met.dre=d+1;S.stats.neighbors=metCount()}say('💈 <b>Dre</b> lines you up and catches you up: who’s opening what, whose kid made the team, which landlord is fixing things and which one isn’t. You leave looking sharp and knowing the hill.')}});
+    if(!S.chat[d]) a.push({ic:'👋',l:'Stop and talk on the corner',s:'30 min. Community +3. You might meet someone. Once a day.',cat:'people',
+      fn:()=>{pass(30);S.chat[d]=true;const x=meetHere();if(x)say(`👋 You meet <b>${x.n}</b>. ${x.d}`);else{adj('community',2);say(pick(['👋 Ms. Lorraine’s grandson waves from his car. Mr. Kim waves from the door. You wave at everybody. Everybody waves back.','👋 You stand on the corner long enough to be part of it.']))}}});
+    a.push({ic:'🎨',l:'Walk MLK and look at the murals',s:'30 min. Stress −6, community +1.',cat:'here',
+      fn:()=>{pass(30);S.stats.walks++;adj('stress',-6);adj('community',1);say(pick(['🎨 Faces three stories tall: elders, kids, a saxophone, a fist full of flowers. Hilltop’s history, painted where everybody can see it.','🎨 A mural of a grandmother in a church hat looks down at the bus stop like she’s keeping an eye on things. She is.','🎨 You find a mural you hadn’t noticed, tucked behind the laundromat: the old neighborhood, every porch with someone on it.']))}});
+    if(d===FAIR_DAY&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
+      a.push({ic:'🎪',l:`The Hilltop Street Fair — ${$(f)}`,s:'2 hours. Food, music, booths, half the hill out on MLK. Stress −20, community +10. Today only.',cat:'people',cls:'primary',dis:!canAfford(f),
+        fn:()=>{spend(f);S.fair=true;pass(120);adj('stress',-20);adj('community',10);const x=meetHere();say(`🎪 The Hilltop Street Fair: a band on the stage playing old soul like they mean it, kids with painted faces, lemonade, a line for barbecue that goes around the block and is worth it. Somebody hands you a flyer for a block club. ${x?`You meet <b>${x.n}</b> in the barbecue line.`:'You know half the people here now. Wild.'}`)}});}
   }
-  if(S.loc==='marina'){
-    if(typeof marinaActions==='function') a.push(...(marinaActions()||[]));
-    const n=S.coffee[d]||0,c=rp(4);
-    a.push({ic:'☕',l:`Coffee at the boathouse — ${$(c)}`,s:n>=3?'Three is plenty. Your hands need to tie knots.':at(300,1200)?'10 min. Energy +6.':'The boathouse counter is open 5 AM–8 PM.',cat:'rest',dis:n>=3||!at(300,1200)||!canAfford(c),
-      fn:()=>{spend(c);S.coffee[d]=n+1;pass(10);adj('energy',6);say(pick(['☕ Boathouse coffee: hot, strong, a little burnt. Perfect.','☕ You sip it on the dock and watch the Vashon ferry slide out of Point Defiance.','☕ A seal pops up by the launch, looks at your coffee, judges you, leaves.']))}});
+  if(S.loc==='work'){
+    const sd=isShiftDay(d),done=d in S.worked,late=Math.max(0,m-J.start),open=isOpen('work');
+    if(sd&&!done&&m<J.end-60) a.push({ic:J.ic,l:'Work your shift',s:late?`${late} min late. Pay is docked and it gets noticed.`:m<J.start-30?`Starts ${fmt(J.start)}. You can wait, or clock in on time from here.`:`Until ${fmt(J.end)}. About ${$(J.pay)}${J.tips?' plus tips':''}.`,cat:'work',cls:'primary',fn:()=>work(late)});
+    else if(sd&&done) a.push({ic:'✅',l:'Shift done for today',s:'See you tomorrow.',cat:'work',dis:true,fn:()=>{}});
+    else if(sd&&!done) a.push({ic:'❌',l:'Too late to clock in today',s:'The shift is nearly over.',cat:'work',dis:true,fn:()=>{}});
+    if(!sd&&!S.extra[d]&&!(d in S.worked)){const ok=S.standing>=50&&at(540,J.end>1000?1080:780),pay=Math.round(J.pay*.5);
+      a.push({ic:'🕓',l:`Pick up a few extra hours — about ${$(pay)}`,s:ok?'4 hours. Energy −16, stress +6, job +3. Your day off, so it’s your call.':S.standing<50?'They only offer extra hours to people they count on (job 50+).':'Extra hours start between 9 AM and early afternoon.',cat:'work',dis:!ok,
+        fn:()=>{S.extra[d]=true;S.stats.extra++;pass(240);money(pay);S.stats.earned+=pay;adj('energy',-16);adj('stress',6);adj('standing',3);say(`🕓 Four hours covering for someone’s kid’s birthday. ${$(pay)}, and a “you’re a lifesaver” you’ll be cashing in later.`)}});}
+    if(!S.breakroom[d]&&open) a.push({ic:'☕',l:'Break-room coffee and five minutes with coworkers',s:'15 min. Energy +5, job +1. Once a day.',cat:'work',
+      fn:()=>{S.breakroom[d]=true;pass(15);adj('energy',5);adj('standing',1);say(pick(WORK_TALK[S.job]||WORK_TALK.cafe))}});
+    if(!open) a.push({ic:'🔒',l:`${J.place} is closed right now`,s:hoursTxt('work'),cat:'work',dis:true,fn:()=>{}});
   }
-  if(S.loc==='ruston'){
-    if(!S.walk[d]) a.push({ic:'🚶',l:'Walk Ruston Way',s:'1 hour. Energy +8. Once a day. Clears your head.',cat:'rest',dis:S.energy>=100,
-      fn:()=>{pass(60);S.walk[d]=true;S.stats.walks=(S.stats.walks||0)+1;adj('energy',8);say(pick(['🚶 Two miles of waterfront path: joggers, dogs, the smell of salt and fried fish. '+(at(370,1220)?'The mountain is out.':'The bay is black glass.'),'🚶 You walk to the old Asarco site and back. Herons stand in the shallows like they own the place. They do.','🚶 Cranes across the bay, kids on scooters, a kayak sliding by. You feel human again.']))}});
-    if(S.scout!==d+1&&!last) a.push({ic:'🔭',l:'Scout the Slag Pile',s:'45 min. Watch the tide line, bait balls and the boats working the drop-off. Sharper read on the water tomorrow.',cat:'fish',
-      fn:()=>{pass(45);S.scout=d+1;adj('energy',-3);say(pick(['🔭 Birds working a bait ball just off the Slag Pile, two boats hooked up on the drop at the top of the tide. You make notes.','🔭 Herring flicking on the surface off the old smelter rock. The tide rip sets up right where it should. Tomorrow looks better.','🔭 You count the boats, the birds and the rod bends. Mostly coho on the rip, a king or two deeper.']))}});
-    if(!S.pier[d]) a.push({ic:'🎣',l:'Hang out at Les Davis Pier',s:'30 min. Energy +3. The pier regulars hear everything, and sometimes somebody wants a guide.',cat:'here',
-      fn:()=>{pass(30);S.pier[d]=true;adj('energy',3);say('🎣 Squid jiggers, crabbers and a man who has fished this pier since 1979. '+pick(TACOMA_LORE));if(Math.random()<.2&&tryReq('pier'))say('📞 A guy on the pier takes your card. An hour later there’s a booking request in your phone.')}});
+  if(S.loc==='link'){
+    if(!S.ride[d]) a.push({ic:'🚋',l:'Ride the T Line and back',s:'40 min. Free. Stress −6. The whole hill rides this train. Once a day.',cat:'here',
+      fn:()=>{S.ride[d]=true;S.stats.rides++;pass(40);adj('stress',-6);say(pick(['🚋 Down MLK past the hospitals, around the bend and back. A grandma and a toddler share a window seat and narrate every single dog.','🚋 Two nurses in scrubs asleep against each other, a guy with a guitar who doesn’t play it, and a kid reading a library book with total focus. The train dings. Nobody looks up.','🚋 You ride to the end of the line and back for no reason. The best reason.']));fireHook('ride',{sub:'On the T Line'})}});
+    a.push({ic:'🪑',l:'Sit on the platform and people-watch',s:'20 min. Stress −3.',cat:'rest',fn:()=>{pass(20);adj('stress',-3);say(pick(['🪑 A train every few minutes. Every one brings somebody home.','🪑 A man in a church hat tips it to you. You don’t have a hat, so you nod hard.','🪑 Two teenagers argue about the best burger in Tacoma with the seriousness of a court case.']))}});
   }
-  if(S.loc==='foss'){
-    const tab=rp(25),open=at(960,1380);
-    if(!S.bar[d]) a.push({ic:'🍻',l:`An evening at the taproom — ${$(tab)}`,s:open?'90 min. Energy −10. Once a night. Boaters, port people and folks with money talk fishing. Maybe a booking.':'The waterfront taproom gets lively from 4 PM to 11 PM.',cat:'here',dis:!open||S.energy<12||!canAfford(tab),
-      fn:()=>{spend(tab);S.bar[d]=true;S.stats.bar=(S.stats.bar||0)+1;pass(90);adj('energy',-10);
-        say(pick(['🍻 Pint of local IPA, the Foss going gold in the sunset, a table of tech guys asking if salmon “bite in August.”','🍻 You end up at the rail with a tug captain and a couple from Seattle who have never once said “Tacompton” without smiling.','🍻 The bartender knows your name now. That’s either good or a warning.']));
-        if(Math.random()<.55&&tryReq('bar'))say('📞 Someone at the bar wants to go out. A booking request is waiting in 📅 Bookings.');else say('🍻 Lots of “we should totally go sometime.” Nobody books.')}});
-    const mOpen=d%7>=2&&at(600,1020),fee=rp(22);
-    if(!S.museum[d]) a.push({ic:'🏺',l:`Museum of Glass — ${$(fee)}`,s:mOpen?'1 hour. Energy +6. Watch the Hot Shop crew blow glass, then cross the Chihuly Bridge.':'Open Wednesday–Sunday, 10 AM–5 PM.',cat:'rest',dis:!mOpen||!canAfford(fee),
-      fn:()=>{spend(fee);S.museum[d]=true;pass(60);adj('energy',6);say('🏺 In the Hot Shop under the big tilted cone, a team turns a glowing blob into a salmon. Out on the Chihuly Bridge of Glass, the light comes through blue and gold.')}});
+  if(S.loc==='peoples'){
+    const open=isOpen('peoples'),sw=rp(5);
+    if(!S.swim[d]) a.push({ic:'🏊',l:`Swim laps — ${$(sw)}`,s:open&&at(360,1200)?'45 min. Energy −6, stress −14. Once a day.':'Pool hours are 6 AM to 8 PM.',cat:'rest',dis:!open||!at(360,1200)||!canAfford(sw),
+      fn:()=>{spend(sw);S.swim[d]=true;S.stats.swims++;pass(45);adj('energy',-6);adj('stress',-14);say(pick(['🏊 Twenty laps in the cool blue. The lifeguard blows the whistle at a cannonball, then grins.','🏊 You swim until your head goes quiet. Then a few more.','🏊 Lap lanes on one side, a swim lesson on the other: six little kids blowing bubbles like it’s their job.']))}});
+    if(!S.hoops[d]) a.push({ic:'🏀',l:'Get in on the pickup game',s:at(1020,1230)?'1 hour. Energy −12, stress −10, community +4. Once a day.':'The pickup game runs about 5 to 8:30 PM.',cat:'people',dis:!at(1020,1230)||S.energy<15,
+      fn:()=>{S.hoops[d]=true;pass(60);adj('energy',-12);adj('stress',-10);adj('community',4);let x=null;if(!S.met.tasha){S.met.tasha=d+1;S.stats.neighbors=metCount();x=NEIGHBORS.find(y=>y.id==='tasha')}
+        say(x?`🏀 <b>Tasha</b> picks you for her team because you were standing there. You hit one jumper all night and she acts like it was the game-winner. ${x.d}`:pick(['🏀 Next game is to eleven, ones and twos. You hold your own. Somebody calls you by name.','🏀 You get dunked on by a sixteen-year-old. The whole court groans in sympathy. It’s an honor, honestly.','🏀 Tasha calls a foul on herself. The court goes silent with respect. Then trash talk resumes.']))}});
+    if(!S.volunteer[d]) a.push({ic:'🤲',l:'Help out with a community program',s:open&&at(540,1080)?'2 hours. Energy −8, community +6, stress −4. Once a day.':'Programs run 9 AM to 6 PM.',cat:'people',dis:!open||!at(540,1080),
+      fn:()=>{S.volunteer[d]=true;pass(120);adj('energy',-8);adj('community',6);adj('stress',-4);const x=Math.random()<.5?meetHere():null;say(pick(['🤲 You hand out free lunches at the summer meal program. A kid trades you a drawing for an extra milk. You keep the drawing.','🤲 Tutoring at the summer reading program. A third grader reads you a whole chapter book, every word, and then explains it to you.','🤲 You set up chairs for the elders’ lunch and stay for dominoes. You lose, loudly, and are invited back.'])+(x?` You meet <b>${x.n}</b>.`:''))}});
+    a.push({ic:'🌳',l:'Sit in People’s Park',s:'30 min. Stress −5.',cat:'rest',fn:()=>{pass(30);adj('stress',-5);S.stats.walks++;say(pick(['🌳 Shade, a breeze, somebody’s speaker playing Earth, Wind & Fire at a polite volume.','🌳 Pigeons, toddlers, an old man feeding both.','🌳 The courts thump, the pool shrieks, the trees don’t care. Perfect.']))}});
   }
-  if(S.loc==='gigharbor'){
-    const open=isOpen('gigharbor'),shop=d%7<6&&at(480,1020),fix=rp(350);
-    a.push({ic:'🔧',l:`Marine repair: full service — ${$(fix)}`,s:shop?`3 hours. Boat +40 (now ${S.boat}): impeller, lower-unit oil, plugs, a look at the transom.`:'The shop is open Monday–Saturday, 8 AM–5 PM.',cat:'work',cls:S.boat<=40&&shop?'primary':'',dis:!shop||S.boat>=95||!canAfford(fix)||m>840,
-      fn:()=>{spend(fix);pass(180);adj('boat',40);adj('energy',-4);say('🔧 The Gig Harbor shop swaps the water-pump impeller, changes the lower-unit oil, finds a cracked fuel line and charges you like you’re a yacht. The sled runs like new.')}});
-    const lunch=rp(30);
-    if(!S.meet[d]) a.push({ic:'🥂',l:`Meet a wealthy client for a drink — ${$(lunch)}`,s:open?'1 hour on a deck over the harbor. Rep +1, and a good shot at a well-paid booking.':hoursTxt('gigharbor'),cat:'here',dis:!open||!canAfford(lunch),
-      fn:()=>{spend(lunch);S.meet[d]=true;pass(60);adj('rep',1);say(pick(['🥂 A retired surgeon with a 40-foot sailboat buys the second round and asks about kings.','🥂 A couple from the yacht club wants to take their grandkids out “for a real fish.”','🥂 A software VP explains crypto. You explain the Chinook minimum size. You both learn something.']));
-        if(Math.random()<.6&&tryReq('rich'))say('📞 They want to book. The request is waiting in 📅 Bookings.');else say('🥂 “We’ll call you.” Gig Harbor people do, eventually.')}});
+  if(S.loc==='view'){
+    a.push({ic:'🌄',l:'Sit on the bench',s:'30 min. Stress −8.',cat:'rest',fn:()=>{pass(30);adj('stress',-8);say(pick(['🌄 The bay, the cranes, the ferry to Vashon cutting its slow white line. The whole city is down there working, and you’re up here, breathing.','🌄 A container ship eases toward the port. From up here it looks like a toy somebody’s very careful with.','🌄 '+(S.ev.flags.mtn===d?'The mountain is out, all of it, so big it looks painted on.':'Rainier is behind the haze today. Everybody on the bench knows it’s there anyway.')]))}});
+    if(!S.sunset[d]) a.push({ic:'🌅',l:'Watch the sunset',s:at(SUNSET-60,SUNSET+20)?'45 min. Stress −18. Once a day. Worth it every time.':`Come back around ${fmt(SUNSET-45)}.`,cat:'rest',cls:at(SUNSET-60,SUNSET+20)?'primary':'',dis:!at(SUNSET-60,SUNSET+20),
+      fn:()=>{S.sunset[d]=true;S.stats.sunsets++;pass(45);adj('stress',-18);const x=!S.met.harris&&Math.random()<.5;if(x){S.met.harris=d+1;S.stats.neighbors=metCount();adj('community',3)}
+        say(pick(['🌅 The sun drops behind the Olympics and the whole bay goes copper. Rainier catches the last of it, pink as a shell.','🌅 Gold, then orange, then a purple you don’t have a word for. Somebody on the next bench says “Every night,” like a prayer.','🌅 The port lights come on one by one. The mountain goes blue, then gone.'])+(x?' An older man in a pressed shirt shares the bench and hums the whole time: <b>Deacon Harris</b>, choir bass, thirty-one years at the Port. “Best seat in Tacoma,” he says. “Don’t tell anybody.”':''))}});
+    a.push({ic:'🚶',l:'Walk the edge of the hill',s:'45 min. Stress −8, energy −4.',cat:'here',fn:()=>{pass(45);S.stats.walks++;adj('stress',-8);adj('energy',-4);say(pick(['🚶 Old houses with deep porches and new ones with big windows, side by side, everybody’s tomatoes coming in at once.','🚶 Stairs down, stairs back up. Hilltop is a hill. Your legs have noticed.','🚶 A yard sign says “Hilltop is home.” A kid’s chalk on the sidewalk says the same thing with more hearts.']))}});
   }
-  if(!(S.loc==='home'&&m>=1260)) a.push({ic:'⏳',l:'Wait a while…',s:'Skip ahead 30, 60 or 120 minutes.',cat:'rest',fn:()=>worldWait()});
+  if(!(S.loc==='home'&&m>=1290)) a.push({ic:'⏳',l:'Wait a while…',s:'Skip ahead 30, 60 or 120 minutes.',cat:'rest',fn:()=>worldWait()});
   return a;
 }
+const WORK_TALK={
+  hospital:['☕ The charge nurse tells you which patient asks for you by name. You pretend that doesn’t make your whole week.','☕ A respiratory therapist shows you pictures of her garden. Every tomato has a name.','☕ Someone brought donuts. Someone always brings donuts. Hospitals run on donuts.'],
+  cafe:['☕ The owner shows you how to pour a rosetta. Yours looks like a potato. She says potatoes are a start.','☕ Your coworker has a theory about every regular. Most of the theories are wrong and all of them are great.','☕ Free shift drink, a minute on the back step, the Link going by.'],
+  kitchen:['☕ The pitmaster tells you the greens take a whole day and a whole life to get right. He’s on year thirty.','☕ The dishwasher is the funniest person you’ve ever met. You laugh so hard you have to sit on a milk crate.','☕ Mama herself checks your station, says nothing, nods once. You will remember that nod forever.'],
+};
+function work(late){
+  const d=day(),J=job(),m=tod();
+  if(m<J.start){pass(J.start-m)}   // early: you wait for the shift to start
+  const start=Math.max(J.start,tod()),frac=Math.max(0,(J.end-start)/(J.end-J.start));
+  let pay=Math.round(J.pay*frac),tip=0;
+  if(J.tips){tip=Math.round((J.tips[0]+Math.random()*(J.tips[1]-J.tips[0]))*(.6+S.standing/250)*frac);S.stats.tips+=tip}
+  S.worked[d]=late;S.stats.shifts++;pass(J.end-tod());money(pay+tip);S.stats.earned+=pay+tip;
+  adj('energy',-J.energy);adj('stress',J.stress);
+  if(late){S.stats.late++;adj('standing',-Math.min(12,Math.ceil(late/5)));adj('stress',5);say(`${J.ic} You slip in ${late} minutes late. ${S.job==='hospital'?'The charge nurse just looks at the clock.':S.job==='kitchen'?'The ticket rail is already full. Nobody says a word, which is worse.':'The line is out the door and your coworker is drowning.'} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
+  else{adj('standing',5);say(`${J.ic} ${pick(SHIFT_LINES[S.job]||SHIFT_LINES.cafe)} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
+  if(J.staffMeal) say('🍗 Staff meal after close: fried chicken, greens, a square of cornbread. Dinner’s covered tonight.');
+  fireHook('shift',{sub:`At ${J.place}`});
+}
+const SHIFT_LINES={
+  hospital:['A full shift on the fourth floor: vitals, baths, call lights, a man who tells you about his longshore days at the Port for twenty minutes while you change his sheets.','Eight and a half hours on your feet. You help a woman walk the hall for the first time since her surgery. She cries; you nearly do.','A hard one. Two admissions, a fall risk who will not stay in bed, and a family that needed someone to sit with them. You sat with them.'],
+  cafe:['Opening shift: four hundred drinks, a hundred names, the Link outside the window every few minutes. The regulars start saying hi to you first.','A rush at 7:40 that nearly breaks you, then a slow sunny hour where a retired teacher tells you about Hilltop in the ’70s.','You remember a regular’s order before she says it. She looks at you like you did a magic trick.'],
+  kitchen:['Saturday-night energy on a Wednesday: chicken, oxtails, mac and cheese, ticket after ticket. You keep up. Barely, then fully.','Sixty plates of smothered pork chops and a birthday party of twenty-two. The pitmaster says “Not bad,” which in this kitchen is a medal.','Hot, loud and fast. You burn one batch of cornbread and nail the next six. The servers start calling you by name.'],
+};
 function worldWait(){
   const m=tod(),o=[30,60,120].filter(x=>m+x<1439);
   modal('⏳ Wait a while',`<p style="font-size:13px;color:var(--mute)">It’s ${fmt(S.t)}. Time passes and nothing else happens.</p>`,
@@ -220,37 +304,47 @@ function worldWait(){
 
 // ---- small extras on the Here tab ----
 function statusTags(){
-  const t=[],d=day(),trips=todaysTrips(d);
-  if(trips.length) t.push(`<span class="tag">🛶 ${trips.map(b=>fmt(b.start)).join(', ')}</span>`);
-  if(S.boat<=40) t.push(`<span class="tag ${S.boat<=20?'bad':''}">🔧 boat ${S.boat}</span>`);
-  t.push(`<span class="tag ${S.gear<1?'bad':''}">🪝 tackle ×${S.gear}</span>`);
-  if(S.bait) t.push(`<span class="tag">🐟 herring ×${S.bait}</span>`);
-  t.push(`<span class="tag ${S.fuel<10?'bad':''}">⛽ ${Math.round(S.fuel)}/${TANK} gal</span>`);
-  if(S.unlogged) t.push(`<span class="tag bad">📓 ${S.unlogged} catch record${S.unlogged>1?'s':''} to fill in</span>`);
-  if(S.scout===d) t.push('<span class="tag">🔭 you scouted the Slag Pile</span>');
-  if(S.energy<25) t.push('<span class="tag bad">🥱 running on fumes</span>');
-  if(S.loc==='gigharbor') t.push(`<span class="tag">🌉 ${$(TOLL)} toll back to Tacoma</span>`);
+  const t=[],d=day(),J=job();
+  if(isShiftDay(d)&&!(d in S.worked)) t.push(`<span class="tag">${J.ic} work ${fmt(J.start)}–${fmt(J.end)}</span>`);
+  t.push(`<span class="tag ${S.food<1?'bad':''}">🍽️ ${S.food} meal${S.food===1?'':'s'} in the fridge</span>`);
+  t.push(S.rent.paid?'<span class="tag">🧾 rent paid</span>':`<span class="tag ${d>=10&&!canAfford(S.rent.amt)?'bad':''}">🧾 rent ${$(S.rent.amt)} due Sun Aug 16</span>`);
+  if(S.energy<25) t.push('<span class="tag bad">🥱 running on empty</span>');
+  if(S.stress>=70) t.push('<span class="tag bad">😣 stressed</span>');
+  if(d===FAIR_DAY&&!S.fair&&tod()<FAIR_HOURS[1]) t.push('<span class="tag">🎪 street fair on MLK today</span>');
   return t;
 }
 function alertBar(){
-  const d=day(),m=tod(),trips=todaysTrips(d);
-  for(const b of trips){
-    if(m>b.start&&m<=b.start+90&&S.loc!=='marina') return {t:`⏰ Your party is waiting at Point Defiance Marina (the trip was ${fmt(b.start)}).`};
-    if(m>=b.start-150&&m<=b.start&&S.loc!=='marina') return {t:`🛶 Trip today at ${fmt(b.start)} from Point Defiance Marina: ${travelMins(S.loc,'marina')} min away.`,kind:'info'};
-  }
-  const soon=trips.length||todaysTrips(d+1).length;
-  if(soon&&S.fuel<10) return {t:`⛽ Only ${Math.round(S.fuel)} gallons in the tank. A trip burns most of that. Fuel up at the Point Defiance fuel dock.`};
-  if(soon&&S.gear<1) return {t:'🪝 Out of tackle. Restock at the tackle shop downtown before your next trip.'};
-  if(S.boat>0&&S.boat<=20&&soon) return {t:`🔧 The boat is at ${S.boat}. Breakdowns get likely. The marine repair shop is in Gig Harbor.`,kind:'info'};
+  const d=day(),m=tod(),J=job();
+  if(isShiftDay(d)&&!(d in S.worked)&&m>J.start&&m<J.end-60) return {t:`⏰ You’re late for work at ${J.place} (your shift started at ${fmt(J.start)}).`};
+  if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${J.place} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
+  if(d===FAIR_DAY&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
+  if(!S.rent.paid&&d>=11) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by Sunday night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
+  if(S.food<1&&m>=960) return {t:'🍽️ The fridge is empty and dinner is coming. The corner market on MLK is open until 10 PM.',kind:'info'};
   return null;
 }
 
-// ---- extra tabs (TRIPS supplies the views) ----
+// ---- extra tabs ----
+// keyboard shortcuts use the label's first letter: W(eek), N(eighbors)
 const EXTRA_TABS=[
-  {k:'book',ic:'📅',l:'Bookings',view:()=>typeof bookingsView==='function'?bookingsView():'<div class="sect">Bookings</div><div class="rules">No bookings yet.</div>'},
-  {k:'fish',ic:'🐟',l:'Fish',view:()=>typeof fishView==='function'?fishView():'<div class="sect">Fish</div><div class="rules">No fishing report yet.</div>'},
-  {k:'regs',ic:'📖',l:'Regs',view:()=>typeof regsView==='function'?regsView():'<div class="sect">Regs</div><div class="rules">Check the current WDFW rules.</div>'},
+  {k:'week',ic:'📅',l:'Week',view:()=>weekView()},
+  {k:'hood',ic:'🤝',l:'Neighbors',view:()=>hoodView()},
 ];
+function weekView(){
+  const J=job(),d0=day();
+  return `<div class="sect">Your two weeks · ${J.ic} ${J.n}</div>`+Array.from({length:GAME.days},(_,i)=>{
+    const sd=isShiftDay(i),w=S.worked[i];
+    let s=sd?(i in S.worked?(w?`worked, ${w} min late`:'worked, on time'):i<d0?'missed work':`work ${fmt(J.start)}–${fmt(J.end)}`):(S.extra[i]?'day off (picked up extra hours)':'day off');
+    if(i===FAIR_DAY) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
+    if(i===S.rent.due) s+=` · 🧾 rent due${S.rent.paid?' (paid)':''}`;
+    return `<div class="todo"><span class="ck">${i<d0?'✔️':i===d0?'👉':'·'}</span><div><b>${augDate(i)}</b><span>${s}</span></div></div>`}).join('')
+    +`<div class="rules">Rent: ${S.rent.paid?`paid on ${augDate(S.rent.paidDay)} ✔️`:`${$(S.rent.amt)}, due by the end of Sunday, Aug 16. Pay it at home.`}</div>`;
+}
+function hoodView(){
+  const met=NEIGHBORS.filter(x=>S.met[x.id]);
+  return `<div class="sect">Neighbors · community ${S.community}/100</div><div class="rules">${met.length} of ${NEIGHBORS.length} neighbors know your name. Talk on the corner, play ball, help out, go to the fair: Hilltop meets you halfway.</div>`
+    +met.map(x=>`<div class="todo"><span class="ck">${x.ic}</span><div><b>${x.n}</b><span>${x.d} (met ${augDate(S.met[x.id]-1)})</span></div></div>`).join('')
+    +(met.length<NEIGHBORS.length?`<div class="todo"><span class="ck">·</span><div><b>${NEIGHBORS.length-met.length} more to meet</b><span>Somewhere on MLK, at People’s, on the porches and at the overlook.</span></div></div>`:'');
+}
 
 // ---- engine shims ----
 // The engine (02–09) still calls a few Guide Master helpers without typeof guards (40-art.js, 45-names.js, the morning report).

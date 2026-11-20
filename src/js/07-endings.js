@@ -7,7 +7,7 @@ function gameOver(why){S.over=true;clearTiles();closeModals();sfx('bad');
   const T=LOSSES[why]||['Game over','It’s over.'];endScreen(T[0],T[1],true)}
 function endScreen(h1,sub,lost){
   achCheck({end:true,lost});const achNew=(S.achGame||[]).map(id=>ACH.find(a=>a.id===id)).filter(Boolean);
-  const sc=Math.round(scoreOf()),g=lost?['F','Hang Up the Waders','A career that ends early is always an F.']:gradeOf(sc);
+  const sc=Math.round(scoreOf()),g=lost?['F','Back to Square One','Two weeks that end early are always an F.']:gradeOf(sc);
   saveGame(); // S.over is set, so this deletes the save
   let best=null,newBest=false;const ls=store();
   try{const b=ls?Number(ls.getItem(BEST_KEY)||'NaN'):NaN;best=isNaN(b)?null:b;if(!lost&&(best==null||sc>best)){ls&&ls.setItem(BEST_KEY,String(sc));newBest=true}}catch(e){}

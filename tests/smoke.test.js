@@ -1,12 +1,13 @@
 const { open, newGame, noErrors, assert } = require('./helpers');
 
-// A bot that plays by clicking, for the whole 14-day season. Modals: usually the legal button (legalBtn) when present, else a random one.
-// It must reach the end screen (the season ends, or the career does) with no page errors.
+// A random bot plays a whole 14 days by clicking. Any modal: press the first enabled button (or a random one now and then).
+// It must reach the end screen (14 days, or a loss) with no page errors.
 const STEPS = 6000, SEEDS = [20261119, 7, 424242];
 
-module.exports = SEEDS.map(seed => ({ name: `bot plays a whole season (seed ${seed})`, fn: async ctx => {
+module.exports = SEEDS.map(seed => ({ name: `bot plays 14 days (seed ${seed})`, fn: async ctx => {
   const { page, errors } = await open(ctx, { seed });
   await newGame(page);
+  await page.evaluate(() => { newGame('normal'); }); // keep the job-choice modal: the bot answers it
   let st = { steps: 0, done: false };
   while (!st.done && st.steps < STEPS && !errors.length) {
     st = await page.evaluate(([st, n]) => {
@@ -20,10 +21,8 @@ module.exports = SEEDS.map(seed => ({ name: `bot plays a whole season (seed ${se
         const m = document.getElementById('mbg');
         if (m) {
           const bs = [...m.querySelectorAll('.modal > button.act')];
-          if (typeof window.legalBtn === 'function' && rnd() < 0.8) { const j = window.legalBtn(); if (bs[j] && !bs[j].disabled) { MBTN(j); continue; } }
-          const j = bs.findIndex(b => ok(b) && (b.classList.contains('primary') || rnd() < 0.5));
           const any = bs.map((b, k) => k).filter(k => ok(bs[k]));
-          if (any.length) MBTN(j >= 0 ? j : pick(any)); else m.remove();
+          if (any.length) MBTN(rnd() < 0.7 ? any[0] : pick(any)); else m.remove();
           continue;
         }
         if (rnd() < 0.05) { setTab(pick(allTabs().map(t => t[0]))); continue; }
@@ -38,6 +37,6 @@ module.exports = SEEDS.map(seed => ({ name: `bot plays a whole season (seed ${se
     }, [st, 100]);
   }
   noErrors(errors);
-  assert.ok(st.done, `the season should finish within ${STEPS} steps (got ${st.steps})`);
+  assert.ok(st.done, `the 14 days should finish within ${STEPS} steps (got ${st.steps})`);
   console.log(`       bot: ${st.steps} steps, day ${await page.evaluate(() => S ? S.cur : 'end')}`);
 } }));

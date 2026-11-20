@@ -1,84 +1,56 @@
-# Tacompton: build contract (for parallel agents)
+# Tacompton: build contract (Hilltop edition)
 
-**Game:** Tacompton, a mobile PWA game. You run a small Puget Sound salmon-guide business out of Tacoma, WA ("Tacompton" / "Grit City").
-One season = 14 days, **Mon Aug 3 to Sun Aug 16, 2026** (`GAME.days=14`, day index 0–13, `day()`, `dayName(d)` from the engine).
-The design is Guide Master (krazow/Guide-Master, cloned read-only at `/home/claude/krazow/guide-master`) cut down to one season:
-clients → bookings → trips → dilemmas with shuffled legal and illegal options → reviews → ★ rating, cash, rep, citations.
+**Game:** Tacompton, a mobile PWA life game about **living on Hilltop in Tacoma, WA**. There is **NO fishing, boats, marina,
+salmon, WDFW, charters or trips anywhere** (the earlier fishing version is being removed entirely, so don't mention it).
+You've just moved into an apartment on Hilltop. Two weeks (14 days, `GAME.days=14`, Mon **Aug 3** to Sun **Aug 16, 2026**) to
+settle in: hold down a job, make rent, keep food in the fridge, keep your energy up and your stress down, and become part of the
+neighborhood. Every place is ON Hilltop (no Downtown, Ruston, Foss or Gig Harbor).
 
-**Engine:** `src/js/00-09` came from Guide Master and are generic. Don't edit them unless something is broken (tell the integrator).
-Read them for the APIs: `modal(title, body, btns, noClose)`, `modalSwap(...)`, the button flag `{l, fn, stay:true, legal:true|false}`,
-`showTile`, `say`, `pass(min)`, `adj(stat, n)`, `money(n)`, `$`, `$k`, `fmt(min)`, `tod()`, `day()`, `pick`, `defEvent`, `chain`,
-`fireHook`, `endDay(where)`, `go(dest)`, `isOpen`, `hoursTxt`, `DF()`. For how the content side uses them, look at the Guide Master files
-`src/js/20-world.js`, `21-story.js`, `22-trips.js`, `23-fish.js` and `33-day.js` (and copy patterns freely), but **no Alaska content**.
-The framework's sample contract is at `/home/claude/framework/src/js/20-world.js` and `21-story.js`: every name defined there must exist.
+Hilltop context: a historically Black neighborhood, now gentrifying, with a strong community. Martin Luther King Jr. Way is the
+main street. The Hilltop Link light rail (the T Line extension opened in 2023) runs along MLK with stops like St Joseph and
+MLK Jr Way/S 11th. MultiCare Tacoma General Hospital and St. Joseph Medical Center are the big employers. People's Community
+Center (pool, gym) and People's Park are on MLK. Murals, corner stores, barbershops, food spots, the Hilltop Street Fair (a real
+summer event: keep it to one in-game Saturday, Aug 8), the views of Commencement Bay and Mount Rainier from the hill. Write it with
+warmth and respect: real community, real neighbors, gentle humor, no crime-ridden "Tacompton" clichés. The name is a wink, the
+game is a love letter. Generic or invented business names are fine ("the corner market", "Mama's Kitchen"), and don't invent facts
+about real named businesses.
 
-## File ownership (only write your own files)
+**Engine:** `src/js/00-09` came from Guide Master and are generic: don't edit them. APIs: `modal`, `modalSwap`, button
+`{l, fn, stay}`, `showTile`, `say`, `pass(min)`, `adj(stat, n)`, `money(n)`, `$`, `$k`, `fmt`, `tod()`, `day()`, `dayName(d)`,
+`pick`, `defEvent`, `chain`, `fireHook`, `endDay(where)`, `go(dest)`, `isOpen`, `hoursTxt`, `DF()`. The framework contract (every
+name the engine needs) is at `/home/claude/framework/src/js/20-world.js` and `21-story.js`. That small life-sim sample
+("Pocket Week": work shifts, pantry, energy, stress, job) is the closest model. The current `src/js/20-world.js` has an
+"engine shims" block at its end (artOn, artNarrEvent, ART, LOGSUB, cabinName, reqKey, dlabel, …): **keep that block**.
+
+## File ownership
 | Agent | Files |
 |---|---|
-| WORLD | `src/js/00-game.js` (DIFFS text only), `src/js/20-world.js` |
-| TRIPS | `src/js/22-trips.js` (clients, bookings, trips, dilemmas, fish, regs, reviews) |
-| STORY | `src/js/21-story.js`, `src/js/26-help.js`, `src/js/29-update-notice.js` |
-| SHIP  | `README.md`, `CHANGELOG.md`, `release.json`, `manifest.webmanifest`, `src/shell.html`, `install/ios.html`, `tests/*.test.js`, `tools/sim/` (optional), `.github/` |
+| GAME | `src/js/00-game.js` (DIFFS text, tagline, comments), `src/js/20-world.js`, `src/js/21-story.js`, `src/js/26-help.js`, `src/js/29-update-notice.js` (CHANGELOG object: only 0.1.0, described as the Hilltop game; WN_DATES `{'0.1.0':'2026-11-19'}`) |
+| SHIP | `README.md`, `CHANGELOG.md`, `manifest.webmanifest`, `src/shell.html`, `release.json` (description), `package.json` (description), `install/ios.html`, `tests/*.test.js` |
 
-## Shared state (S). WORLD defines these in `newState()`; everyone else may read and write them
-```
-money:1500, rep:50, energy:90, boat:85, cites:0, warns:0, fuel:20 (gallons in the boat, tank 40)
-gear:3            // trips' worth of tackle (herring, flashers, hoochies, leaders)
-bait:0            // trays of herring on ice (1 per trip, spoils at end of day it was bought + 1)
-book:[]           // bookings {id, day, start(min), type, party:{name, n, want, mood}, price, status:'booked'|'done'|'noshow'|'cancelled'}
-nextId:1
-reqs:[]           // booking requests waiting {id, r:{...same as a booking without status}, exp:dayIndex}
-trip:null         // the trip in progress (TRIPS owns its shape)
-reviews:[]        // {day, who, type, stars:1-5, text}
-dil:{}            // dilemma key → times shown
-unlogged:0        // catch-record cards / logbook not filled in
-licensed:{guide:true, boat:true, crc:true} // the credentials: WA charter license, vessel, catch record cards
-stats:{trips:0, clients:0, fish:0, chinook:0, coho:0, earned:0, spent:0, tips:0, viol:0, fines:0, noshow:0, fuelGal:0, seen:{}}
-visited:{home:true}
-water:{}          // TRIPS: per-day spot conditions
-```
-The HUD (WORLD's `STATS`): Cash, Rep, Energy, Boat, Record (`S.cites/3`). Three citations = the career ends (`checkLoss()` in STORY returns `'permit'`).
+## Places (`L` keys, exactly these)
+- `home`: your apartment on Hilltop (bed, rest, cook from the fridge, call family, the alarm).
+- `mlk`: MLK Jr Way. The corner market (groceries), a food spot, the barbershop or salon, the murals.
+- `work`: your job. The player picks a job at the start (onNewGame modal): **hospital** (a CNA at Tacoma General: early shift
+  7–3:30, better pay, more stress), **cafe** (a barista at a Hilltop café: 6:30–2:30), or **kitchen** (a line cook at a soul-food
+  spot on MLK: 2–10 PM). Shifts Mon–Fri (the kitchen works Wed–Sun instead). `S.job` = which one; `S.standing` = 0–100 job standing.
+- `link`: the Hilltop Link station (St Joseph). The streetcar costs $0 (Link is free), is quick to ride, and gives people-watching events.
+- `peoples`: People's Community Center and People's Park: the pool, the gym, community programs, a pickup basketball game.
+- `view`: the overlook / a bench with the Commencement Bay and Rainier view (the edge of the hill). Calm, sunset.
 
-## Places (WORLD's `L` keys; use exactly these)
-- `home`: Apartment, Hilltop. Bed, logbook, rest. Boat on a trailer out back.
-- `downtown`: Downtown Tacoma / 6th Ave. Tackle shop (gear, bait), diner, urgent care. Hours 6 AM–9 PM.
-- `marina`: Point Defiance Marina and boathouse, Ruston. Boat launch, fuel dock, where trips start.
-- `ruston`: Ruston Way waterfront. Les Davis Pier, walk, scout the bay, meet clients sometimes.
-- `foss`: Thea Foss Waterway. Marina, Museum of Glass, a waterfront bar, the evening crowd.
-- `gigharbor`: Gig Harbor, across the Narrows Bridge (the toll is paid eastbound only, so going back to Tacoma costs ~$5). Rich clients, marine repair shop.
+## State (S)
+`money` (start per DF().money scaled to around 900), `energy`, `stress` (high is bad), `food` (meals in the fridge), `standing` (the job),
+`community` (0–100: neighbors who know you), `rent:{due:13, amt:1150, paid:false}` (rent due by the end of day index 13),
+`worked:{}`, `visited:{home:true}`, `stats:{shifts, late, missed, earned, spent, meals, neighbors, walks, swims}` plus per-day maps.
 
-Travel minutes come from WORLD's `TRAVEL` (realistic, 8–30 min).
-
-## Cross-file functions (exact names)
-TRIPS exports these; WORLD and STORY call them, each guarded with `typeof fn==='function'`:
-- `marinaActions()` → an array of actions (the same shape as `actionsHere` items) for the marina: start today's booked trip, fuel up, launch.
-- `homeTripActions()` → actions at home: fill in the catch record / logbook (`S.unlogged`).
-- `bookingsView()` → HTML for the 📅 Bookings tab (waiting requests with answer buttons at the top, then the schedule).
-- `regsView()` → HTML for the 📖 Regs tab.
-- `fishView()` → HTML for the 🐟 Fish tab (today's spots Hot/Good/Fair/Poor, tides).
-- `tripsMorning(d)` → called from STORY `onMorning`: it generates new booking requests and the day's water.
-- `tripsNight(notes, d)` → called from STORY `onNight`: no-shows, a missed trip costs rep, bait spoils, the `unlogged` penalty.
-- `ratingAvg()` → the ★ average of the last 20 reviews (or null).
-- `window.legalBtn()` → the index of the legal button in the open modal (for the tests and bots).
-
-WORLD's `EXTRA_TABS`: `{k:'book', ic:'📅', l:'Bookings', view:bookingsView}`, `{k:'fish', ic:'🐟', l:'Fish', view:fishView}`, `{k:'regs', ic:'📖', l:'Regs', view:regsView}`.
-
-## Content facts (Tacoma, 2026; TRIPS researches and checks the regulations)
-- Water: Marine Area 11 (Tacoma–Vashon): Point Defiance ("the Clay Banks", Owen Beach, Gibson Point), the Slag Pile at Ruston,
-  Commencement Bay, Browns Point, Dalco Passage, the Narrows, Point Dalco, Quartermaster Harbor (Vashon), the Foss and Hylebos mouths.
-- Fish: Chinook (king), coho (silver). No pinks in 2026 (an even year: pinks return in odd years). Mooching cut-plug herring, trolling flashers and hoochies, downriggers.
-- Regs flavor (simplified, with the real 2026 numbers where TRIPS can find them): the daily limit, wild Chinook release (adipose fin
-  intact = wild = release), barbless hooks required, catch record card filled in right after you land a fish, the charter license and
-  vessel requirements, no culling, the Chinook minimum size, closed areas (e.g. Commencement Bay east of a line, when applicable), USCG six-pack (OUPV) limits.
-- Lore: the Tacoma Aroma, the Narrows bridges and Galloping Gertie (1940), Mount Rainier ("the mountain is out"), Point Defiance Zoo,
-  the Puyallup River, the Port of Tacoma cranes, Dick's/Frisko Freeze/Shake Shake Shake (generic diner names are fine), the Tacoma Dome,
-  the Puyallup Tribe's treaty fishery (treat it respectfully), the "Grit City" pride, The Spar in Old Town.
-- Tone: warm, wry, local. Short sentences. Emoji icons like Guide Master. US English.
-
-## Scoring (STORY)
-Score = cash + rep×40 + ★avg×1000 + trips×150 − cites×1500. Grades: A ≥ 14000, B ≥ 11000, C ≥ 8000, D ≥ 5000. Tune after the sim.
+HUD: Cash, Energy, Stress, Food, Job (standing). Losses: `fired` (standing 0), `burnout` (stress 100), `evicted` (rent unpaid at the
+end of day 13, or money < −500). Score: cash + community×15 + standing×8 − stress×5 + shifts×60 (+ bonuses), grades A–F tuned so
+decent play gets a B. Content: 15+ events (the Link bell, a neighbor's barbecue, a mural being painted, the street fair on Sat
+Aug 8, a heat wave, the mountain is out, a block party, a lost dog, a power blip, a free fridge, a church choir on Sunday), TIPS for a
+new player, todoItems, 10+ achievements, a title SVG (the hill, the Link train, Rainier), and a short Help.
 
 ## Rules for all agents
-- Plain browser JS, no modules, the global functions style of the engine. Each file must parse on its own (`node --check`).
-- Don't run `tools/build.py` or `git` (the integrator does). Keep each file under ~60 KB.
-- When done, reply with: the functions and globals you defined, any S fields you added, and anything the other files must do.
+- Plain browser JS globals in the engine style; each file must pass `node --check`. Don't run git. You MAY run
+  `python3 tools/build.py` and the tests (`NODE_PATH=/opt/npm-tools/node_modules CHROME_PATH=/usr/bin/google-chrome node tests/run.js`)
+  to check your work once the other agent's files exist.
+- When done, reply briefly: the globals and S fields you defined, and anything the other agent must know.

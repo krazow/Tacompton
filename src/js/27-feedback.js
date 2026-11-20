@@ -17,7 +17,7 @@ let FBD={kind:FB_KINDS[0],msg:'',email:'',trap:''};      // the open form's draf
 function fbContext(){
   const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
   const c={version:APP_VERSION,app:standalone?'installed app':'browser',screen:`${screen.width}×${screen.height}`,device:navigator.userAgent.slice(0,160)};
-  if(typeof S!=='undefined'&&S&&!S.over&&S.cur!=null){Object.assign(c,{day:`${typeof augDate==='function'?augDate(S.cur):'day '+(S.cur+1)} ${fmt(S.t)}`,difficulty:S.diff,location:(L[S.loc]||{}).name,cash:Math.round(S.money),rep:S.rep,trips:S.stats.trips})}
+  if(typeof S!=='undefined'&&S&&!S.over&&S.cur!=null){Object.assign(c,{day:`${typeof augDate==='function'?augDate(S.cur):'day '+(S.cur+1)} ${fmt(S.t)}`,difficulty:S.diff,location:(L[S.loc]||{}).name,cash:Math.round(S.money),job:S.job,standing:S.standing,community:S.community})}
   return c;
 }
 function fbQueue(){try{return JSON.parse(localStorage.getItem(FEEDBACK.qKey())||'[]')}catch(e){return []}}
