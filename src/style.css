@@ -91,6 +91,7 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .place{position:absolute;left:12px;bottom:10px;background:rgba(251,248,241,.94);border-radius:10px;padding:6px 10px;max-width:80%}
 .place h2{font-size:18px}
 .place div{font-size:12px;color:var(--mute)}
+@media (max-width:480px){.place div{display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}}   /* one line on a phone, so the scene's signs show */
 .alertbar{background:var(--bad);color:#fff;font-size:13px;padding:8px 14px;font-weight:500}
 .alertbar.fog{background:#6c7a80}
 /* content */
@@ -142,7 +143,7 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .log p{margin:0;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.4}
 .log p em{font-style:normal;color:var(--mute);font-variant-numeric:tabular-nums;margin-right:6px;font-size:12px}
 /* event tiles (toasts) */
-#tiles{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 8px);width:calc(100% - 20px);max-width:460px;z-index:60;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+#tiles{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 150px);width:calc(100% - 20px);max-width:460px;z-index:15;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .tile{pointer-events:auto;display:flex;align-items:center;gap:11px;background:#fffdf8;border-radius:14px;padding:10px 10px 10px 12px;box-shadow:0 8px 24px rgba(8,25,30,.28),0 1px 0 rgba(0,0,0,.05);border-left:6px solid #6b7478;animation:tileIn .32s cubic-bezier(.2,.9,.3,1.2)}
 .tile.good{border-left-color:var(--good)}.tile.bad{border-left-color:var(--bad)}.tile.info{border-left-color:var(--brand)}.tile.warn{border-left-color:var(--warn)}
 .tile .ti{font-size:26px;width:32px;text-align:center;flex:none}
@@ -152,6 +153,9 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .tile .tt span{display:block;font-size:12px;color:var(--mute);margin-top:1px}
 .tile .ok{flex:none;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:17px;color:var(--accent);font-weight:700}
 .tile.out{animation:tileOut .25s ease-in forwards}
+/* tiles sit under pop-ups (z 20) and transitions (z 30), and hide while one is open: they come back when it closes (02-kit.js) */
+body:has(> #mbg) #tiles,body:has(> .cross) #tiles{visibility:hidden}
+body:has(> #mbg) #tiles .tile,body:has(> .cross) #tiles .tile{pointer-events:none}
 @keyframes tileIn{from{transform:translateY(-16px) scale(.96);opacity:0}}
 @keyframes tileOut{to{transform:translateY(-12px);opacity:0;height:0;margin:0;padding-top:0;padding-bottom:0}}
 .gear{background:rgba(255,255,255,.12);border:0;border-radius:10px;width:38px;height:38px;font-size:19px;color:#fff;flex:none}
@@ -212,6 +216,7 @@ html.hc .hud :focus-visible,html.hc .title :focus-visible,html.hc nav.tabs :focu
 .prio .pt[role="button"]{cursor:pointer;border-radius:6px}
 /* ⌨️ keyboard shortcut hints (desktop only) */
 .kn{display:none}
+@media (pointer:coarse),(any-pointer:coarse) and (hover:none){.kn{display:none!important}}
 @media (hover:hover) and (pointer:fine){
   button.act{position:relative}
   .kn{display:block;position:absolute;top:6px;right:8px;font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;font-style:normal;color:var(--mute);border:1px solid currentColor;border-radius:4px;padding:2px 4px;opacity:.55;pointer-events:none}

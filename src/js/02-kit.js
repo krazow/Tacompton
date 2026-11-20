@@ -57,7 +57,7 @@ function modalClosed(){
   if(!document.getElementById('mbg')&&MQ.length&&S&&!S.over){const q=MQ.shift();modal(...q)}
   if(S&&!S.over&&!document.querySelector('.title,.end'))render();
   syncInert();
-  if(!document.getElementById('mbg')){const k=FOCUS_RET;FOCUS_RET=null;focusBack(k)}
+  if(!document.getElementById('mbg')){const k=FOCUS_RET;FOCUS_RET=null;focusBack(k);tileFlush()}
 }
 window.MBTN=i=>{const b=MB[i];if(b&&b.dis)return;const el=document.getElementById('mbg');
   if(b&&b.stay&&el){SWAPOK=true;SWAPPED=false;try{b.fn&&b.fn()}finally{SWAPOK=false;if(!SWAPPED){const e2=document.getElementById('mbg');e2&&e2.remove()}}modalClosed();return}
@@ -70,7 +70,7 @@ function escModal(){
   if(c){c.click();return true}
   el.remove();modalClosed();return true}
 window.escModal=escModal;
-function closeModals(){MQ=[];FOCUS_RET=null;document.querySelectorAll('.modal-bg').forEach(e=>e.remove());syncInert()}
+function closeModals(){MQ=[];FOCUS_RET=null;document.querySelectorAll('.modal-bg').forEach(e=>e.remove());syncInert();setTimeout(tileFlush,0)}
 
 // ---------------- full-screen transition ----------------
 // transition('🚌','Off to work','20 minutes', done)  plays a short animation, then calls done().
@@ -81,7 +81,7 @@ function transition(ic,cap,cap2,done,snd){
     <text class="bob" x="240" y="150" text-anchor="middle" font-size="84">${ic}</text></svg>
     <div class="cap">${withName(cap)}</div><div class="cap2">${withName(cap2||'')}</div><div class="cap2" style="margin-top:18px">tap to skip</div>`;
   document.body.appendChild(el);el.focus();
-  let fin=false;const end=()=>{if(fin)return;fin=true;el.remove();done&&done()};
+  let fin=false;const end=()=>{if(fin)return;fin=true;el.remove();done&&done();setTimeout(tileFlush,0)};
   el.onclick=end;el.onkeydown=e=>{if(e.key==='Escape'||e.key==='Enter'||e.key===' '){e.preventDefault();end()}};
   setTimeout(end,prefs().rm?700:2200);
 }
@@ -90,7 +90,8 @@ function transition(ic,cap,cap2,done,snd){
 // showTile('🎉','Found $20','On the way to the park','good')   kind: good | bad | warn | info
 // One tile at a time, shown just below the HUD so Cash and Rep stay readable. Extra tiles wait in a short queue (duplicates are
 // dropped, the oldest goes if it grows past TILE_QUEUE) and each stays about 3.5 seconds. A tile whose title is already in an open
-// (or queued) pop-up is skipped: the pop-up says it.
+// (or queued) pop-up is skipped: the pop-up says it. While a pop-up (or a full-screen transition) is open, tiles wait in the queue
+// and a tile already showing is hidden (CSS) and kept: they come out when the last pop-up closes. Tiles sit below the HUD, never on it.
 let tileQ=[];const TILE_MAX=1,TILE_QUEUE=3,TILE_MS=3500;
 const plain=h=>String(h||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 function modalSays(title){
@@ -105,16 +106,24 @@ function showTile(ic,title,sub,kind,when){
   if(modalSays(title)) return;
   when=when||`${dayName(day()).slice(0,3)} ${fmt(S.t)}`;
   const box=tileBox();
-  if(box.children.length>=TILE_MAX){
+  if(box.children.length>=TILE_MAX||tileBlocked()){
     if(!tileQ.some(q=>q[1]===title&&q[2]===sub)){tileQ.push([ic,title,sub,kind,when]);while(tileQ.length>TILE_QUEUE)tileQ.shift()}
     return}
-  const hud=document.querySelector('.hud');box.style.top=hud?Math.round(hud.getBoundingClientRect().bottom+6)+'px':'';
+  tileTop(box);
   const t=document.createElement('div');t.className='tile '+(kind||'info');
   title=withName(title);sub=withName(sub);sfx(kind==='good'?'good':kind==='bad'?'bad':'info');
   t.innerHTML=`<span class="ti">${ic}</span><span class="tt"><small>${{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span><button class="ok" aria-label="Got it">✓</button>`;
-  let gone=false;const close=()=>{if(gone)return;gone=true;t.classList.add('out');setTimeout(()=>{t.remove();if(tileQ.length){const q=tileQ.shift();showTile(...q)}},260)};
-  t.querySelector('.ok').onclick=close;t.onclick=e=>{if(e.target===t)close()};
+  let gone=false;const close=tap=>{if(gone)return;
+    if(tap!==true&&tileBlocked()){setTimeout(close,800);return}   // hidden behind a pop-up: keep it until the pop-up is gone
+    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260)};
+  t.querySelector('.ok').onclick=()=>close(true);t.onclick=e=>{if(e.target===t)close(true)};
   setTimeout(close,tileQ.length>=2?TILE_MS-1200:TILE_MS);box.appendChild(t);
 }
+// a pop-up or a full-screen transition is up: tiles wait
+function tileBlocked(){return !!(document.getElementById('mbg')||document.querySelector('.cross'))}
+// show the next waiting tile, if nothing is in the way
+function tileFlush(){if(!tileQ.length||tileBlocked()||!S||S.over)return;const box=document.getElementById('tiles');if(box&&box.children.length>=TILE_MAX)return;showTile(...tileQ.shift())}
+// just under the HUD (the HUD is sticky, so its bottom edge is where the page content starts on screen)
+function tileTop(box){const hud=document.querySelector('#app .hud');if(hud){const b=hud.getBoundingClientRect().bottom;if(b>0)box.style.top=Math.round(b+6)+'px'}}
 function clearTiles(){tileQ=[];document.querySelectorAll('#tiles .tile').forEach(t=>t.remove())}
 window.showTile=showTile;

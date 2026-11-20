@@ -182,7 +182,7 @@ module.exports = [
     for (const h of r.hrefs) assert.ok(await page.$(h), 'TOC target ' + h);
     // real numbers from the game
     const txt = await page.textContent('#tut');
-    for (const s of ['$1,150', '$172', '$104', '$138', '7:00 AM', '6:30 AM', '2:00 PM', '$42', '3,300', '2,500', '× 15', '× 60']) assert.ok(txt.includes(s), 'mentions ' + s);
+    for (const s of ['$1,150', '$172', '$104', '$138', '7:00 AM', '6:30 AM', '2:00 PM', '$42', '3,850', '3,000', '× 20', '× 60', '× ½']) assert.ok(txt.includes(s), 'mentions ' + s);
     assert.doesNotMatch(txt, /\b(fish\w*|salmon|marina|charters?|wdfw)\b/i);
     // a TOC link jumps to its chapter and moves focus to the heading
     await page.click('.tut-toc a[href="#tut-score"]');
