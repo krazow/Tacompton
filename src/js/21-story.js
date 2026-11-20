@@ -49,11 +49,13 @@ function stWelcome(){
 
 // ---- lifecycle hooks (04-loop.js) ----
 function onNewGame(){
+  if(isGrow()) return GROW.onNewGame();
   say(`${stLong(0)}, 2026, ${fmt(S.t)}. Your first morning on Hilltop. Boxes everywhere, the window open, the Link bell ringing down on MLK.`);
   jobModal();
 }
 const ST_MORNING=['☀️ Clear and warm already. August on the hill.','🌫️ A marine layer over the bay. It’ll burn off by ten.','🐦 The crows on the power line are holding a meeting. Loudly.','🎶 Somebody down the block is playing old Motown with the windows open.','🚋 The first Link of the day dings past on MLK.','☕ The neighbor’s coffee smells better than yours. You’ll ask what it is.','🌤️ Haze from a wildfire somewhere over the Cascades. The sun comes up orange.'];
 function onMorning(d){
+  if(isGrow()) return GROW.onMorning(d);
   if(d===0) return;
   const J=job();
   say(`${stLong(d)}, ${fmt(S.t)}. ${pick(ST_MORNING)}`);
@@ -64,6 +66,7 @@ function onMorning(d){
   else if(!S.rent.paid&&d>=10) say(`🧾 Rent is due Sunday night: ${$(S.rent.amt)}. You have ${$(Math.round(S.money))}.`);
 }
 function onNight(where,notes,d){
+  if(isGrow()) return GROW.onNight(where,notes,d);
   const J=job();
   if(where==='collapsed'){S.loc='home';adj('stress',6);notes.push('😵 You were up past midnight. You wake up on the couch with your shoes on and the lamp still burning.')}
   let hungry=false;
@@ -80,18 +83,18 @@ function onNight(where,notes,d){
   if(S.energy<15){adj('stress',6);notes.push('🥱 You’re running on fumes.')}
   if(S.stress>=80) notes.push('😣 Your stress is near the edge. Tomorrow, take something for yourself: a swim, the overlook, a call home.');
 }
-function onTime(min){if(min>0)adj('energy',-min/50)}        // being awake is tiring
-function onArrive(dest){S.visited[dest]=true}
-function daySummary(d){const sd=isShiftDay(d);return [`⚡ ${S.energy}`,`😣 ${S.stress}`,`🤝 ${S.community}`,sd?(d in S.worked?(S.worked[d]?`💼 ${S.worked[d]} min late`:'💼 on time'):'💼 missed'):'']}
-function hudDay(d){return `${augDate(d)} · Day ${d+1} of ${GAME.days}`}
+function onTime(min){if(isGrow())return GROW.onTime(min);if(min>0)adj('energy',-min/50)}        // being awake is tiring
+function onArrive(dest,from){if(isGrow())return GROW.onArrive(dest,from);S.visited[dest]=true}
+function daySummary(d){if(isGrow())return GROW.daySummary(d);const sd=isShiftDay(d);return [`⚡ ${S.energy}`,`😣 ${S.stress}`,`🤝 ${S.community}`,sd?(d in S.worked?(S.worked[d]?`💼 ${S.worked[d]} min late`:'💼 on time'):'💼 missed'):'']}
+function hudDay(d){if(isGrow())return GROW.hudDay(d);return `${augDate(d)} · Day ${d+1} of ${GAME.days}`}
 
 // ---- losing ----
-const LOSSES={
+let LOSSES={
   fired:['Let go','Too many late mornings and missed shifts. The manager is kind about it, which somehow makes it worse. You start the job search again, from a couch that is still yours for now.'],
   burnout:['Burned out','You hit the wall. You call home, and your mom buys you a bus ticket. Hilltop will still be here when you’re ready.'],
   evicted:['Out of the apartment','The rent didn’t come together. The landlord gives you a week to find somewhere else, and Ms. Lorraine across the street says you can leave your boxes on her porch.'],
 };
-function checkLoss(){if(S.standing<=0)return 'fired';if(S.stress>=100)return 'burnout';if(S.evicted||S.money< -500)return 'evicted';return null}
+function checkLoss(){if(isGrow())return GROW.checkLoss();if(S.standing<=0)return 'fired';if(S.stress>=100)return 'burnout';if(S.evicted||S.money< -500)return 'evicted';return null}
 
 // ---- random events (03-events.js). Hooks: wake, arrive {at,from}, travel {from,to}, night {where,notes}, ride (the T Line), shift (after work) ----
 const evening=()=>tod()>=1020&&tod()<1290, daytime=()=>tod()>=540&&tod()<1140;
@@ -162,7 +165,7 @@ defEvent({id:'coworker_cover',hook:'shift',tile:['🤝','A coworker’s favor','
   run:()=>{adj('stress',-5);adj('standing',2);say('🤝 A coworker takes your last hour of side work so you can leave on time. “You’d do it for me.” You would.')}});
 
 // ---- tips: one at a time, first match wins, each once per game ----
-const TIPS=[
+let TIPS=[
   {id:'welcome',when:()=>day()===0&&S.loc==='home',get t(){return `👋 Welcome to Hilltop, {{name}}! ${isShiftDay(0)?`Work starts at <b>${fmt(job().start)}</b>. Open <b>🧭 Go somewhere</b> below to head to ${job().place}.`:'No shift today. Walk down to <b>MLK</b> and meet the street.'}`}},
   {id:'work',when:()=>S.loc==='work'&&isShiftDay(day())&&!(day() in S.worked),t:'💼 Tap <b>Work your shift</b>. The clock jumps to the end of the shift and you get paid. Late costs pay and job standing.'},
   {id:'food',when:()=>S.food<=1,t:'🧺 The fridge is nearly empty. The corner market on <b>MLK</b> sells 4 meals of groceries, 7 AM to 10 PM.'},
@@ -177,6 +180,7 @@ const TIPS=[
 
 // ---- To-do tab goals: {l, s, ok, fail, urgent} ----
 function todoItems(){
+  if(isGrow()) return GROW.todoItems();
   const d=day(),m=tod(),J=job(),it=[];
   if(isShiftDay(d)) it.push({l:`${J.ic} Work today`,s:d in S.worked?(S.worked[d]?`Done, ${S.worked[d]} min late`:'Done, on time'):`${fmt(J.start)}–${fmt(J.end)}, ${J.place}`,ok:d in S.worked,fail:!(d in S.worked)&&m>=J.end-60,urgent:!(d in S.worked)&&m>=J.start-60&&m<J.end-60});
   it.push({l:'Pay rent',s:S.rent.paid?`Paid on ${augDate(S.rent.paidDay)}.`:`${$(S.rent.amt)} by Sunday night, Aug 16. You have ${$(Math.round(S.money))}.`,ok:S.rent.paid,urgent:!S.rent.paid&&d>=11});
@@ -190,7 +194,7 @@ function todoItems(){
 }
 const SCORE_W={community:15,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};
 const GRADE_CUTS=[3300,2500,1800,1100];   // A, B, C, D (the same on every difficulty)
-const RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
+let RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
 
 // ---- achievements: test(ctx) runs after every render ({}), each night ({night,where}) and at the end ({end,lost}) ----
 const ST_SEEN=id=>(S.ev.count[id]||0)>0;
@@ -214,8 +218,9 @@ const ACH=[
 ];
 
 // ---- scoring and the end screen ----
-const FINISH_TEXT={h1:'{{name}}, you made it through your first two weeks',sub:()=>`Mon Aug 3 to Sun Aug 16, 2026. ${S.rent.paid?'Rent is paid, ':''}${metCount()} neighbor${metCount()===1?'':'s'} know your name, and the Link is still dinging down on MLK.`};
+let FINISH_TEXT={h1:'{{name}}, you made it through your first two weeks',sub:()=>`Mon Aug 3 to Sun Aug 16, 2026. ${S.rent.paid?'Rent is paid, ':''}${metCount()} neighbor${metCount()===1?'':'s'} know your name, and the Link is still dinging down on MLK.`};
 function scoreParts(){
+  if(isGrow()) return GROW.scoreParts();
   const w=SCORE_W,s=S.stats,early=S.rent.paid&&S.rent.paidDay<=6;
   return [['Cash',S.money,'what’s in the bank'],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
     ['Stress',-S.stress*w.stress,`${S.stress} × −${w.stress}`],['Shifts',s.shifts*w.shift,`${s.shifts} × ${w.shift}`],
@@ -224,6 +229,7 @@ function scoreParts(){
 }
 function scoreOf(){return scoreParts().reduce((a,r)=>a+r[1],0)}
 function gradeOf(sc){
+  if(isGrow()) return GROW.gradeOf(sc);
   if(sc>=GRADE_CUTS[0]) return ['A','Hilltop Local','Mr. Kim saves you the good avocados and Ms. Lorraine tells people you’re family.'];
   if(sc>=GRADE_CUTS[1]) return ['B','Settling In','You know which Link car has the working AC and whose porch has the best gossip.'];
   if(sc>=GRADE_CUTS[2]) return ['C','Getting By','Rent’s paid, mostly on time, mostly on caffeine.'];
@@ -231,6 +237,7 @@ function gradeOf(sc){
   return ['F','Starting Over','Hilltop will still be here. It’s been here through a lot.'];
 }
 function endRows(){
+  if(isGrow()) return GROW.endRows();
   const s=S.stats,J=job();
   return [['Difficulty',`${DF().ic} ${DF().n}`],['Job',`${J.ic} ${J.n}`],['Cash',$(Math.round(S.money))],['Rent',S.rent.paid?`paid ${augDate(S.rent.paidDay)}`:'unpaid'],
     ['Shifts worked',`${s.shifts} of ${shiftsTotal()}${s.late?` (${s.late} late)`:''}${s.missed?`, ${s.missed} missed`:''}${s.extra?`, +${s.extra} extra`:''}`],

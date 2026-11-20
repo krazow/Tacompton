@@ -48,6 +48,14 @@ button{font:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select
 .title .t-help:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
 .title .t-inst{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
 .title .t-inst .t-ic{background:rgba(255,255,255,.14)}
+.stats:has(> .stat:nth-child(6):last-child){grid-template-columns:minmax(0,1.3fr) repeat(5,minmax(0,1fr))}   /* Growing Up: six stats fill the row */
+html.fs-xl .stats:has(> .stat:nth-child(6):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:360px){.stats:has(> .stat:nth-child(6):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}}
+.title .t-growrow{margin-top:8px}
+.title .t-grow{background:#f4d27a;color:#3a2410;border:0;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.title .t-grow .t-ic{background:rgba(255,255,255,.55)}
+.title .t-grow:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.end .teaser{margin:4px 0 6px}
 .title .t-btn:focus-visible{outline:3px solid #ffd27a;outline-offset:2px}
 .title .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px}
 .title .tgrid .ghost{min-height:44px;padding:6px;font-size:14px;font-weight:500;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;background:transparent;border-color:rgba(255,255,255,.22);border-radius:12px}
