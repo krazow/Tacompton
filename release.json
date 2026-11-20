@@ -1,0 +1,36 @@
+{
+  "id": "tacompton",
+  "name": "Tacompton",
+  "description": "A salmon guide's season out of Tacoma: a fishing-guide game.",
+  "site": ".",
+  "app": ".",
+  "prebuild": [
+    "python3 tools/build.py --check"
+  ],
+  "exclude": [".kit"],
+  "sw": "sw.js",
+  "version": [
+    {
+      "file": "index.html",
+      "pattern": "version:'([^']*)'"
+    }
+  ],
+  "android": {
+    "enabled": false
+  },
+  "windows": {
+    "enabled": true,
+    "port": 47851
+  },
+  "ios": {
+    "enabled": false
+  },
+  "macos": {
+    "enabled": false
+  },
+  "extras": {
+    "enabled": true,
+    "betaBuild": false,
+    "custom": "python3 tools/build-offline.py && cp offline/tacompton-offline.html \"$OUT/Tacompton-offline.html\""
+  }
+}

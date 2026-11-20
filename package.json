@@ -1,0 +1,13 @@
+{
+  "name": "tacompton",
+  "private": true,
+  "description": "Tacompton: a Puget Sound salmon-guide game set in Tacoma, WA (PWA, built on the krazow framework)",
+  "scripts": {
+    "build": "python3 tools/build.py",
+    "test": "node tests/run.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
