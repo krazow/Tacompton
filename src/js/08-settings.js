@@ -28,11 +28,11 @@ function titleScreen(){clearTiles();
   const prev=document.querySelector('.title details.about'),wasOpen=prev?prev.open:null;
   const d=loadSave(),multi=[2,3].some(k=>k<=GAME.slots&&k!==curSlot()&&rawSave(k));
   const help=typeof helpModal==='function'?'<button id="helpBtn" class="t-btn t-help" onclick="helpModal()"><span class="t-ic" aria-hidden="true">❓</span><span class="t-tx"><b>Help</b><span>How to play: the full guide, chapter by chapter</span></span></button>':'';
+  const fb=typeof feedbackModal==='function'?'<button id="feedbackBtn" class="t-btn t-feedback" onclick="feedbackModal()"><span class="t-ic" aria-hidden="true">💬</span><span class="t-tx"><b>Send feedback</b><span>Ideas, bugs, something we got wrong about Hilltop</span></span></button>':'';
   const inst=typeof installButton==='function'?installButton():'';
   const cells=[
     ...(d?['<button class="ghost" onclick="startNewGame()">🆕 New game</button>']:[]),
     ...(GAME.slots>1?['<button class="ghost" onclick="slotsModal()">💾 Save slots</button>']:[]),
-    ...(typeof feedbackModal==='function'?['<button class="ghost" onclick="feedbackModal()">💬 Send feedback</button>']:[]),
     ...(typeof whatsNewModal==='function'?['<button id="whatsNewBtn" class="ghost" onclick="whatsNewModal()">🆕 What’s new</button>']:[]),
     '<button class="ghost" onclick="openTransfer()" title="Transfer a saved game to another device or browser">🔁 Transfer a save</button>'];
   if(cells.length%2)cells[cells.length-1]=cells[cells.length-1].replace('class="ghost"','class="ghost wide"').replace('🔁 Transfer a save<','🔁 Transfer a saved game<');
@@ -40,7 +40,7 @@ function titleScreen(){clearTiles();
   app.innerHTML=withName(`<div class="title">${typeof installBar==='function'?installBar():''}<div class="art"><button class="tgear" onclick="openSettings()" aria-label="Settings">⚙️</button>${TITLE.art()}</div>
   <div class="body"><h1>${esc(GAME.title)}<span>${esc(GAME.tagline)}</span></h1>
   ${d?`<button class="big" onclick="resumeGame()">Continue as ${esc(d.S.name||currentName())}: ${dayName(d.S.cur)} ${fmt(d.S.t)}${multi||curSlot()>1?` (slot ${curSlot()})`:''}</button>`:`<button class="big" onclick="startNewGame()">${TITLE.start}</button>`}
-  ${help||inst?`<div class="t-main">${help}${inst}</div>`:''}
+  ${help||fb||inst?`<div class="t-main">${help}${fb}${inst}</div>`:''}
   ${about?`<details class="about"><summary>What’s the game about?</summary>${TITLE.intro?`<p>${TITLE.intro}</p>`:''}
   ${TITLE.bullets.length?`<ul>${TITLE.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}</details>`:''}
   <div class="tgrid" aria-label="More">${cells.join('')}</div>
@@ -105,8 +105,8 @@ window.openSettings=()=>{
     {l:'♿ Accessibility',s:`Text size: ${{n:'Normal',l:'Large',xl:'Extra large'}[prefs().fs]} · High contrast: ${prefs().hc?'On':'Off'} · Reduce motion: ${prefs().rm?'On':'Off'}`,fn:()=>accessModal()},
     {l:`💡 Tips: ${prefs().tips?'On':'Off'}`,s:'One short tip at a time while you learn.',fn:()=>{setPref('tips',!prefs().tips);openSettings()}},
     {l:`🔔 Event pop-ups: ${popupsOn()?'On':'Off'}`,s:popupsOn()?'An OK window for each event during the day. Tap to turn off (the tiles still show).':'Events during the day show as small tiles and log lines. Tap to get an OK window for each. The morning report always shows.',fn:()=>{try{localStorage.setItem(POPUP_KEY,popupsOn()?'off':'on')}catch(e){}openSettings()}},
-    ...(typeof feedbackModal==='function'?[{l:'💬 Send feedback',s:'Ideas, bugs, a rule we got wrong: it goes straight to the developer.',fn:()=>feedbackModal(openSettings)}]:[]),
     ...(typeof helpModal==='function'?[{l:'❓ Help',s:'The full how-to-play guide: every chapter, with a print / save as PDF button.',fn:()=>helpModal()}]:[]),
+    ...(typeof feedbackModal==='function'?[{l:'💬 Send feedback',s:'Ideas, bugs, something we got wrong about Hilltop: it goes straight to the developer.',fn:()=>feedbackModal(openSettings)}]:[]),
     ...(typeof whatsNewModal==='function'?[{l:'🆕 What’s new',s:`Every update, newest first. You have version ${APP_VERSION}.`,fn:()=>whatsNewModal({back:openSettings})}]:[]),
     {l:'⌨️ Keyboard shortcuts',s:'On a computer: numbers press buttons, ? for the list.',fn:()=>keysModal(openSettings)},
     {l:`🏆 Achievements (${achCount()}/${ACH.length})`,s:'Earned on this device, across all your games.',fn:()=>achModal(openSettings)},

@@ -45,6 +45,8 @@ button{font:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select
 .title .t-tx span{font-size:13px;opacity:.8}
 .title .t-help{background:var(--paper);color:var(--brand-dark);border:0;box-shadow:0 3px 0 rgba(0,0,0,.22)}
 .title .t-help .t-ic{background:var(--surface)}
+.title .t-feedback{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+.title .t-feedback .t-tx span{color:rgba(255,255,255,.75)}
 .title .t-help:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
 .title .t-inst{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
 .title .t-inst .t-ic{background:rgba(255,255,255,.14)}
