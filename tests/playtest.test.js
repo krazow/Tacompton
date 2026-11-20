@@ -24,6 +24,19 @@ module.exports = [
     assert.strictEqual(await page.$('#mbg'), null);
     noErrors(errors);
   } },
+  { name: 'Growing Up: achievement tiles wait behind the first-day pop-up', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    const has = await page.evaluate(() => typeof startGrowUp === 'function');
+    if (!has) return;   // only once Growing Up is in the build
+    await page.evaluate(() => { setMode('grow'); newGame('normal'); render(); achUnlock(ACH[0].id); showTile('🏆', 'Test achievement', '', 'good'); });
+    await page.waitForTimeout(300);
+    assert.ok(await page.$('#mbg'), 'the first-day pop-up is open');
+    const shown = await page.$$eval('#tiles .tile', ts => ts.filter(t => getComputedStyle(t.parentNode).visibility !== 'hidden').length);
+    assert.strictEqual(shown, 0, 'no visible tile over the pop-up');
+    let k = 0; while (await page.$('#mbg') && k++ < 10) await page.click('#mbg .modal > button.act');
+    await page.waitForSelector('#tiles .tile');
+    noErrors(errors);
+  } },
   { name: 'tiles sit below the HUD, not on it', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);

@@ -21,6 +21,7 @@ function simGame({ policy, job, diff, seed }) {
   const stayUp = () => { if (!alive()) return; until(1438); pass(5); afterAction(); flush(); };
   const tryAll = list => list.forEach(re => act(re));
 
+  if (typeof setMode === 'function') setMode('adult');
   newGame(diff); closeModals(); clearTiles(); pickJob(job); closeModals(); render();
   const J = JOBS[job], early = J.start < 720;
   const P = policy;

@@ -5,6 +5,13 @@ are taken from it.
 
 ## Unreleased
 
+### Added
+- 🎒 Growing Up (new), a second mode on the start page: you're 12, your family just moved to Hilltop, and Chapter 1 is the week before middle school (Mon Aug 24 to Sun Aug 30, 2026), ending with the first day of seventh grade on Mon Aug 31 and a "Chapter 1 complete" grade with a look at the next chapter.
+- Growing Up stats: Energy, Mood, Family, Friends and Ready (school readiness), plus allowance money; chores, family dinner and your little sister Nia; a curfew (home by 8:30 PM or Family drops) instead of a job.
+- Five kids to meet (Marcus, Ana, Tavita, Linh and Zay), any of whom can become your best friend, and Growing Up events: shooting hoops, the barbecue across the street, the ice cream truck, a mural going up, the Link bell, a back-to-school supply giveaway at People's, a rainy day and more.
+- New places drawn for Growing Up (with night versions): the family apartment, the Reading Room and Summit View Middle School; Growing Up achievements, its own best score, and a "Growing Up" chapter in the Help guide.
+- The adult game, "Two weeks on Hilltop", still starts with Move in on Monday, and existing saves load as before (see Changed for its new balance).
+
 ### Changed
 - Balance: the two weeks are a real game now. Shifts cost more stress (CNA +20, line cook +16, barista +12), sleep takes off only −3 (−5 in bed before 11 PM), so a swim, the sunset, a call home or a Link ride matter. Community grows more slowly, late and missed shifts cost more Job, and a night past midnight costs Job −3. The rest, bench, park, platform, murals and hill walk work fully twice a day.
 - Score: cash counts half and community ×20, so the better-paid job doesn't decide the grade. New grade cutoffs from a simulation (`node tools/sim.js`): A 3,850, B 3,000, C 2,200, D 1,500. A sensible player gets a B, a careful and social one an A, a sloppy one a C or D.

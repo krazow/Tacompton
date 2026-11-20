@@ -6,9 +6,18 @@
 //  the alert bar and the extra tabs. Events, tips, goals and scoring live in 21-story.js.
 // ============================================================
 
+// ---- game modes ----
+// MODE 'adult' is this game, "Two weeks on Hilltop". MODE 'grow' is "Growing Up" (30-grow-world.js, 31-grow-story.js): the same
+// engine, a 12-year-old's first week on Hilltop. setMode() (30-grow-world.js) swaps the per-mode data (L, STATS, SCENE, EXTRA_TABS,
+// ACT_CATS, TIPS, LOSSES, FINISH_TEXT, RULES_HTML, GAME.days, the difficulty texts), and each contract function below hands off to
+// GROW when MODE==='grow'. A save with no S.mode is an adult save.
+let MODE='adult';
+const isGrow=()=>MODE==='grow';
+
 // ---- the game-specific part of the save (merged over the engine's fields in baseState()) ----
 // Add a field here and old saves get it automatically (fillDefaults in 06-save.js).
 function newState(){
+  if(isGrow()) return GROW.newState();
   return {
     money:900,               // replaced by DF().money at new game
     energy:85,stress:25,
@@ -115,7 +124,7 @@ function meetHere(loc=S.loc){
 const metCount=()=>Object.keys(S.met||{}).length;
 
 // ---- HUD ----
-const STATS=[
+let STATS=[
   {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=10,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by Sunday night, Aug 16.`)}},
   {l:'Energy',v:()=>S.energy,m:()=>S.energy,warn:()=>S.energy<20},
   {l:'Stress',v:()=>S.stress,m:()=>S.stress,good:false,warn:()=>S.stress>=75,title:'Stress. High is bad: at 100 you burn out.'},
@@ -125,7 +134,7 @@ const STATS=[
 
 // ---- scenery ----
 // August on Hilltop: sunrise about 6:10 AM, sunset about 8:20 PM. The engine draws the sky (y 0–140) and the ground (140–170).
-const SCENE={get sun(){return [370,sunsetNow()]},skyDay:['#8fbbd9','#e6eef0'],skyDusk:['#5d5f97','#f4b183'],skyNight:['#0c1729','#1f2f4a'],ground:'#6f7a6c',groundNight:'#1f2526'};
+let SCENE={get sun(){return [370,sunsetNow()]},skyDay:['#8fbbd9','#e6eef0'],skyDusk:['#5d5f97','#f4b183'],skyNight:['#0c1729','#1f2f4a'],ground:'#6f7a6c',groundNight:'#1f2526'};
 const HC={
   bay:n=>n?'#13263a':'#4f8fae',bay2:n=>n?'#22405a':'#9ccbdd',mtn:n=>n?'#26344c':'#a9b9cc',snow:n=>n?.32:.96,
   hill:n=>n?'#1a2a28':'#5b7d68',hill2:n=>n?'#223530':'#77957f',leaf:n=>n?'#13261d':'#3d7a4e',leaf2:n=>n?'#18301f':'#58955f',
@@ -172,7 +181,7 @@ const person=(x,n,c,b=146,h=1)=>`<circle cx="${x}" cy="${b-22*h}" r="${4*h}" fil
 
 // ---- places ----
 // L keys are fixed by SPEC.md. hours: d=>[open,close] minutes (or null = closed that day). art: ({night,dusk,m})=>svg
-const L={
+let L={
   home:{name:'Your apartment',ic:'🏠',desc:'Third floor of an old brick walk-up on Hilltop. Boxes, a bed, a fridge, a window that looks at the mountain',
     art:({night:n})=>`${starsSky(n)}${rainier(n,400,.7,112)}
       <rect x="40" y="38" width="170" height="102" fill="${n?'#3e2621':'#94503c'}"/><rect x="36" y="32" width="178" height="8" fill="${n?'#271714':'#5c2f25'}"/>
@@ -244,12 +253,13 @@ const TRAVEL={'home|mlk':6,'home|work':12,'home|link':8,'home|peoples':10,'home|
   'mlk|work':8,'mlk|link':4,'mlk|peoples':5,'mlk|view':10,
   'work|link':4,'work|peoples':10,'work|view':14,
   'link|peoples':6,'link|view':12,'peoples|view':12};
-function travelMins(a,b){return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??10}
+function travelMins(a,b){if(isGrow())return GROW.travelMins(a,b);return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??10}
 
 // ---- actions ----
 // Each: {ic, l, s, fn, cat (an ACT_CATS key), cls:'primary'|'danger', dis:true}. fn changes S, calls pass(min) and say('…').
-const ACT_CATS={work:'💼 Work',money:'🧾 Bills & money',food:'🛒 Food',people:'🤝 Neighbors',rest:'🛋️ Rest & recharge',here:'📍 Around here'};
+let ACT_CATS={work:'💼 Work',money:'🧾 Bills & money',food:'🛒 Food',people:'🤝 Neighbors',rest:'🛋️ Rest & recharge',here:'📍 Around here'};
 function actionsHere(){
+  if(isGrow()) return GROW.actionsHere();
   const d=day(),m=tod(),a=[],J=job(),at=(lo,hi)=>m>=lo&&m<hi;
   if(S.loc==='home'){
     const tomorrow=d+1<GAME.days&&isShiftDay(d+1);
@@ -353,6 +363,7 @@ function worldWait(){
 
 // ---- small extras on the Here tab ----
 function statusTags(){
+  if(isGrow()) return GROW.statusTags();
   const t=[],d=day(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)) t.push(`<span class="tag">${J.ic} work ${fmt(J.start)}–${fmt(J.end)}</span>`);
   t.push(`<span class="tag ${S.food<1?'bad':''}">🍽️ ${S.food} meal${S.food===1?'':'s'} in the fridge</span>`);
@@ -363,6 +374,7 @@ function statusTags(){
   return t;
 }
 function alertBar(){
+  if(isGrow()) return GROW.alertBar();
   const d=day(),m=tod(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)&&m>J.start&&m<J.end-60) return {t:`⏰ You’re late for work at ${J.place} (your shift started at ${fmt(J.start)}).`};
   if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${cap(J.place)} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
@@ -374,7 +386,7 @@ function alertBar(){
 
 // ---- extra tabs ----
 // keyboard shortcuts use the label's first letter: W(eek), N(eighbors)
-const EXTRA_TABS=[
+let EXTRA_TABS=[
   {k:'week',ic:'📅',l:'Week',view:()=>weekView()},
   {k:'hood',ic:'🤝',l:'Neighbors',view:()=>hoodView()},
 ];

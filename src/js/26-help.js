@@ -243,6 +243,17 @@ function helpChapters(){
     <li><b>Other browsers:</b> it shows the menu steps for yours.</li>
     <li>Open it once from the new icon while online. After that it plays with no signal.</li>
     <li>There’s also a one-file offline copy you can open by double-clicking; it doesn’t need installing.</li></ul>`],
+  ['grow','Growing Up (new)',`
+    <p><b>🎒 Growing Up</b> is a second way to play, on the title screen under Help. You start life on Hilltop at <b>12</b>, and live it chapter by chapter: middle school, high school, and one day a place of your own. The two weeks in the rest of this guide stay just as they are.</p>
+    <h3>Chapter 1: the new kid</h3>
+    <p>Your family (Mom, Dad, your little sister Nia and you) just moved to Hilltop. You have one week, <b>Monday, Aug 24 to Sunday, Aug 30, 2026</b>, and then the first day of seventh grade at <b>Summit View Middle School</b> on Monday, Aug 31. No job and no rent: just your allowance, your family and the kids on the hill.</p>
+    ${hTable(['On the top bar','What it means'],[['Money','Your allowance. Chores pay $3, and Saturday is allowance day ($10).'],['Energy','Rest, dinner and bed by 10:30 PM keep it up.'],['Mood','Fun, friends and the view bring it up; nerves bring it down.'],['Family','Chores, family dinner (5:30–7:30 PM), playing with Nia. Missing curfew costs 12.'],['Friends','Every kid you know, and how well. Hang out once a day.'],['Ready','Supplies, the way to school, a haircut, the forms signed and turned in, and an outfit.']])}
+    <ul><li><b>Curfew:</b> be home by <b>8:30 PM</b>, or Family drops and you’re sent straight home.</li>
+    <li><b>Places:</b> home, MLK Jr Way (the corner market, the barbershop and salon, the murals), People’s Center and Park (the pool, the courts, the summer rec program), the Reading Room (a little community library), Summit View Middle School and the overlook.</li>
+    <li><b>Five kids</b> to meet: Marcus on the courts, Ana on MLK, Tavita across the street, Linh at the Reading Room and Zay at the overlook. Any of them can become your best friend.</li>
+    <li><b>Saturday:</b> a free back-to-school giveaway at People’s (10 AM–2 PM) and a barbecue across the street in the evening.</li>
+    <li><b>Monday, Aug 31:</b> walk to school by the 8:15 AM bell, and Chapter 1 ends with your grade. There’s no game over in Growing Up: every week gets to Monday.</li></ul>
+    ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}`],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>
@@ -266,7 +277,7 @@ window.helpJump=k=>{
   return false;
 };
 function helpDoc(){
-  const ch=helpChapters();
+  const ch=typeof withMode==='function'?withMode('adult',helpChapters):helpChapters();   // the guide always describes the adult game's numbers, whatever mode is playing
   const toc=`<nav class="tut-toc" id="${helpId('toc')}" tabindex="-1" aria-labelledby="tut-toc-h"><h2 id="tut-toc-h">Contents</h2><ol>${ch.map(([k,h],i)=>
     `<li><a href="#${helpId(k)}" onclick="return helpJump('${k}')"><span class="tut-tn">${i+1}</span>${h}</a></li>`).join('')}</ol></nav>`;
   const secs=ch.map(([k,h,t],i)=>`<section class="tut-ch" id="${helpId(k)}" aria-labelledby="${helpId(k)}-h">
