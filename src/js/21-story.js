@@ -6,20 +6,20 @@
 
 // ---- dates and small helpers ----
 function stLong(d){return `${dayName(d)}, Aug ${3+d}`}
-function stMet(id){if(S.met[id])return false;S.met[id]=day()+1;S.stats.neighbors=metCount();adj('community',3);return true}
+function stMet(id){if(S.met[id])return false;S.met[id]=day()+1;S.stats.neighbors=metCount();adj('community',MEET_COMMUNITY);return true}
 const stNb=id=>NEIGHBORS.find(x=>x.id===id);
 
 // ---- title screen ----
 const TITLE={
   start:'Move in on Monday 📦',
-  intro:'You just moved into a third-floor walk-up on Hilltop, in Tacoma, Washington: the old neighborhood up on the hill, with Martin Luther King Jr. Way running down the middle, the Link train ringing past, murals on the walls and the mountain over everything. Two weeks, Monday Aug 3 to Sunday Aug 16, 2026, to settle in.',
+  intro:'You just moved into a third-floor walk-up on Hilltop, in Tacoma, Washington: the old neighborhood up on the hill, with Martin Luther King Jr. Way running down the middle, the Link train ringing past, murals on the walls and the mountain over everything. Two weeks, Monday Aug 3 to Sunday Aug 16, 2026, to settle in. The name is a wink at an old nickname for the city, said with a grin by people who grew up here; the game itself is a love letter to Hilltop: the people who built it, the people who stayed, and the people just arriving.',
   bullets:['Pick a job on day one: a CNA at Tacoma General, a barista at a Hilltop café, or a line cook at a soul-food spot on MLK.','Show up for your shifts. Be late too often, or don’t show, and you’re let go.','Keep food in the fridge, your energy up and your stress down.','Rent is $1,150, due by Sunday night, Aug 16.','Meet your neighbors. The street fair is Saturday, Aug 8.'],
   note:'A game about a real neighborhood. Businesses and neighbors in it are made up.',
   art:()=>`<svg viewBox="0 0 480 250" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%" aria-hidden="true"><defs><linearGradient id="tts" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1a97a"/><stop offset=".5" stop-color="#f8d9b0"/><stop offset="1" stop-color="#d7e6e6"/></linearGradient></defs>
     <rect width="480" height="250" fill="url(#tts)"/><circle cx="90" cy="64" r="22" fill="#fff1c4" opacity=".9"/>
-    <polygon points="200,150 300,58 318,52 336,60 450,150" fill="#a4b2c4"/><polygon points="268,88 300,58 318,52 336,60 364,88 348,82 334,94 318,82 302,96 288,84" fill="#fbfcfd"/>
+    ${rainier(false,318,1,148)}
     <rect y="140" width="480" height="30" fill="#5d93ad"/><path d="M40 152 q24 -4 48 0 M220 160 q24 -4 48 0 M380 150 q24 -4 48 0" stroke="#a6d0df" stroke-width="2" fill="none" opacity=".7"/>
-    ${[330,356,382].map(x=>`<g stroke="#c8452f" stroke-width="2.5" fill="none"><path d="M${x} 142 V116 M${x+14} 142 V116 M${x-14} 116 H${x+28}"/></g>`).join('')}
+    <rect x="18" y="146" width="150" height="4" fill="#8a8d86"/>${boxesOnDock(82,false,146)}${crane(46,false,146,.78)}${crane(110,false,146,.78)}${crane(150,false,146,.7)}
     <path d="M0 250 V176 Q60 150 150 160 Q240 168 300 156 Q380 142 480 160 V250 Z" fill="#4c6b58"/>
     ${[[18,'#b66a4a'],[96,'#d9b45a'],[176,'#6f9aa6'],[300,'#c97a5a'],[392,'#8fae7a']].map(([x,c],i)=>`<g transform="translate(${x},${170-i%2*6})"><rect width="58" height="38" fill="${c}"/><polygon points="-5,2 29,-20 63,2" fill="#5a3328"/><rect x="8" y="10" width="12" height="11" fill="#fbe9b0"/><rect x="38" y="10" width="12" height="11" fill="#fbe9b0"/><rect x="24" y="22" width="10" height="16" fill="#3a2a20"/></g>`).join('')}
     <rect x="252" y="150" width="34" height="60" fill="#8c4a38"/>${[0,1,2].map(r=>`<rect x="258" y="${158+r*14}" width="8" height="8" fill="#fbe9b0"/><rect x="272" y="${158+r*14}" width="8" height="8" fill="#fbe9b0"/>`).join('')}
@@ -65,14 +65,17 @@ function onMorning(d){
 }
 function onNight(where,notes,d){
   const J=job();
-  if(where==='collapsed'){S.loc='home';adj('stress',6);notes.push('😵 You were up past midnight. You wake up on the couch with your shoes on and the lamp still burning.')}
+  const bedAt=tod();
+  if(where==='collapsed'){S.loc='home';adj('stress',BAL.midnightStress);adj('standing',-BAL.midnightJob);notes.push(`😵 You were up past midnight. You wake up on the couch with your shoes on and the lamp still burning, and you’ll be dragging all day. Job −${BAL.midnightJob}.`)}
   let hungry=false;
   if(J.staffMeal&&(d in S.worked)) notes.push('🍗 Staff meal at the kitchen covered dinner.');
   else if(S.food>0){S.food--;S.stats.meals++;notes.push(`🍽️ Dinner from the fridge (${S.food} meal${S.food===1?'':'s'} left).`)}
   else{hungry=true;S.stats.hungry++;adj('stress',10);notes.push('🥣 Nothing in the fridge. You go to bed hungry.')}
   adj('energy',(where==='home'?58:28)/(hungry?2:1));
-  if(where==='home') adj('stress',-10);   // a night in your own bed
-  if(isShiftDay(d)&&!(d in S.worked)){const hit=S.stats.missed?12:6;adj('standing',-hit);adj('stress',6);S.stats.missed++;notes.push(`📵 You missed your shift at ${J.place}. ${S.job==='hospital'?'The floor ran short a CNA all day.':S.job==='kitchen'?'They worked the line one cook short.':'Your coworker opened alone.'} ${S.stats.missed===1?'Your manager texts: “Everything okay? Don’t make it a habit.” Job −6.':`Job −${hit}.`}`)}
+  if(where==='home'){const good=!hungry&&bedAt<BAL.goodSleepBy;adj('stress',-(good?BAL.goodSleep:BAL.sleep));   // a night in your own bed; a real night's sleep if you're down before 11
+    if(good) notes.push(`😴 In bed before ${fmt(BAL.goodSleepBy)}: a real night’s sleep. Stress −${BAL.goodSleep}.`)}
+  if(!S.rent.paid&&DF().worry) adj('stress',DF().worry);   // rent on your mind
+  if(isShiftDay(d)&&!(d in S.worked)){const hit=S.stats.missed?BAL.missed[1]:BAL.missed[0];adj('standing',-hit);adj('stress',BAL.missedStress);S.stats.missed++;notes.push(`📵 You missed your shift at ${J.place}. ${S.job==='hospital'?'The floor ran short a CNA all day.':S.job==='kitchen'?'They worked the line one cook short.':'Your coworker opened alone.'} ${S.stats.missed===1?`Your manager texts: “Everything okay? Don’t make it a habit.” Job −${hit}.`:`Job −${hit}.`}`)}
   if(d===S.rent.due&&!S.rent.paid){
     if(S.money>=S.rent.amt){spend(S.rent.amt);S.rent.paid=true;S.rent.paidDay=d;adj('stress',4);notes.push(`🧾 You pay rent from bed at 11:58 PM: ${$(S.rent.amt)}. Cutting it close.`)}
     else{S.evicted=true;notes.push(`🧾 Rent was due tonight and you have ${$(Math.round(S.money))} of ${$(S.rent.amt)}.`)}
@@ -96,7 +99,7 @@ function checkLoss(){if(S.standing<=0)return 'fired';if(S.stress>=100)return 'bu
 // ---- random events (03-events.js). Hooks: wake, arrive {at,from}, travel {from,to}, night {where,notes}, ride (the T Line), shift (after work) ----
 const evening=()=>tod()>=1020&&tod()<1290, daytime=()=>tod()>=540&&tod()<1140;
 defEvent({id:'mountain_out',hook:'wake',tile:['🏔️','The mountain is out','good'],chance:0.3,max:4,cooldown:2,cond:()=>day()>0,
-  run:()=>{S.ev.flags.mtn=day();adj('stress',-5);say('🏔️ The mountain is out. Rainier fills the whole south sky, pink with the first light, so big it looks fake. Everybody on the block stops on their porch to look. It’s the thing Tacoma does.')}});
+  run:()=>{S.ev.flags.mtn=day();adj('stress',-5);say('🏔️ The mountain is out. Rainier fills the whole southeast sky, pink with the first light, so big it looks fake. Everybody on the block stops on their porch to look. It’s the thing Tacoma does.')}});
 defEvent({id:'heat_wave',hook:'wake',tile:['🥵','A hot one','bad'],chance:0.12,bad:true,max:2,cooldown:4,cond:()=>day()>0,
   run:()=>{adj('energy',-6);adj('stress',4);say('🥵 Ninety-two by afternoon, they say. Tacoma treats that like weather from another planet. The pool at People’s will be packed, and every box fan on the hill is sold out.')}});
 defEvent({id:'fair_morning',hook:'wake',tile:['🎪','Street fair day','good'],chance:1,max:1,cond:()=>day()===FAIR_DAY,
@@ -106,9 +109,9 @@ defEvent({id:'internet_bill',hook:'wake',tile:['🧾','Internet hookup','bad'],c
 defEvent({id:'power_bill',hook:'wake',tile:['🧾','The power bill','bad'],chance:1,max:1,cond:()=>day()===8,
   run:()=>{const c=rp(72);spend(c);say(`🧾 Your first power bill, prorated: ${$(c)}. You had the box fan on all night. Worth every cent.`)}});
 defEvent({id:'priya_hall',hook:'wake',tile:['🩺','The nurse down the hall','good'],chance:0.35,max:1,cond:()=>day()>0&&!S.met.priya,
-  run:()=>{stMet('priya');say(`🩺 In the hallway at dawn you meet <b>Priya</b>, coming home from a night shift as you’re heading out. ${stNb('priya').d} She tells you which washing machine eats quarters.`)}});
+  run:()=>{stMet('priya');say(`🩺 In the hallway at dawn you meet <b>Priya</b>, coming home from a night shift as you’re heading out. ${stNb('priya').d}`)}});
 defEvent({id:'church_choir',hook:'arrive',tile:['🎶','The choir on Sunday','good'],chance:0.6,max:2,cond:c=>dayName(day())==='Sunday'&&tod()>=600&&tod()<780&&['mlk','link','home','peoples'].includes(c.at),
-  run:()=>{adj('stress',-8);adj('community',3);const x=stMet('harris');say(`🎶 The doors of the church on the corner are open and the choir is going full strength: a hundred voices and an organ shaking the windows. You stand on the sidewalk and listen through two songs. ${x?'A man in a pressed suit comes out at the break and shakes your hand: <b>Deacon Harris</b>, choir bass. “You can come in, you know.”':'Deacon Harris waves at you from the steps.'}`)}});
+  run:()=>{adj('stress',-8);adj('community',3);const x=stMet('harris');say(`🎶 The doors of the church on the corner are open and the choir is going full strength: a hundred voices and an organ shaking the windows. You stand on the sidewalk and listen through two songs. ${x?'An old man in a pressed suit comes out at the break and shakes your hand with a welder’s grip: <b>Mr. Harris</b>, choir bass. “You can come in, you know. Or don’t. The music carries.”':'Mr. Harris waves at you from the steps.'}`)}});
 defEvent({id:'link_bell',hook:['arrive','ride'],tile:['🔔','The Link bell','good'],chance:0.25,cooldown:2,cond:c=>c.hook==='ride'||c.at==='link',
   run:()=>{adj('stress',-3);const x=stMet('jaylen');say(x?`🔔 The operator dings the bell twice for a kid on a BMX racing the train down the sidewalk. The kid wins, barely, and pops a wheelie for the passengers: <b>Jaylen</b>, eleven, who then asks you if you’re new, where you’re from, and if you have a dog.`:'🔔 The operator dings the bell at Jaylen racing the train on his BMX. He wins again. The whole car cheers.')}});
 defEvent({id:'link_musician',hook:'ride',tile:['🎷','Music on the train','good'],chance:0.35,cooldown:2,
@@ -119,26 +122,42 @@ defEvent({id:'summer_shower',hook:'travel',tile:['🌦️','A rare August shower
   run:()=>{say('🌦️ A sudden warm shower, the first in weeks. The whole hill smells like hot pavement and cut grass. Kids run out into it. So, a little, do you.')}});
 defEvent({id:'lorraine_porch',hook:'arrive',tile:['🍅','Tomatoes from across the street','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&daytime(),
   run:()=>{stMet('lorraine');S.food++;say(`🍅 A woman on the porch across the street calls you over by pointing: <b>Ms. Lorraine</b>. ${stNb('lorraine').d} She sends you home with a bag of tomatoes from her yard “so you eat something real.” Food +1.`)}});
-defEvent({id:'neighbor_bbq',hook:'arrive',tile:['🍖','Big Ron’s smoker','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&evening()&&day()%7>=4,
-  run:()=>{const x=stMet('ron');adj('energy',8);adj('stress',-8);adj('community',4);say(`🍖 The smoke has been drifting up the block all afternoon. ${x?'Two doors down, a very large, very quiet man waves you into his yard with a pair of tongs: <b>Big Ron</b>.':'Big Ron waves you in with the tongs.'} Ribs, links, potato salad, a cooler of pop and six neighbors arguing about the Seahawks. You leave with a foil-wrapped plate.`);chain('bbq_leftovers')}});
+defEvent({id:'neighbor_bbq',hook:'arrive',tile:['🍖','Ron’s smoker','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&evening()&&day()%7>=4,
+  run:()=>{const x=stMet('ron');adj('energy',8);adj('stress',-8);adj('community',4);say(`🍖 The smoke has been drifting up the block all afternoon. ${x?'Two doors down, a man in a Port of Tacoma cap waves you into his yard with a pair of tongs: <b>Ron</b>, who engineers wharves for a living and brisket for love.':'Ron waves you in with the tongs.'} Ribs, links, Tita Rose’s lumpia, potato salad, a cooler of pop and six neighbors arguing about the Seahawks. You leave with a foil-wrapped plate.`);chain('bbq_leftovers')}});
 defEvent({id:'bbq_leftovers',hook:'wake',tile:['🍖','Leftovers','good'],
-  run:()=>{S.food++;say('🍖 Big Ron’s leftover plate is in the fridge. Breakfast of champions. Food +1.')}});
+  run:()=>{S.food++;say('🍖 Ron’s leftover plate is in the fridge. Breakfast of champions. Food +1.')}});
 defEvent({id:'mural_painting',hook:'arrive',tile:['🎨','A mural going up','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&daytime(),
   run:()=>{const x=stMet('marisol');pass(20);adj('stress',-5);adj('community',3);say(`🎨 Scaffolding on the side wall by the bus stop, paint cans, a boombox. ${x?'The painter is <b>Marisol</b>. ':''}She’s painting the old Hilltop, the new one and the people who stayed through all of it. She hands you a roller and points at a patch of sky. “Blue. Don’t overthink it.”`);chain('mural_done')}});
 defEvent({id:'mural_done',hook:'arrive',tile:['🖼️','The mural is finished','good'],cond:c=>c.at==='mlk'&&day()>=2,
   run:()=>{adj('stress',-6);adj('community',2);say('🖼️ The mural is done. Three stories of faces, the Link, the mountain and, up in one corner, a patch of sky that is a little streakier than the rest. Yours. Marisol signed the corner and wrote “and the neighbors” under her name.')}});
 defEvent({id:'free_fridge',hook:'arrive',tile:['🧺','The free community fridge','good'],chance:0.25,max:2,cooldown:4,cond:c=>c.at==='mlk',
   run:()=>{const x=stMet('bev');
-    if(S.food<2){S.food+=2;say(`🧺 Outside the laundromat there’s a little painted fridge that says <b>TAKE WHAT YOU NEED, LEAVE WHAT YOU CAN</b>. ${x?'<b>Auntie Bev</b>, restocking it, ':'Auntie Bev '}looks at you once and hands you two containers of red beans and rice. “You’re new. Eat.” Food +2.`)}
-    else{S.food--;adj('community',4);say(`🧺 The little painted community fridge outside the laundromat is looking empty. You leave a meal of your own in it. ${x?'<b>Auntie Bev</b>, who keeps it stocked, ':'Auntie Bev '}catches you doing it and tells the whole sidewalk. Community +4.`)}}});
+    if(S.food<2){S.food+=2;say(`🧺 Outside the laundromat there’s a little painted fridge that says <b>TAKE WHAT YOU NEED, LEAVE WHAT YOU CAN</b>. ${x?'<b>Bev</b>, a retired librarian restocking it, ':'Bev '}looks at you once and hands you two containers of red beans and rice. “You’re new. Eat.” Food +2.`)}
+    else{S.food--;adj('community',4);say(`🧺 The little painted community fridge outside the laundromat is looking empty. You leave a meal of your own in it. ${x?'<b>Bev</b>, who keeps it stocked, ':'Bev '}catches you doing it and tells the whole sidewalk. Community +4.`)}}});
 defEvent({id:'corner_name',hook:'arrive',tile:['🛒','“Morning!”','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&S.community>=30,
-  run:()=>{adj('stress',-6);say('🛒 Mr. Kim calls your name from the market door before you even get there. So does the guy at the bus stop. So does a woman you’re pretty sure you’ve never met. You live here now.')}});
+  run:()=>{adj('stress',-6);say('🛒 Grace Kim calls your name from the market door before you even get there. So does the guy at the bus stop. So does a woman you’re pretty sure you’ve never met. You live here now.')}});
 defEvent({id:'jaylen_questions',hook:'arrive',tile:['🚲','Questions from Jaylen','good'],chance:0.25,max:2,cooldown:3,cond:c=>['home','peoples'].includes(c.at),
   run:()=>{const x=stMet('jaylen');adj('stress',-3);say(`🚲 ${x?'A kid on a BMX skids to a stop beside you: <b>Jaylen</b>, eleven. ':'Jaylen skids up on his BMX. '}“Is it true Mount Rainier is a volcano? Would it get us up here? What’s your job? Can I have a dollar? Never mind, I don’t need a dollar.” He rides off satisfied.`)}});
 defEvent({id:'ice_cream',hook:'arrive',tile:['🍦','The ice cream truck','good'],chance:0.25,max:2,cooldown:3,cond:c=>['peoples','home'].includes(c.at)&&tod()>=780&&tod()<1170,
   run:()=>{spend(3);adj('stress',-4);adj('energy',3);say('🍦 The ice cream truck’s song comes around the corner and the whole block’s kids appear out of nowhere. You get in line with them. A rocket pop, $3. You’re an adult. You can do this.')}});
 defEvent({id:'block_party',hook:'arrive',tile:['🎉','A block party','good'],chance:0.5,max:1,cond:c=>c.at==='home'&&evening()&&day()>=9&&day()%7>=5,
-  run:()=>{pass(60);adj('community',8);adj('stress',-10);adj('energy',-4);say('🎉 Somebody blocked off the end of the street with sawhorses and folding tables. Kids on bikes, a grill going, a speaker playing everything from Earth, Wind & Fire to Sir Mix-a-Lot, and Ms. Lorraine in a lawn chair running the whole thing. You stay an hour and dance once, badly. Community +8.')}});
+  run:()=>{pass(60);adj('community',8);adj('stress',-10);adj('energy',-4);say('🎉 Somebody blocked off the end of the street with sawhorses and folding tables. Kids on bikes, a grill going, a speaker playing everything from Earth, Wind & Fire to Sir Mix-a-Lot to the Santos kids’ K-pop, Denise running the raffle, and Ms. Lorraine in a lawn chair running everything else. You stay an hour and dance once, badly. Community +8.')}});
+defEvent({id:'bookstore',hook:'arrive',tile:['📚','Hilltop Pages','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&tod()>=600&&tod()<1140,
+  run:()=>{const x=stMet('imani');pass(20);adj('stress',-5);say(`📚 A bookstore you hadn’t noticed, two doors up from the barbershop: Hilltop Pages. ${x?'The owner is <b>Imani</b>. ':'Imani waves from the register. '}She asks what you read, frowns at your answer and hands you a paperback of Tacoma poets. “Pay me when you’ve read it. Or don’t, and come to poetry night.”`)}});
+defEvent({id:'pho',hook:'arrive',tile:['🍜','Phở on MLK','good'],chance:0.25,max:1,cond:c=>['mlk','link'].includes(c.at)&&tod()>=660&&tod()<1260,
+  run:()=>{const x=stMet('linh');const c=rp(13);spend(c);adj('energy',10);adj('stress',-5);say(`🍜 The phở shop on MLK has a line out the door and a smell that pulls you into it. ${x?'<b>Linh</b>, who runs it, ':'Linh '}seats you at the counter, brings a bowl of brisket phở you didn’t order and the basil you would have forgotten. ${$(c)}. You’ll be back.`)}});
+defEvent({id:'santos_next_door',hook:'arrive',tile:['🎤','Karaoke next door','good'],chance:0.3,max:1,cond:c=>c.at==='home'&&tod()>=1020&&tod()<1290,
+  run:()=>{const x=stMet('santos');adj('stress',-6);adj('community',1);say(`🎤 Someone next door is singing “Dancing Queen” with total commitment. A knock: ${x?'<b>The Santos family</b> — Tita Rose, Tito Ben and three kids — ':'Tita Rose '}want to know if the new neighbor sings. You do not. You sing anyway. Tita Rose sends you home with a plate of pancit “for tomorrow.” Food +1.`);S.food++}});
+defEvent({id:'denise_elevator',hook:'arrive',tile:['♿','The elevator’s out','info'],chance:0.3,max:1,cond:c=>['link','mlk'].includes(c.at)&&daytime(),
+  run:()=>{const x=stMet('denise');pass(15);adj('community',1);say(`♿ The elevator at the station is out again, and a woman in a wheelchair is on the phone with the transit agency, reading them the work-order number from memory: ${x?'<b>Denise</b>, who chairs the block club’s transit committee. ':'Denise. '}You hold the door of the corner store while she finishes, and she signs you up for the committee’s email list before you can say no.`)}});
+defEvent({id:'malik_desk',hook:'arrive',tile:['🎓','The front desk at People’s','good'],chance:0.35,max:1,cond:c=>c.at==='peoples',
+  run:()=>{const x=stMet('malik');adj('stress',-3);say(`🎓 ${x?'The kid at the front desk of People’s is <b>Malik</b>, home from UW Tacoma for the summer. ':'Malik waves you through the front desk. '}He tells you the pool is least crowded at 6 AM, the pickup game starts “around five, which means 5:20,” and that he is building an app for the block club. “They don’t want one. They need one.”`)}});
+defEvent({id:'eli_newcomer',hook:'arrive',tile:['💻','Another new neighbor','info'],chance:0.3,max:1,cond:c=>['home','view'].includes(c.at)&&day()>=2,
+  run:()=>{const x=stMet('eli');say(`💻 ${x?'A guy with a laptop bag and a very new bike introduces himself: <b>Eli</b>, moved from Seattle last month for the rent. ':'Eli catches you on the sidewalk. '}He asks where the “real Hilltop places” are, then catches himself. “Sorry. That’s a weird question. I just don’t want to be the guy who moves in and doesn’t know anybody.” You point him to Imani’s bookstore and the block club meeting. He writes both down.`)}});
+defEvent({id:'new_building',hook:'arrive',tile:['🏗️','A new building going up','info'],chance:0.3,max:1,cond:c=>['mlk','home'].includes(c.at)&&day()>=3&&daytime(),
+  run:()=>{adj('stress',2);say('🏗️ Where the old tire shop was, a crane and a banner: <b>LUXURY LIVING ON HILLTOP · STUDIOS FROM $1,995</b>. Ms. Lorraine reads it out loud, twice, and doesn’t say anything else. Mr. Harris says his first apartment on this block was $90 a month and it had a hole in the floor. “Both things are true,” he says. “It got better, and it got harder to stay.”')}});
+defEvent({id:'block_club',hook:'arrive',tile:['🗳️','The block club meets','good'],chance:0.6,max:1,cond:c=>c.at==='peoples'&&day()>=6&&(dayName(day())==='Thursday'||tod()>=1080),
+  run:()=>{pass(45);adj('community',3);adj('stress',-2);const x=stMet('lorraine');say(`🗳️ The block club meets in a back room at People’s: folding chairs, a sheet cake, twenty neighbors. ${x?'<b>Ms. Lorraine</b>, who chairs it, ':'Ms. Lorraine '}runs the agenda like a principal: the curb cuts (Denise reports progress), a tenants’-rights clinic next month for anybody whose rent jumped, the street fair cleanup, and who is checking on Mrs. Abernathy after her surgery. Eli takes notes. You volunteer for something before you know what it is. Community +3.`)}});
 defEvent({id:'lost_dog',hook:'arrive',tile:['🐕','A lost dog','info'],chance:0.18,max:1,cond:c=>['peoples','view','mlk'].includes(c.at)&&daytime(),
   run:()=>{modal('🐕 A lost dog','<p>A girl of about eight is taping a hand-drawn poster to a pole: <b>LOST: BISCUIT. VERY FRIENDLY. LIKES CHEESE.</b> Her dad is calling the name down the block.</p>',[
     {l:'Help look for Biscuit',s:'45 minutes. Energy −5.',np:true,fn:()=>{pass(45);adj('energy',-5);adj('community',4);say('🐕 You walk the alleys calling “Biscuit!” with half the block. No luck yet. The dad writes your number on the poster.');chain('dog_found')}},
@@ -157,20 +176,21 @@ defEvent({id:'hospital_thanks',hook:'shift',tile:['💐','A thank-you card','goo
 defEvent({id:'cafe_regular',hook:'shift',tile:['💵','A big tip from a regular','good'],chance:0.3,max:2,cooldown:3,cond:()=>S.job==='cafe',
   run:()=>{money(20);S.stats.earned+=20;S.stats.tips+=20;adj('community',2);say('💵 A retired bus driver who comes in every morning leaves a folded twenty in the jar. “For the new kid. You remembered my name.”')}});
 defEvent({id:'kitchen_rush',hook:'shift',tile:['🔥','The Friday rush','info'],chance:0.3,max:2,cooldown:3,cond:()=>S.job==='kitchen',
-  run:()=>{adj('stress',4);adj('standing',4);say('🔥 A church group of thirty walks in at 7 without calling ahead. The kitchen goes quiet, then very fast. You keep up. Mama comes back to the line afterwards and says “Okay. Okay,” and that’s the best review you’ve ever had.')}});
+  run:()=>{adj('stress',4);adj('standing',4);say('🔥 A church group of thirty walks in at 7 without calling ahead. The kitchen goes quiet, then very fast. You keep up. Miss Odessa comes back to the line afterwards and says “Okay. Okay,” and that’s the best review you’ve ever had.')}});
 defEvent({id:'coworker_cover',hook:'shift',tile:['🤝','A coworker’s favor','good'],chance:0.15,max:1,cond:()=>S.standing>=60,
   run:()=>{adj('stress',-5);adj('standing',2);say('🤝 A coworker takes your last hour of side work so you can leave on time. “You’d do it for me.” You would.')}});
 
 // ---- tips: one at a time, first match wins, each once per game ----
 const TIPS=[
-  {id:'welcome',when:()=>day()===0&&S.loc==='home',get t(){return `👋 Welcome to Hilltop, {{name}}! ${isShiftDay(0)?`Work starts at <b>${fmt(job().start)}</b>. Open <b>🧭 Go somewhere</b> below to head to ${job().place}.`:'No shift today. Walk down to <b>MLK</b> and meet the street.'}`}},
+  {id:'welcome',when:()=>day()===0&&S.loc==='home',get t(){return `👋 Welcome to Hilltop, {{name}}! ${isShiftDay(0)?`Work starts at <b>${fmt(job().start)}</b>. Tap <b>Go to work</b>, or pick a place under <b>🧭 Go somewhere</b>.`:'No shift today. Walk down to <b>MLK</b> and meet the street.'}`}},
   {id:'work',when:()=>S.loc==='work'&&isShiftDay(day())&&!(day() in S.worked),t:'💼 Tap <b>Work your shift</b>. The clock jumps to the end of the shift and you get paid. Late costs pay and job standing.'},
+  {id:'tiles',when:()=>S.ev.history.length>0,t:'🔔 Things that happen around you show up as small <b>tiles at the top</b>, just under the bar. Tap ✓ to put one away; they also go in the 📜 <b>Log</b>.'},
   {id:'food',when:()=>S.food<=1,t:'🧺 The fridge is nearly empty. The corner market on <b>MLK</b> sells 4 meals of groceries, 7 AM to 10 PM.'},
   {id:'rent',when:()=>day()>=2&&!S.rent.paid,t:'🧾 Rent is due by Sunday night, Aug 16. Pay it from <b>home</b> as soon as you have it: early takes a weight off.'},
   {id:'stress',when:()=>S.stress>=60,t:'😣 Stress is high. Swim at <b>People’s</b>, sit at the <b>overlook</b>, call home or ride the Link. At 100 you burn out.'},
   {id:'energy',when:()=>S.energy<30,t:'🥱 Low energy. Rest at home, eat a real meal, and get to bed before midnight.'},
   {id:'hood',when:()=>day()>=1,t:'🤝 The <b>Neighbors</b> tab lists who you’ve met. Community counts toward your score, and Hilltop rewards people who show up.'},
-  {id:'sunset',when:()=>tod()>=1080&&day()>=1,t:`🌅 The sunset from the <b>overlook</b> starts around ${fmt(SUNSET-45)}. It’s the best free thing on the hill.`},
+  {id:'sunset',when:()=>tod()>=1080&&day()>=1,get t(){const ss=sunsetNow();return `🌅 Sunset from the <b>overlook</b> is at ${fmt(ss)} tonight, best from ${fmt(ss-45)} (a minute or two earlier every day). It’s the best free thing on the hill.`}},
   {id:'bed',when:()=>S.loc==='home'&&tod()>=1260,t:'🛏️ Go to bed before midnight. Staying up all night costs you.'},
   {id:'todo',when:()=>day()>=2,t:'📋 The <b>To-do</b> tab has your goals. 📅 <b>Week</b> shows your shifts, the fair and rent.'},
 ];
@@ -188,9 +208,9 @@ function todoItems(){
   it.push({l:'Optional: the Hilltop Street Fair',s:'Sat Aug 8 on MLK, 10 AM–6 PM.',ok:S.fair,fail:!S.fair&&(d>FAIR_DAY||(d===FAIR_DAY&&m>=FAIR_HOURS[1]))});
   return it;
 }
-const SCORE_W={community:15,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};
-const GRADE_CUTS=[3300,2500,1800,1100];   // A, B, C, D (the same on every difficulty)
-const RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
+const SCORE_W={cash:0.5,community:20,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};   // cash counts half, so the better-paid job doesn't decide the grade
+const GRADE_CUTS=[3850,3000,2200,1500];   // A, B, C, D (the same on every difficulty; tuned with tools/sim.js)
+const RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: half your cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
 
 // ---- achievements: test(ctx) runs after every render ({}), each night ({night,where}) and at the end ({end,lost}) ----
 const ST_SEEN=id=>(S.ev.count[id]||0)>0;
@@ -217,14 +237,14 @@ const ACH=[
 const FINISH_TEXT={h1:'{{name}}, you made it through your first two weeks',sub:()=>`Mon Aug 3 to Sun Aug 16, 2026. ${S.rent.paid?'Rent is paid, ':''}${metCount()} neighbor${metCount()===1?'':'s'} know your name, and the Link is still dinging down on MLK.`};
 function scoreParts(){
   const w=SCORE_W,s=S.stats,early=S.rent.paid&&S.rent.paidDay<=6;
-  return [['Cash',S.money,'what’s in the bank'],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
+  return [['Cash',S.money*w.cash,`${$(Math.round(S.money))} in the bank × ½`],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
     ['Stress',-S.stress*w.stress,`${S.stress} × −${w.stress}`],['Shifts',s.shifts*w.shift,`${s.shifts} × ${w.shift}`],
     ['Street fair',S.fair?w.fair:0,S.fair?'went':'missed'],['Rent paid early',early?w.early:0,early?'in the first week':'—'],
     ['Unpacked',S.unpacked>=BOXES?w.unpacked:0,`${S.unpacked} of ${BOXES} boxes`],['Every neighbor',metCount()>=NEIGHBORS.length?w.neighbors:0,`${metCount()} of ${NEIGHBORS.length}`]].map(([k,v,n])=>[k,Math.round(v)||0,n]);
 }
 function scoreOf(){return scoreParts().reduce((a,r)=>a+r[1],0)}
 function gradeOf(sc){
-  if(sc>=GRADE_CUTS[0]) return ['A','Hilltop Local','Mr. Kim saves you the good avocados and Ms. Lorraine tells people you’re family.'];
+  if(sc>=GRADE_CUTS[0]) return ['A','Hilltop Local','Grace saves you the good avocados, Linh starts your order when you walk in, and Ms. Lorraine tells people you’re family.'];
   if(sc>=GRADE_CUTS[1]) return ['B','Settling In','You know which Link car has the working AC and whose porch has the best gossip.'];
   if(sc>=GRADE_CUTS[2]) return ['C','Getting By','Rent’s paid, mostly on time, mostly on caffeine.'];
   if(sc>=GRADE_CUTS[3]) return ['D','Still Unpacking','You live here. You’re not sure you’ve arrived yet.'];

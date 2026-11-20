@@ -102,6 +102,7 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .place{position:absolute;left:12px;bottom:10px;background:rgba(251,248,241,.94);border-radius:10px;padding:6px 10px;max-width:80%}
 .place h2{font-size:18px}
 .place div{font-size:12px;color:var(--mute)}
+@media (max-width:480px){.place div{display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}}   /* one line on a phone, so the scene's signs show */
 .alertbar{background:var(--bad);color:#fff;font-size:13px;padding:8px 14px;font-weight:500}
 .alertbar.fog{background:#6c7a80}
 /* content */
@@ -153,7 +154,7 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .log p{margin:0;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.4}
 .log p em{font-style:normal;color:var(--mute);font-variant-numeric:tabular-nums;margin-right:6px;font-size:12px}
 /* event tiles (toasts) */
-#tiles{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 8px);width:calc(100% - 20px);max-width:460px;z-index:60;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+#tiles{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 150px);width:calc(100% - 20px);max-width:460px;z-index:15;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .tile{pointer-events:auto;display:flex;align-items:center;gap:11px;background:#fffdf8;border-radius:14px;padding:10px 10px 10px 12px;box-shadow:0 8px 24px rgba(8,25,30,.28),0 1px 0 rgba(0,0,0,.05);border-left:6px solid #6b7478;animation:tileIn .32s cubic-bezier(.2,.9,.3,1.2)}
 .tile.good{border-left-color:var(--good)}.tile.bad{border-left-color:var(--bad)}.tile.info{border-left-color:var(--brand)}.tile.warn{border-left-color:var(--warn)}
 .tile .ti{font-size:26px;width:32px;text-align:center;flex:none}
@@ -163,6 +164,9 @@ html.fs-xl .stats{grid-template-columns:repeat(4,minmax(0,1fr))}   /* large text
 .tile .tt span{display:block;font-size:12px;color:var(--mute);margin-top:1px}
 .tile .ok{flex:none;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:17px;color:var(--accent);font-weight:700}
 .tile.out{animation:tileOut .25s ease-in forwards}
+/* tiles sit under pop-ups (z 20) and transitions (z 30), and hide while one is open: they come back when it closes (02-kit.js) */
+body:has(> #mbg) #tiles,body:has(> .cross) #tiles{visibility:hidden}
+body:has(> #mbg) #tiles .tile,body:has(> .cross) #tiles .tile{pointer-events:none}
 @keyframes tileIn{from{transform:translateY(-16px) scale(.96);opacity:0}}
 @keyframes tileOut{to{transform:translateY(-12px);opacity:0;height:0;margin:0;padding-top:0;padding-bottom:0}}
 .gear{background:rgba(255,255,255,.12);border:0;border-radius:10px;width:38px;height:38px;font-size:19px;color:#fff;flex:none}
@@ -223,6 +227,7 @@ html.hc .hud :focus-visible,html.hc .title :focus-visible,html.hc nav.tabs :focu
 .prio .pt[role="button"]{cursor:pointer;border-radius:6px}
 /* ⌨️ keyboard shortcut hints (desktop only) */
 .kn{display:none}
+@media (pointer:coarse),(any-pointer:coarse) and (hover:none){.kn{display:none!important}}
 @media (hover:hover) and (pointer:fine){
   button.act{position:relative}
   .kn{display:block;position:absolute;top:6px;right:8px;font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;font-style:normal;color:var(--mute);border:1px solid currentColor;border-radius:4px;padding:2px 4px;opacity:.55;pointer-events:none}
@@ -426,10 +431,11 @@ const KEY=k=>GAME.id+'.'+k;  // every localStorage key goes through this
 const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 // Difficulties: anything here is readable in your content as DF().something.
 const DIFFS={
-  // money: starting cash. bad: random-event multiplier (the bad ones only). cost: groceries, food, bills. No difficulty changes the score.
-  easy:  {n:'Soft Landing',ic:'🌱',d:'More savings in the bank, cheaper groceries and fewer things going sideways. For learning the neighborhood.',money:1300,bad:0.6,cost:0.85},
-  normal:{n:'Hilltop',     ic:'🏘️',d:'The two weeks as they come: rent is due, the fridge empties, and the neighborhood is right outside your door.',money:900,bad:1,cost:1},
-  hard:  {n:'Tight Month', ic:'🔥',d:'Thin savings, pricier everything and more bad luck. Rent is the same $1,150. Same score, tougher two weeks.',money:500,bad:1.5,cost:1.15},
+  // money: starting cash. bad: random-event multiplier (the bad ones only). cost: groceries, food, bills.
+  // strain: shift stress multiplier. worry: stress each night while rent is unpaid. No difficulty changes the score.
+  easy:  {n:'Soft Landing',ic:'🌱',d:'More savings in the bank, cheaper groceries, easier shifts and fewer things going sideways. For learning the neighborhood.',money:1300,bad:0.6,cost:0.85,strain:0.85,worry:0},
+  normal:{n:'Hilltop',     ic:'🏘️',d:'The two weeks as they come: rent is due, the fridge empties, and the neighborhood is right outside your door.',money:900,bad:1,cost:1,strain:1,worry:2},
+  hard:  {n:'Tight Month', ic:'🔥',d:'Thin savings, pricier everything, harder shifts, rent on your mind every night and more bad luck. Rent is the same $1,150. Same score, tougher two weeks.',money:450,bad:1.6,cost:1.2,strain:1.2,worry:4},
 };
 const DF=()=>DIFFS[(typeof S!=='undefined'&&S&&S.diff)||'normal']||DIFFS.normal;
 // ---------------- state ----------------
@@ -562,7 +568,7 @@ function modalClosed(){
   if(!document.getElementById('mbg')&&MQ.length&&S&&!S.over){const q=MQ.shift();modal(...q)}
   if(S&&!S.over&&!document.querySelector('.title,.end'))render();
   syncInert();
-  if(!document.getElementById('mbg')){const k=FOCUS_RET;FOCUS_RET=null;focusBack(k)}
+  if(!document.getElementById('mbg')){const k=FOCUS_RET;FOCUS_RET=null;focusBack(k);tileFlush()}
 }
 window.MBTN=i=>{const b=MB[i];if(b&&b.dis)return;const el=document.getElementById('mbg');
   if(b&&b.stay&&el){SWAPOK=true;SWAPPED=false;try{b.fn&&b.fn()}finally{SWAPOK=false;if(!SWAPPED){const e2=document.getElementById('mbg');e2&&e2.remove()}}modalClosed();return}
@@ -575,7 +581,7 @@ function escModal(){
   if(c){c.click();return true}
   el.remove();modalClosed();return true}
 window.escModal=escModal;
-function closeModals(){MQ=[];FOCUS_RET=null;document.querySelectorAll('.modal-bg').forEach(e=>e.remove());syncInert()}
+function closeModals(){MQ=[];FOCUS_RET=null;document.querySelectorAll('.modal-bg').forEach(e=>e.remove());syncInert();setTimeout(tileFlush,0)}
 
 // ---------------- full-screen transition ----------------
 // transition('🚌','Off to work','20 minutes', done)  plays a short animation, then calls done().
@@ -586,7 +592,7 @@ function transition(ic,cap,cap2,done,snd){
     <text class="bob" x="240" y="150" text-anchor="middle" font-size="84">${ic}</text></svg>
     <div class="cap">${withName(cap)}</div><div class="cap2">${withName(cap2||'')}</div><div class="cap2" style="margin-top:18px">tap to skip</div>`;
   document.body.appendChild(el);el.focus();
-  let fin=false;const end=()=>{if(fin)return;fin=true;el.remove();done&&done()};
+  let fin=false;const end=()=>{if(fin)return;fin=true;el.remove();done&&done();setTimeout(tileFlush,0)};
   el.onclick=end;el.onkeydown=e=>{if(e.key==='Escape'||e.key==='Enter'||e.key===' '){e.preventDefault();end()}};
   setTimeout(end,prefs().rm?700:2200);
 }
@@ -595,7 +601,8 @@ function transition(ic,cap,cap2,done,snd){
 // showTile('🎉','Found $20','On the way to the park','good')   kind: good | bad | warn | info
 // One tile at a time, shown just below the HUD so Cash and Rep stay readable. Extra tiles wait in a short queue (duplicates are
 // dropped, the oldest goes if it grows past TILE_QUEUE) and each stays about 3.5 seconds. A tile whose title is already in an open
-// (or queued) pop-up is skipped: the pop-up says it.
+// (or queued) pop-up is skipped: the pop-up says it. While a pop-up (or a full-screen transition) is open, tiles wait in the queue
+// and a tile already showing is hidden (CSS) and kept: they come out when the last pop-up closes. Tiles sit below the HUD, never on it.
 let tileQ=[];const TILE_MAX=1,TILE_QUEUE=3,TILE_MS=3500;
 const plain=h=>String(h||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 function modalSays(title){
@@ -610,17 +617,25 @@ function showTile(ic,title,sub,kind,when){
   if(modalSays(title)) return;
   when=when||`${dayName(day()).slice(0,3)} ${fmt(S.t)}`;
   const box=tileBox();
-  if(box.children.length>=TILE_MAX){
+  if(box.children.length>=TILE_MAX||tileBlocked()){
     if(!tileQ.some(q=>q[1]===title&&q[2]===sub)){tileQ.push([ic,title,sub,kind,when]);while(tileQ.length>TILE_QUEUE)tileQ.shift()}
     return}
-  const hud=document.querySelector('.hud');box.style.top=hud?Math.round(hud.getBoundingClientRect().bottom+6)+'px':'';
+  tileTop(box);
   const t=document.createElement('div');t.className='tile '+(kind||'info');
   title=withName(title);sub=withName(sub);sfx(kind==='good'?'good':kind==='bad'?'bad':'info');
   t.innerHTML=`<span class="ti">${ic}</span><span class="tt"><small>${{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span><button class="ok" aria-label="Got it">✓</button>`;
-  let gone=false;const close=()=>{if(gone)return;gone=true;t.classList.add('out');setTimeout(()=>{t.remove();if(tileQ.length){const q=tileQ.shift();showTile(...q)}},260)};
-  t.querySelector('.ok').onclick=close;t.onclick=e=>{if(e.target===t)close()};
+  let gone=false;const close=tap=>{if(gone)return;
+    if(tap!==true&&tileBlocked()){setTimeout(close,800);return}   // hidden behind a pop-up: keep it until the pop-up is gone
+    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260)};
+  t.querySelector('.ok').onclick=()=>close(true);t.onclick=e=>{if(e.target===t)close(true)};
   setTimeout(close,tileQ.length>=2?TILE_MS-1200:TILE_MS);box.appendChild(t);
 }
+// a pop-up or a full-screen transition is up: tiles wait
+function tileBlocked(){return !!(document.getElementById('mbg')||document.querySelector('.cross'))}
+// show the next waiting tile, if nothing is in the way
+function tileFlush(){if(!tileQ.length||tileBlocked()||!S||S.over)return;const box=document.getElementById('tiles');if(box&&box.children.length>=TILE_MAX)return;showTile(...tileQ.shift())}
+// just under the HUD (the HUD is sticky, so its bottom edge is where the page content starts on screen)
+function tileTop(box){const hud=document.querySelector('#app .hud');if(hud){const b=hud.getBoundingClientRect().bottom;if(b>0)box.style.top=Math.round(b+6)+'px'}}
 function clearTiles(){tileQ=[];document.querySelectorAll('#tiles .tile').forEach(t=>t.remove())}
 window.showTile=showTile;
 // ---------------- random events ----------------
@@ -829,7 +844,7 @@ function render(){
   const al=typeof alertBar==='function'?alertBar():null;
   if(al) h+=`<div class="alertbar ${al.kind||''}">${al.t}</div>`;
   const atCabin=tab==='home'&&(S.loc==='shop'||artOn());   // the Home tab names the cabin (45-names.js) when the scene shows it
-  h+=`<div class="scene">${sceneSVG()}${artScene()}<div class="place"><h2>${atCabin?`🏠 ${esc(cabinName())}`:`${loc.ic} ${loc.name}`}</h2><div>${atCabin?L.shop.desc:`${loc.desc||''}${loc.hours?' · '+hoursTxt(S.loc):''}`}</div></div></div>`;
+  h+=`<div class="scene">${sceneSVG()}${artScene()}${tab==='act'?`<div class="place"><h2>${atCabin?`🏠 ${esc(cabinName())}`:`${loc.ic} ${loc.name}`}</h2><div>${atCabin?L.shop.desc:`${loc.desc||''}${loc.hours?' · '+hoursTxt(S.loc):''}`}</div></div>`:''}</div>`;   // the place card only on the Here tab
   const xt=(EXTRA_TABS||[]).find(t=>t.k===tab);
   h+=`<div class="content">${tab==='act'?actView():tab==='todo'?todoView():tab==='log'?logView():xt?xt.view():actView()}</div>`;
   const pending=todoItems().filter(x=>x.urgent&&!x.ok).length,tabs=allTabs();
@@ -856,7 +871,7 @@ function actView(){
       .forEach(c=>{h+=`<div class="sect">${ACT_CATS[c]}</div>`+groups[c].map(btn).join('')});
   } else if(acts.length) h+='<div class="sect">Do something</div>'+acts.map(btn).join('');
   const dests=Object.keys(L).filter(k=>k!==S.loc&&!L[k].hidden);
-  const p=prefs().goOpen,open=p===null||p===undefined?acts.length<=5:p;
+  const p=prefs().goOpen,open=p===null||p===undefined?(day()===0||acts.length<=5):p;   // open on day one, so a new player sees where to go
   h+=`<details class="go" ${open?'open':''} ontoggle="setPref('goOpen',this.open)"><summary>🧭 Go somewhere (${dests.length})</summary>`;
   dests.forEach(k=>{const m=travelMins(S.loc,k),i=ACTS.push(()=>go(k))-1;
     h+=`<div class="dest compact"><div class="dn"><b>${L[k].ic} ${L[k].name}</b><span>${L[k].hours?hoursTxt(k):L[k].desc||''}</span></div><div class="chips"><button class="chip" onclick="ACT(${i})" aria-label="Go to ${esc(L[k].name)} · ${m} min">Go · ${m} min</button></div></div>`});
@@ -1047,7 +1062,8 @@ function nameModal(opts={}){
   setTimeout(()=>{const i=document.getElementById('nmIn');if(i){i.focus();i.select()}},60);
 }
 function diffModal(then){
-  const cur=prefs().diff;
+  // "(last time)" only once a difficulty has really been picked before (prefs default to normal, which isn't a choice)
+  const cur=(()=>{try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}').diff||null}catch(e){return null}})();
   modal('🎚️ Pick a difficulty','',Object.keys(DIFFS).map(k=>({l:`${DIFFS[k].ic} ${DIFFS[k].n}${k===cur?' (last time)':''}`,s:DIFFS[k].d,fn:()=>{setPref('diff',k);then(k)}})));
 }
 // Name (first time only) → difficulty → play. Add more pickers to this chain if your game needs them.
@@ -1217,7 +1233,7 @@ function newState(){
     food:3,                  // meals in the fridge (you eat one every night)
     job:'cafe',              // a JOBS key; picked in the welcome pop-up (21-story.js)
     jobPicked:false,
-    standing:65,             // 0–100: how work feels about you. 0 = fired
+    standing:70,             // 0–100: how work feels about you. 0 = fired
     community:5,             // 0–100: how many neighbors know you, and how well
     rent:{due:13,amt:1150,paid:false,paidDay:-1},
     worked:{},               // day → minutes late (0 = on time)
@@ -1226,7 +1242,7 @@ function newState(){
     visited:{home:true},
     fair:false,              // went to the Hilltop Street Fair (Sat Aug 8)
     // per-day trackers (day index → true / count)
-    cooked:{},called:{},chat:{},coffee:{},plate:{},swim:{},hoops:{},volunteer:{},sunset:{},ride:{},unpack:{},breakroom:{},
+    calm:{},cooked:{},called:{},chat:{},coffee:{},plate:{},swim:{},hoops:{},volunteer:{},sunset:{},ride:{},unpack:{},breakroom:{},
     unpacked:0,              // boxes unpacked, out of BOXES
     haircut:false,
     stats:{shifts:0,late:0,missed:0,earned:0,spent:0,meals:0,neighbors:0,walks:0,swims:0,hungry:0,rides:0,sunsets:0,extra:0,tips:0},
@@ -1237,23 +1253,48 @@ function newState(){
 const BOXES=6;                                             // moving boxes still taped shut on day one
 const rp=c=>Math.round(c*(DF().cost||1));                  // a price scaled by the difficulty
 function canAfford(c){return S.money>=c}
+// Repeatable ways to unwind (rest, the bench, the park, the platform, the murals, the hill walk) work fully twice a day,
+// then about a third as well: the big stress relief is in the once-a-day things (a swim, the sunset, a call home, a Link ride).
+const CALM_FULL=2;
+const calmN=()=>(S.calm&&S.calm[day()])||0;
+const calmAmt=v=>calmN()<CALM_FULL?v:Math.ceil(v/3);
+function calm(v){S.calm=S.calm||{};const d=day();adj('stress',-calmAmt(v));S.calm[d]=calmN()+1}
+const cap=t=>t[0].toUpperCase()+t.slice(1);
+const calmTxt=v=>`stress −${calmAmt(v)}${calmN()>=CALM_FULL?' (you’ve already unwound a lot today)':''}`;
 function spend(c){money(-c);S.stats.spent+=c}
 const augDate=d=>`${dayName(d).slice(0,3)} Aug ${3+d}`;   // day index → "Mon Aug 3"
 const FAIR_DAY=5;                                          // Sat Aug 8: the Hilltop Street Fair
 const FAIR_HOURS=[600,1080];                               // 10 AM – 6 PM
-const SUNSET=1220;                                         // about 8:20 PM in mid-August
+// Sunset over the Olympics: about 8:20 PM on Mon Aug 3, about 8:00 PM by Sun Aug 16 (a minute and a half earlier each day).
+const sunsetOn=d=>Math.round(1220-(clamp(d,0,13))*20/13);
+const SUNSET=1220;                                         // day one's sunset (the Help guide's timeline uses it)
+const sunsetNow=()=>sunsetOn(typeof S!=='undefined'&&S?day():0);
+// How work, sleep and the night treat you (the Help guide reads these).
+const BAL={
+  onTime:2,                 // Job + for a shift on time
+  late:[2,6,15],            // Job −(2 + 1 per 6 min late), at most −15
+  lateStress:6,             // and stress +6
+  missed:[10,16],           // Job − for the first missed shift, then each one after
+  missedStress:8,
+  midnightJob:3,            // up past midnight: Job −3 (you drag in tired)…
+  midnightStress:6,         // …and stress +6
+  sleep:3,                  // stress − for a night in your own bed
+  goodSleep:5,              // stress − instead, in bed before goodSleepBy and not hungry
+  goodSleepBy:1380,         // 11:00 PM
+};
+const shiftStress=(J=job())=>Math.round(J.stress*(DF().strain||1));
 
 // ---- jobs: the player picks one on day one ----
 // days: which weekdays (0 = Monday) have a shift. pay: a full shift's take-home. tips: [lo, hi] cash tips (the café).
 const JOBS={
   hospital:{n:'CNA at Tacoma General',short:'the hospital',ic:'🏥',place:'Tacoma General',role:'certified nursing assistant',
-    start:420,end:930,pay:172,days:[0,1,2,3,4],stress:12,energy:32,alarm:360,open:()=>[0,1440],
+    start:420,end:930,pay:172,days:[0,1,2,3,4],stress:20,energy:32,alarm:360,open:()=>[0,1440],
     blurb:'Early shift, 7:00 AM to 3:30 PM, Monday to Friday. The best pay of the three, and the hardest days: call lights, lifts, vitals and people at their worst and bravest.'},
   cafe:{n:'Barista at a Hilltop café',short:'the café',ic:'☕',place:'the café',role:'barista',
-    start:390,end:870,pay:104,tips:[14,40],days:[0,1,2,3,4],stress:6,energy:24,alarm:330,open:d=>d%7<5?[360,1080]:[420,900],
+    start:390,end:870,pay:104,tips:[14,40],days:[0,1,2,3,4],stress:12,energy:24,alarm:330,open:d=>d%7<5?[360,1080]:[420,900],
     blurb:'Opening shift, 6:30 AM to 2:30 PM, Monday to Friday. Less pay, cash tips, and the whole neighborhood comes through your line before nine.'},
-  kitchen:{n:'Line cook at a soul-food spot on MLK',short:'the kitchen',ic:'🍳',place:'Mama’s Kitchen',role:'line cook',
-    start:840,end:1320,pay:138,days:[2,3,4,5,6],stress:10,energy:28,alarm:480,staffMeal:true,open:()=>[660,1380],
+  kitchen:{n:'Line cook at a soul-food spot on MLK',short:'the kitchen',ic:'🍳',place:'Odessa’s Table',role:'line cook',
+    start:840,end:1320,pay:138,days:[2,3,4,5,6],stress:16,energy:28,alarm:480,staffMeal:true,open:()=>[660,1380],
     blurb:'Evenings, 2:00 to 10:00 PM, Wednesday to Sunday. Hot, loud and fast, with a staff meal every shift. Your mornings are your own.'},
 };
 const job=()=>JOBS[(typeof S!=='undefined'&&S&&S.job)]||JOBS.cafe;
@@ -1264,22 +1305,29 @@ const shiftDays=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay);
 // ---- the neighbors you can meet (21-story.js lists them on the Neighbors tab) ----
 // at: the places you're likely to meet them
 const NEIGHBORS=[
-  {id:'lorraine',n:'Ms. Lorraine',ic:'🪴',at:['home'],d:'On her porch across the street since 1968. Knows every house on the block, who built it and who painted it last.'},
-  {id:'kim',n:'Mr. Kim',ic:'🛒',at:['mlk'],d:'Runs the corner market. Saves you the last ripe avocado without being asked, and asks about your mother.'},
-  {id:'dre',n:'Dre',ic:'💈',at:['mlk'],d:'Has the chair by the window at the barbershop. Opinions on everything, mostly right, delivered with a straight razor.'},
+  {id:'lorraine',n:'Ms. Lorraine',ic:'🪴',at:['home'],d:'On her porch across the street since 1968. Taught third grade at the school down the hill for thirty years, knows every house on the block, who built it and who sold it, and runs the block club like a principal.'},
+  {id:'kim',n:'Grace Kim',ic:'🛒',at:['mlk'],d:'Runs the corner market her parents opened in 1988, and is two classes from an accounting degree. Stocks a whole shelf of hot sauces made on the hill and will argue about every one of them.'},
+  {id:'imani',n:'Imani',ic:'📚',at:['mlk'],d:'Owns Hilltop Pages, the bookstore on MLK: a kids’ corner, a wall of Northwest Black history and poetry night on Thursdays. Hands you the right book before you know you need it.'},
+  {id:'linh',n:'Linh',ic:'🍜',at:['mlk','link'],d:'Runs the phở shop on MLK her family opened in 1994. The second time you come in, she starts your order before you sit down, and the third time she asks how the new job is.'},
+  {id:'dre',n:'Dre',ic:'💈',at:['mlk'],d:'Has the chair by the window at the barbershop and a podcast about Tacoma history that eleven people listen to, all of them his clients. Coaches the middle-school debate team. Usually wins the argument.'},
   {id:'marisol',n:'Marisol',ic:'🎨',at:['mlk','view'],d:'Painting a mural on the side wall by the bus stop. Let you fill in a patch of sky. You will point at it for years.'},
-  {id:'tasha',n:'Tasha',ic:'🏀',at:['peoples'],d:'Runs the evening pickup game at People’s. Calls fouls fairly, which makes her the most powerful person on the court.'},
-  {id:'ron',n:'Big Ron',ic:'🍖',at:['home','mlk'],d:'Two doors down. His smoker runs every weekend and his ribs are a neighborhood institution. Soft-spoken. Huge.'},
+  {id:'tasha',n:'Tasha',ic:'🏀',at:['peoples'],d:'Physical therapist by day, runs the evening pickup game at People’s by night. Calls fouls fairly, which makes her the most powerful person on the court.'},
+  {id:'ron',n:'Ron',ic:'🏗️',at:['home','mlk'],d:'Two doors down. A civil engineer at the Port of Tacoma: he designs the wharves the big cranes stand on. On weekends his smoker runs and he explains brisket the way he explains load-bearing piles.'},
+  {id:'harris',n:'Mr. Harris',ic:'🔧',at:['view','link','mlk'],d:'Eighty-one. Thirty-one years welding hulls at the shipyard on the tideflats, the block’s elder, choir bass on Sundays. Sits on the overlook bench most evenings and can name every ship in the bay.'},
+  {id:'bev',n:'Bev',ic:'🧺',at:['mlk','peoples'],d:'Retired school librarian. Started the free community fridge outside the laundromat and keeps it stocked, and runs the block club group chat with an iron hand.'},
+  {id:'santos',n:'The Santos family',ic:'🎤',at:['home'],d:'Next door: Tita Rose, a respiratory therapist, Tito Ben, a Navy vet, three kids and a karaoke machine that comes out every birthday. There is always a plate of pancit with your name on it.'},
+  {id:'priya',n:'Priya',ic:'🩺',at:['home','link','work'],d:'ICU nurse down your hall, coming off nights. Waves good night at 7 AM and good morning at dusk, and knows which washing machine eats quarters.'},
+  {id:'denise',n:'Denise',ic:'♿',at:['link','mlk'],d:'Uses a wheelchair and chairs the block club’s transit committee: she knows which Link stops have working elevators, and she has been fighting for curb cuts on her street for six years. She’s winning.'},
+  {id:'malik',n:'Malik',ic:'🎓',at:['peoples','link'],d:'A sophomore at UW Tacoma studying computer science, working the summer front desk at People’s. Grew up four blocks away and is going to build an app for the block club whether they want one or not.'},
+  {id:'eli',n:'Eli',ic:'💻',at:['home','view'],d:'Moved in a month before you, from Seattle, for the rent. Works remote for a software company, and is trying, a little awkwardly, to learn the neighborhood instead of just living in it.'},
   {id:'jaylen',n:'Jaylen',ic:'🚲',at:['peoples','home','link'],d:'Eleven, owns the sidewalk on a BMX, and has questions. So many questions. Good ones, mostly.'},
-  {id:'bev',n:'Auntie Bev',ic:'🧺',at:['mlk','peoples'],d:'Keeps the little free community fridge stocked and the block fed. Everybody’s auntie, including yours now.'},
-  {id:'harris',n:'Deacon Harris',ic:'🎶',at:['mlk','link','view'],d:'Sings bass in the choir on Sundays. Thirty-one years at the Port. Sits on the overlook bench most evenings.'},
-  {id:'priya',n:'Priya',ic:'🩺',at:['home','link','work'],d:'Night-shift nurse who lives down your hall. Waves good night at 7 AM and good morning at dusk.'},
 ];
+const MEET_COMMUNITY=2;   // community for each new neighbor you meet
 // Meet someone new here (or anyone not met yet). Returns the neighbor, or null when you know everybody.
 function meetHere(loc=S.loc){
   const left=NEIGHBORS.filter(x=>!S.met[x.id]),here=left.filter(x=>x.at.includes(loc)),p=here.length?here:left;
   if(!p.length) return null;
-  const x=pick(p);S.met[x.id]=day()+1;S.stats.neighbors=Object.keys(S.met).length;adj('community',3);
+  const x=pick(p);S.met[x.id]=day()+1;S.stats.neighbors=Object.keys(S.met).length;adj('community',MEET_COMMUNITY);
   return x;
 }
 const metCount=()=>Object.keys(S.met||{}).length;
@@ -1295,7 +1343,7 @@ const STATS=[
 
 // ---- scenery ----
 // August on Hilltop: sunrise about 6:10 AM, sunset about 8:20 PM. The engine draws the sky (y 0–140) and the ground (140–170).
-const SCENE={sun:[370,SUNSET],skyDay:['#8fbbd9','#e6eef0'],skyDusk:['#5d5f97','#f4b183'],skyNight:['#0c1729','#1f2f4a'],ground:'#6f7a6c',groundNight:'#1f2526'};
+const SCENE={get sun(){return [370,sunsetNow()]},skyDay:['#8fbbd9','#e6eef0'],skyDusk:['#5d5f97','#f4b183'],skyNight:['#0c1729','#1f2f4a'],ground:'#6f7a6c',groundNight:'#1f2526'};
 const HC={
   bay:n=>n?'#13263a':'#4f8fae',bay2:n=>n?'#22405a':'#9ccbdd',mtn:n=>n?'#26344c':'#a9b9cc',snow:n=>n?.32:.96,
   hill:n=>n?'#1a2a28':'#5b7d68',hill2:n=>n?'#223530':'#77957f',leaf:n=>n?'#13261d':'#3d7a4e',leaf2:n=>n?'#18301f':'#58955f',
@@ -1303,9 +1351,23 @@ const HC={
 };
 const win=(n,lit=true)=>n?(lit?'#f7d77a':'#2b3442'):'#cfe0e6';
 const SVGF='font-family="DM Sans, system-ui, sans-serif" font-weight="700"';
-// Mount Rainier, base at y, centered on x, scaled by s
-const rainier=(n,x=360,s=1,y=110)=>`<g transform="translate(${x},${y}) scale(${s})"><polygon points="-130,0 -70,-40 -45,-62 -18,-80 0,-86 20,-80 48,-60 80,-36 130,0" fill="${HC.mtn(n)}"/>
-  <polygon points="-45,-62 -18,-80 0,-86 20,-80 48,-60 34,-58 24,-66 12,-56 0,-68 -10,-58 -24,-66 -34,-56" fill="#f5f8fa" opacity="${HC.snow(n)}"/></g>`;
+// Mount Rainier as Tacoma sees it: not a cone but a broad, glaciated massif, wide shoulders, a long low summit dome
+// (Columbia Crest) with Liberty Cap a step down on the right, and the dark tooth of Little Tahoma on the left flank.
+// Base at y, centered on x, scaled by s (about 360 wide and 86 tall at s=1).
+const rainier=(n,x=360,s=1,y=110)=>{const rock=n?'#1d2839':'#7f8fa3',snow='#f5f8fa',o=HC.snow(n),shade=n?'#3a4a62':'#c9d5e2';
+  return `<g transform="translate(${x},${y}) scale(${s})"><path d="M-182 0 C-150 -10 -122 -24 -98 -40 C-82 -51 -70 -58 -60 -63 L-53 -71 L-46 -64 C-34 -73 -20 -80 -4 -84 C8 -86 22 -86 33 -84 C42 -82 50 -80 56 -79 C64 -79 70 -77 78 -71 C102 -54 138 -28 186 0 Z" fill="${HC.mtn(n)}"/>
+  <path d="M-108 -34 L-96 -40 L-88 -35 L-80 -46 L-71 -43 L-64 -54 L-60 -63 L-53 -71 L-46 -64 C-34 -73 -20 -80 -4 -84 C8 -86 22 -86 33 -84 C42 -82 50 -80 56 -79 C64 -79 70 -77 78 -71 C90 -62 100 -55 112 -46 L104 -44 L97 -49 L90 -36 L82 -47 L72 -38 L64 -51 L55 -33 L46 -49 L36 -40 L27 -56 L17 -38 L7 -53 L-3 -36 L-13 -51 L-23 -41 L-33 -55 L-43 -42 L-53 -50 L-63 -39 L-73 -47 L-84 -32 Z" fill="${snow}" opacity="${o}"/>
+  <path d="M33 -84 C42 -82 50 -80 56 -79 C64 -79 70 -77 78 -71 C90 -62 100 -55 112 -46 L104 -44 L97 -49 L90 -36 L82 -47 L72 -38 L64 -51 L55 -33 L46 -49 L36 -40 L27 -56 C30 -66 31 -76 33 -84 Z" fill="${shade}" opacity="${n?.5:.55}"/>
+  <path d="M-64 -55 L-53 -71 L-46 -64 L-43 -55 L-50 -58 Z" fill="${rock}"/>
+  <path d="M-6 -36 l-6 20 M27 -38 l4 22 M64 -36 l10 20 M-63 -37 l-12 18 M100 -40 l14 18" stroke="${rock}" stroke-width="1.6" fill="none" opacity=".55"/>
+  <path d="M51 -80 q5 -4 10 -1" stroke="${snow}" stroke-width="2" fill="none" opacity="${o}"/></g>`};
+// a Port of Tacoma container crane: legs on the wharf at (x, b), the boom reaching left out over the water
+const crane=(x,n,b=140,s=1)=>{const c=n?'#4a3434':'#c0412c',h=n?'#5a5050':'#f1ede4';
+  return `<g transform="translate(${x},${b}) scale(${s})"><rect x="-12" y="-44" width="3" height="44" fill="${c}"/><rect x="10" y="-44" width="3" height="44" fill="${c}"/><rect x="-13" y="-30" width="27" height="2" fill="${c}"/>
+  <rect x="-70" y="-48" width="104" height="4" fill="${c}"/><rect x="-6" y="-56" width="16" height="9" fill="${h}"/><path d="M-1 -48 L4 -70 L9 -48 M4 -70 L-68 -48 M4 -70 L32 -48" stroke="${c}" stroke-width="1.6" fill="none"/>
+  <rect x="-40" y="-44" width="6" height="5" fill="${n?'#555':'#3a3f45'}"/><path d="M-37 -44 V-34" stroke="${n?'#555':'#3a3f45'}" stroke-width="1"/></g>`};
+// stacked containers on the wharf
+const boxesOnDock=(x,n,b=140)=>[['#2a6fa8',0,0],['#b8402a',22,0],['#2f8f6a',44,0],['#c98a12',8,-8],['#5d6a75',30,-8]].map(([c,dx,dy])=>`<rect x="${x+dx}" y="${b-8+dy}" width="21" height="7.5" fill="${n?'#2c3138':c}"/>`).join('');
 // a round street tree standing on b
 const tree=(x,n,r=16,b=140)=>`<rect x="${x-2}" y="${b-r-8}" width="4" height="${r+8}" fill="${HC.trunk(n)}"/><circle cx="${x}" cy="${b-r-14}" r="${r}" fill="${HC.leaf(n)}"/><circle cx="${x-r*.45}" cy="${b-r-8}" r="${r*.7}" fill="${HC.leaf2(n)}"/><circle cx="${x+r*.5}" cy="${b-r-10}" r="${r*.6}" fill="${HC.leaf(n)}"/>`;
 // a streetlight that glows at night
@@ -1337,14 +1399,14 @@ const L={
       <rect x="73" y="45" width="6" height="7" fill="${n?'#c97f3a':'#c8a06a'}" opacity=".9"/>${tree(240,n,18)}${craftsman(280,n,n?'#2e3a40':'#7ea0a8',140,[0,1,0])}${tree(380,n,14)}${lamp(20,n)}${lamp(440,n)}
       <rect x="0" y="146" width="480" height="4" fill="${HC.walk(n)}"/>`},
   mlk:{name:'MLK Jr Way',ic:'🛒',desc:'Hilltop’s main street: the corner market, the teriyaki spot, the barbershop, murals and the Link rails down the middle',
-    art:({night:n})=>`${starsSky(n)}${wire(n,80)}
+    art:({night:n})=>`${starsSky(n)}${wire(n,80)}<g transform="translate(40 25.7) scale(.8333)">   <!-- scaled to the middle 400 px so a phone (which crops the sides) shows every sign -->
       ${[['CORNER MARKET','#2f6b4a',6,'#e4d6b6'],['TERIYAKI','#b8402a',128,'#e8ddc4'],['BARBER','#24507a',250,'#d9cfc0']].map(([t,c,x,w])=>`<rect x="${x}" y="70" width="114" height="70" fill="${n?'#3a3530':w}"/><rect x="${x-3}" y="62" width="120" height="12" fill="${c}"/><text x="${x+57}" y="71" text-anchor="middle" font-size="8" ${SVGF} fill="#fff">${t}</text>
         <path d="M${x} 78 h114 l-8 10 h-98 z" fill="${c}" opacity=".85"/>${[0,1,2,3,4,5].map(i=>`<rect x="${x+6+i*18}" y="78" width="9" height="10" fill="#fff" opacity=".25"/>`).join('')}<rect x="${x+10}" y="96" width="40" height="28" fill="${win(n)}"/><rect x="${x+62}" y="96" width="20" height="44" fill="${n?'#241c16':'#4a3a2c'}"/><rect x="${x+88}" y="96" width="20" height="28" fill="${win(n)}"/>`).join('')}
       <g transform="translate(341,50)"><rect width="18" height="90" fill="${n?'#2c2c34':'#e3d5bc'}"/><rect x="5" y="0" width="8" height="90" fill="#fff" opacity=".2"/></g>
       <rect x="362" y="44" width="118" height="96" fill="${n?'#2a2830':'#d0c2a8'}"/>
       <g opacity="${n?.55:1}"><circle cx="420" cy="76" r="22" fill="#f2b630"/><path d="M366 120 Q400 92 440 112 T480 104 V140 H366 Z" fill="#2f8f6a"/><path d="M366 136 Q410 118 480 128 V140 H366 Z" fill="#24507a"/><circle cx="398" cy="104" r="7" fill="#6b4430"/><path d="M391 112 q7 10 14 0 v22 h-14 z" fill="#b8402a"/><path d="M440 60 q10 -8 20 0" stroke="#b8402a" stroke-width="4" fill="none"/></g>
       <text x="421" y="54" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#888':'#5a4a3a'}">HILLTOP PROUD</text>
-      ${person(150,n,'#2a6fa8')}${person(196,n,'#c98a12',146,.9)}${person(300,n,'#8e44ad')}${lamp(120,n)}${lamp(352,n)}${rails(n,154)}`},
+      ${person(150,n,'#2a6fa8')}${person(196,n,'#c98a12',146,.9)}${person(300,n,'#8e44ad')}${lamp(120,n)}${lamp(352,n)}</g>${rails(n,154)}`},
   work:{get name(){return job().place},get ic(){return job().ic},get desc(){const j=job();return `Where you work: ${j.role}, ${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Monday to Friday':'Wednesday to Sunday'}`},
     hours:d=>job().open(d),
     art:o=>(WORK_ART[(typeof S!=='undefined'&&S&&S.job)]||WORK_ART.cafe)(o)},
@@ -1365,11 +1427,12 @@ const L={
       <rect x="318" y="118" width="150" height="26" fill="${n?'#2a3e34':'#5f9a6e'}"/><path d="M393 118 v26 M318 131 h150" stroke="#fff" stroke-width="1" opacity=".6"/><circle cx="393" cy="131" r="7" stroke="#fff" stroke-width="1" fill="none" opacity=".6"/>
       <rect x="456" y="82" width="3" height="40" fill="#555"/><rect x="444" y="80" width="18" height="12" fill="${n?'#888':'#fff'}" stroke="#555"/><path d="M444 94 h10" stroke="#e3642e" stroke-width="2"/>
       ${person(360,n,'#c0392b',140)}${person(420,n,'#2a6fa8',140)}<circle cx="388" cy="108" r="4" fill="#e3642e"/>${lamp(306,n)}`},
-  view:{name:'The overlook',ic:'🌄',desc:'The bench at the edge of the hill: Commencement Bay, the port, Vashon off to the right, and Rainier when the mountain is out',
-    art:({night:n,dusk})=>`${starsSky(n)}${rainier(n,330,1.25,104)}<rect y="96" width="480" height="44" fill="${HC.bay(n)}"/>
-      ${dusk&&!n?'<rect y="96" width="480" height="10" fill="#f4b183" opacity=".35"/>':''}<path d="M30 108 q24 -4 48 0 M200 118 q24 -4 48 0 M320 104 q24 -4 48 0 M120 128 q24 -4 48 0 M390 124 q24 -4 48 0" stroke="${HC.bay2(n)}" stroke-width="2" fill="none" opacity=".7"/>
-      <path d="M380 96 Q420 86 480 90 V100 H380 Z" fill="${HC.hill2(n)}"/>${[150,180,210].map(x=>`<g stroke="${n?'#4a3434':'#c8452f'}" stroke-width="2" fill="none" opacity=".8"><path d="M${x} 98 V74 M${x+14} 98 V74 M${x-14} 74 H${x+26}"/></g>`).join('')}
-      ${n?[60,160,200,240,300,350,420].map((x,i)=>`<circle cx="${x}" cy="${98+i%3*3}" r="1.3" fill="#f7d77a"/>`).join(''):bird(80,40)+bird(102,30)}
+  view:{name:'The overlook',ic:'🌄',desc:'A bench over Commencement Bay: the port cranes, Vashon to the left, Rainier to the southeast',
+    art:({night:n,dusk})=>`${starsSky(n)}${rainier(n,350,.82,98)}<rect y="96" width="480" height="44" fill="${HC.bay(n)}"/>
+      ${dusk&&!n?'<rect y="96" width="480" height="10" fill="#f4b183" opacity=".35"/>':''}<path d="M200 118 q24 -4 48 0 M320 108 q24 -4 48 0 M250 130 q24 -4 48 0 M390 124 q24 -4 48 0" stroke="${HC.bay2(n)}" stroke-width="2" fill="none" opacity=".7"/>
+      <path d="M0 96 Q20 90 46 93 V100 H0 Z" fill="${HC.hill2(n)}"/><rect x="20" y="104" width="190" height="5" fill="${n?'#2a2e33':'#8a8d86'}"/>${boxesOnDock(120,n,104)}${crane(60,n,104,.62)}${crane(104,n,104,.62)}${crane(196,n,104,.62)}
+      <path d="M240 112 h40 l6 -4 h-50 z" fill="${n?'#3a3f45':'#b8402a'}"/><rect x="250" y="102" width="20" height="6" fill="${n?'#4a4f55':'#e8e2d4'}"/>
+      ${n?[40,80,120,160,200,252,300,350].map((x,i)=>`<circle cx="${x}" cy="${100+i%3*3}" r="1.3" fill="#f7d77a"/>`).join(''):bird(236,56)+bird(258,46)}
       <path d="M0 132 Q90 118 180 128 T340 126 T480 132 V140 H0 Z" fill="${HC.hill(n)}"/>${tree(36,n,20,142)}${tree(450,n,17,142)}
       <rect x="196" y="130" width="90" height="5" fill="${n?'#3e3228':'#8a6b48'}"/><rect x="196" y="122" width="90" height="4" fill="${n?'#3e3228':'#8a6b48'}"/><rect x="202" y="135" width="4" height="10" fill="#444"/><rect x="276" y="135" width="4" height="10" fill="#444"/>
       ${person(226,n,'#24507a',134,.9)}${lamp(320,n,146)}`},
@@ -1388,7 +1451,7 @@ const WORK_ART={
     <rect x="190" y="26" width="80" height="20" rx="4" fill="#3a2a1e"/><text x="230" y="40" text-anchor="middle" font-size="11" ${SVGF} fill="#f4d27a">☕ CAFÉ</text>
     ${person(140,n,'#2f8f6a',128,.8)}${person(310,n,'#8e44ad',128,.8)}<rect x="392" y="122" width="30" height="4" fill="#555"/><rect x="405" y="126" width="3" height="18" fill="#555"/><rect x="430" y="114" width="12" height="30" fill="${n?'#555':'#222'}"/><text x="436" y="132" text-anchor="middle" font-size="6" fill="#fff">OPEN</text>${lamp(450,n)}`,
   kitchen:({night:n})=>`${starsSky(n)}<rect x="70" y="50" width="320" height="90" fill="${n?'#3a2420':'#c76a3a'}"/><rect x="64" y="42" width="332" height="10" fill="${n?'#2a1814':'#6a2f1e'}"/>
-    <rect x="150" y="18" width="160" height="26" rx="5" fill="#2a1a14"/><text x="230" y="36" text-anchor="middle" font-size="12" ${SVGF} fill="#f2b630">MAMA’S KITCHEN</text>
+    <rect x="150" y="18" width="160" height="26" rx="5" fill="#2a1a14"/><text x="230" y="36" text-anchor="middle" font-size="12" ${SVGF} fill="#f2b630">ODESSA’S TABLE</text>
     <rect x="90" y="68" width="110" height="52" fill="${win(n)}"/><rect x="260" y="68" width="110" height="52" fill="${win(n)}"/><rect x="214" y="80" width="32" height="60" fill="${n?'#1a100c':'#3a2218'}"/>
     <text x="145" y="64" text-anchor="middle" font-size="7" ${SVGF} fill="#fff">FRIED CHICKEN · GREENS</text><text x="315" y="64" text-anchor="middle" font-size="7" ${SVGF} fill="#fff">MAC · CORNBREAD · PIE</text>
     <rect x="370" y="20" width="10" height="24" fill="#555"/>${[0,1,2].map(i=>`<circle cx="${376+i*6}" cy="${12-i*6}" r="${5+i*2}" fill="#ddd" opacity="${.5-i*.12}"/>`).join('')}
@@ -1408,14 +1471,16 @@ function actionsHere(){
   const d=day(),m=tod(),a=[],J=job(),at=(lo,hi)=>m>=lo&&m<hi;
   if(S.loc==='home'){
     const tomorrow=d+1<GAME.days&&isShiftDay(d+1);
+    if(isShiftDay(d)&&!(d in S.worked)&&m<J.end-60){const tm=travelMins('home','work'),leave=J.start-tm;   // the quick way to work on a shift day
+      a.push({ic:J.ic,l:`Go to work (${tm} min)`,s:m<=leave?`${J.place}, ${fmt(J.start)}–${fmt(J.end)}. Leave by ${fmt(leave)} to be on time.`:`${J.place}. Your shift started at ${fmt(J.start)}: go now.`,cat:'work',cls:'primary',fn:()=>go('work')});}
     a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. You eat dinner from the fridge (${S.food} meal${S.food===1?'':'s'}). Alarm ${fmt(S.alarm)}.${tomorrow?` Tomorrow: work at ${fmt(J.start)}.`:''}`,cat:'rest',cls:m>=1290?'primary':'',fn:()=>endDay('home')});
     a.push({ic:'⏰',l:`Alarm: ${fmt(S.alarm)}`,s:'Tap to cycle 5:00 → 5:30 → 6:00 → 6:30 → 7:00 → 8:00 → 9:00.',cat:'rest',fn:()=>{const o=[300,330,360,390,420,480,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Alarm set for ${fmt(S.alarm)}.`)}});
-    a.push({ic:'😴',l:'Rest for an hour',s:'Energy +10, stress −5.',cat:'rest',dis:S.energy>=100&&S.stress<=0,fn:()=>{pass(60);adj('energy',10);adj('stress',-5);say(pick(['😴 An hour on the couch with the window open. A bus sighs at the corner, somebody laughs on a porch, then nothing.','😴 You close your eyes “for a second.” It’s an hour. It helps.','😴 Blinds down, phone face down. The radiator ticks even in August.']))}});
-    if(!S.cooked[d]) a.push({ic:'🍲',l:'Cook something proper',s:S.food>0?'45 min. Uses 1 extra meal from the fridge. Energy +14, stress −6. Once a day.':'The fridge is empty. The corner market is on MLK.',cat:'food',dis:S.food<1,
-      fn:()=>{S.food--;S.cooked[d]=true;S.stats.meals++;pass(45);adj('energy',14);adj('stress',-6);say(pick(['🍲 Rice, beans, an onion and whatever’s green. The whole hallway smells like home.','🍲 Your grandmother’s recipe, mostly from memory. Close enough to count.','🍲 Eggs, toast, hot sauce. Not fancy. Exactly right.']))}});
-    if(!S.called[d]) a.push({ic:'📞',l:'Call home',s:'30 min. Stress −12. Once a day.',cat:'rest',fn:()=>{pass(30);S.called[d]=true;adj('stress',-12);say(pick(['📞 Your mom asks if you’re eating. You lie a little. She knows.','📞 Your cousin wants to hear everything about Tacoma. You tell her the mountain thing. She doesn’t believe you.','📞 Your dad reads you the weather back home like it’s news. It is, kind of.']))}});
-    if(S.unpacked<BOXES&&!S.unpack[d]) a.push({ic:'📦',l:`Unpack a box (${S.unpacked} of ${BOXES} done)`,s:'45 min. Energy −4, stress −5. The place feels more like yours. Once a day.',cat:'here',
-      fn:()=>{pass(45);S.unpack[d]=true;S.unpacked++;adj('energy',-4);adj('stress',-5);say(S.unpacked>=BOXES?'📦 The last box. Your books are on a shelf, your photos are on the wall, and the apartment finally looks like somebody lives here. You do.':pick(['📦 Kitchen stuff. You find the good knife and the mug you thought you’d lost.','📦 Books. You line them up on the windowsill, spines toward the mountain.','📦 Winter clothes in August. You put the box in the closet, still mostly packed. Progress.','📦 Photos. You hang two and lean the rest against the wall “for now.”']))}});
+    a.push({ic:'😴',l:'Rest for an hour',s:`Energy +10, ${calmTxt(5)}.`,cat:'rest',dis:S.energy>=100&&S.stress<=0,fn:()=>{pass(60);adj('energy',10);calm(5);say(pick(['😴 An hour on the couch with the window open. A bus sighs at the corner, somebody laughs on a porch, then nothing.','😴 You close your eyes “for a second.” It’s an hour. It helps.','😴 Blinds down, phone face down. The radiator ticks even in August.']))}});
+    if(!S.cooked[d]) a.push({ic:'🍲',l:'Cook something proper',s:S.food>0?'45 min. Uses 1 extra meal from the fridge. Energy +14, stress −4. Once a day.':'The fridge is empty. The corner market is on MLK.',cat:'food',dis:S.food<1,
+      fn:()=>{S.food--;S.cooked[d]=true;S.stats.meals++;pass(45);adj('energy',14);adj('stress',-4);say(pick(['🍲 Rice, beans, an onion and whatever’s green. The whole hallway smells like home.','🍲 Your grandmother’s recipe, mostly from memory. Close enough to count.','🍲 Eggs, toast, hot sauce. Not fancy. Exactly right.']))}});
+    if(!S.called[d]) a.push({ic:'📞',l:'Call home',s:'30 min. Stress −8. Once a day.',cat:'rest',fn:()=>{pass(30);S.called[d]=true;adj('stress',-8);say(pick(['📞 Your mom asks if you’re eating. You lie a little. She knows.','📞 Your cousin wants to hear everything about Tacoma. You tell her the mountain thing. She doesn’t believe you.','📞 Your dad reads you the weather back home like it’s news. It is, kind of.']))}});
+    if(S.unpacked<BOXES&&!S.unpack[d]) a.push({ic:'📦',l:`Unpack a box (${S.unpacked} of ${BOXES} done)`,s:'45 min. Energy −4, stress −3. The place feels more like yours. Once a day.',cat:'here',
+      fn:()=>{pass(45);S.unpack[d]=true;S.unpacked++;adj('energy',-4);adj('stress',-3);say(S.unpacked>=BOXES?'📦 The last box. Your books are on a shelf, your photos are on the wall, and the apartment finally looks like somebody lives here. You do.':pick(['📦 Kitchen stuff. You find the good knife and the mug you thought you’d lost.','📦 Books. You line them up on the windowsill, spines toward the mountain.','📦 Winter clothes in August. You put the box in the closet, still mostly packed. Progress.','📦 Photos. You hang two and lean the rest against the wall “for now.”']))}});
     if(!S.rent.paid){const r=S.rent.amt;
       a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by Sunday night, Aug 16. ${d<=6?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by Sunday night, Aug 16 (${GAME.days-1-d} day${GAME.days-1-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=10?'primary':'',dis:!canAfford(r),
         fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',d<=6?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${d<=6?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
@@ -1423,19 +1488,19 @@ function actionsHere(){
   if(S.loc==='mlk'){
     const mk=at(420,1320),g=rp(42),sn=rp(5),pl=rp(14),cut=rp(25);
     a.push({ic:'🧺',l:`Groceries at the corner market — ${$(g)}`,s:mk?`4 meals for the fridge (you have ${S.food}).`:'The market is open 7 AM to 10 PM.',cat:'food',cls:S.food<=1&&mk?'primary':'',dis:!mk||!canAfford(g),
-      fn:()=>{spend(g);S.food+=4;pass(25);say(pick(['🧺 Rice, eggs, greens, a chicken, tortillas, hot sauce. Mr. Kim rings it up and throws in a peach. “For the new neighbor.”','🧺 A basket of the basics. The guy behind you in line recommends the frozen dumplings. He’s right.','🧺 Four dinners, if you’re careful. You are learning to be careful.']));if(!S.met.kim&&Math.random()<.5){S.met.kim=d+1;S.stats.neighbors=metCount();adj('community',3);say('🛒 You meet <b>Mr. Kim</b>, who owns the market. He remembers your name the second time. Nobody remembers your name the second time.')}}});
+      fn:()=>{spend(g);S.food+=4;pass(25);say(pick(['🧺 Rice, eggs, greens, a chicken, tortillas, hot sauce. Grace Kim rings it up and throws in a peach. “For the new neighbor.”','🧺 A basket of the basics. The guy behind you in line recommends the frozen dumplings. He’s right.','🧺 Four dinners, if you’re careful. You are learning to be careful.']));if(!S.met.kim&&Math.random()<.5){S.met.kim=d+1;S.stats.neighbors=metCount();adj('community',MEET_COMMUNITY);say('🛒 You meet <b>Grace Kim</b>, who runs the market. She remembers your name the second time, and your hot-sauce opinion the third.')}}});
     a.push({ic:'🥤',l:`A cold drink and chips — ${$(sn)}`,s:mk?'Energy +6.':'The market is closed.',cat:'food',dis:!mk||!canAfford(sn),fn:()=>{spend(sn);adj('energy',6);pass(10);say('🥤 A cold can from the back of the cooler and a bag of chips on the curb. August, perfected.')}});
-    if(!S.plate[d]) a.push({ic:'🍱',l:`A plate at the teriyaki spot — ${$(pl)}`,s:at(660,1260)?'30 min. Energy +15, stress −5. Once a day. Chicken, rice, that sauce.':'Open 11 AM to 9 PM.',cat:'food',dis:!at(660,1260)||!canAfford(pl),
-      fn:()=>{spend(pl);S.plate[d]=true;S.stats.meals++;pass(30);adj('energy',15);adj('stress',-5);say(pick(['🍱 Chicken teriyaki, rice, that little salad with the orange dressing. Tacoma runs on this plate.','🍱 Spicy chicken, extra sauce. The owner nods at you like you passed a test.','🍱 You eat at the window counter and watch the Link slide by. Better than TV.']))}});
+    if(!S.plate[d]) a.push({ic:'🍱',l:`A plate at the teriyaki spot — ${$(pl)}`,s:at(660,1260)?'30 min. Energy +15, stress −4. Once a day. Chicken, rice, that sauce.':'Open 11 AM to 9 PM.',cat:'food',dis:!at(660,1260)||!canAfford(pl),
+      fn:()=>{spend(pl);S.plate[d]=true;S.stats.meals++;pass(30);adj('energy',15);adj('stress',-4);say(pick(['🍱 Chicken teriyaki, rice, that little salad with the orange dressing. Tacoma runs on this plate.','🍱 Spicy chicken, extra sauce. The owner nods at you like you passed a test.','🍱 You eat at the window counter and watch the Link slide by. Better than TV.']))}});
     if(!S.haircut) a.push({ic:'💈',l:`A cut at the barbershop — ${$(cut)}`,s:at(540,1140)?'1 hour. Community +6, stress −6. The chair is where the neighborhood talks.':'Open 9 AM to 7 PM.',cat:'people',dis:!at(540,1140)||!canAfford(cut),
       fn:()=>{spend(cut);S.haircut=true;pass(60);adj('community',6);adj('stress',-6);if(!S.met.dre){S.met.dre=d+1;S.stats.neighbors=metCount()}say('💈 <b>Dre</b> lines you up and catches you up: who’s opening what, whose kid made the team, which landlord is fixing things and which one isn’t. You leave looking sharp and knowing the hill.')}});
-    if(!S.chat[d]) a.push({ic:'👋',l:'Stop and talk on the corner',s:'30 min. Community +3. You might meet someone. Once a day.',cat:'people',
-      fn:()=>{pass(30);S.chat[d]=true;const x=meetHere();if(x)say(`👋 You meet <b>${x.n}</b>. ${x.d}`);else{adj('community',2);say(pick(['👋 Ms. Lorraine’s grandson waves from his car. Mr. Kim waves from the door. You wave at everybody. Everybody waves back.','👋 You stand on the corner long enough to be part of it.']))}}});
-    a.push({ic:'🎨',l:'Walk MLK and look at the murals',s:'30 min. Stress −6, community +1.',cat:'here',
-      fn:()=>{pass(30);S.stats.walks++;adj('stress',-6);adj('community',1);say(pick(['🎨 Faces three stories tall: elders, kids, a saxophone, a fist full of flowers. Hilltop’s history, painted where everybody can see it.','🎨 A mural of a grandmother in a church hat looks down at the bus stop like she’s keeping an eye on things. She is.','🎨 You find a mural you hadn’t noticed, tucked behind the laundromat: the old neighborhood, every porch with someone on it.']))}});
+    if(!S.chat[d]) a.push({ic:'👋',l:'Stop and talk on the corner',s:'30 min. You might meet someone (community +2), or catch up with someone you know (+1). Once a day.',cat:'people',
+      fn:()=>{pass(30);S.chat[d]=true;const x=meetHere();if(x)say(`👋 You meet <b>${x.n}</b>. ${x.d}`);else{adj('community',1);say(pick(['👋 Ms. Lorraine’s grandson waves from his car. Grace waves from the market door. You wave at everybody. Everybody waves back.','👋 You stand on the corner long enough to be part of it.']))}}});
+    a.push({ic:'🎨',l:'Walk MLK and look at the murals',s:`30 min. ${cap(calmTxt(6))}.`,cat:'here',
+      fn:()=>{pass(30);S.stats.walks++;calm(6);say(pick(['🎨 Faces three stories tall: elders, kids, a saxophone, a fist full of flowers. Hilltop’s history, painted where everybody can see it.','🎨 A mural of a grandmother in a church hat looks down at the bus stop like she’s keeping an eye on things. She is.','🎨 You find a mural you hadn’t noticed, tucked behind the laundromat: the old neighborhood, every porch with someone on it.']))}});
     if(d===FAIR_DAY&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
-      a.push({ic:'🎪',l:`The Hilltop Street Fair — ${$(f)}`,s:'2 hours. Food, music, booths, half the hill out on MLK. Stress −20, community +10. Today only.',cat:'people',cls:'primary',dis:!canAfford(f),
-        fn:()=>{spend(f);S.fair=true;pass(120);adj('stress',-20);adj('community',10);const x=meetHere();say(`🎪 The Hilltop Street Fair: a band on the stage playing old soul like they mean it, kids with painted faces, lemonade, a line for barbecue that goes around the block and is worth it. Somebody hands you a flyer for a block club. ${x?`You meet <b>${x.n}</b> in the barbecue line.`:'You know half the people here now. Wild.'}`)}});}
+      a.push({ic:'🎪',l:`The Hilltop Street Fair — ${$(f)}`,s:'2 hours. Food, music, booths, half the hill out on MLK. Stress −20, community +8. Today only.',cat:'people',cls:'primary',dis:!canAfford(f),
+        fn:()=>{spend(f);S.fair=true;pass(120);adj('stress',-20);adj('community',8);const x=meetHere();say(`🎪 The Hilltop Street Fair: a band on the stage playing old soul like they mean it, kids with painted faces, lemonade, a line for barbecue that goes around the block and is worth it. Somebody hands you a flyer for a block club. ${x?`You meet <b>${x.n}</b> in the barbecue line.`:'You know half the people here now. Wild.'}`)}});}
   }
   if(S.loc==='work'){
     const sd=isShiftDay(d),done=d in S.worked,late=Math.max(0,m-J.start),open=isOpen('work');
@@ -1443,34 +1508,34 @@ function actionsHere(){
     else if(sd&&done) a.push({ic:'✅',l:'Shift done for today',s:'See you tomorrow.',cat:'work',dis:true,fn:()=>{}});
     else if(sd&&!done) a.push({ic:'❌',l:'Too late to clock in today',s:'The shift is nearly over.',cat:'work',dis:true,fn:()=>{}});
     if(!sd&&!S.extra[d]&&!(d in S.worked)){const ok=S.standing>=50&&at(540,J.end>1000?1080:780),pay=Math.round(J.pay*.5);
-      a.push({ic:'🕓',l:`Pick up a few extra hours — about ${$(pay)}`,s:ok?'4 hours. Energy −16, stress +6, job +3. Your day off, so it’s your call.':S.standing<50?'They only offer extra hours to people they count on (job 50+).':'Extra hours start between 9 AM and early afternoon.',cat:'work',dis:!ok,
-        fn:()=>{S.extra[d]=true;S.stats.extra++;pass(240);money(pay);S.stats.earned+=pay;adj('energy',-16);adj('stress',6);adj('standing',3);say(`🕓 Four hours covering for someone’s kid’s birthday. ${$(pay)}, and a “you’re a lifesaver” you’ll be cashing in later.`)}});}
+      a.push({ic:'🕓',l:`Pick up a few extra hours — about ${$(pay)}`,s:ok?'4 hours. Energy −16, stress +8, job +3. Your day off, so it’s your call.':S.standing<50?'They only offer extra hours to people they count on (job 50+).':'Extra hours start between 9 AM and early afternoon.',cat:'work',dis:!ok,
+        fn:()=>{S.extra[d]=true;S.stats.extra++;pass(240);money(pay);S.stats.earned+=pay;adj('energy',-16);adj('stress',8);adj('standing',3);say(`🕓 Four hours covering for someone’s kid’s birthday. ${$(pay)}, and a “you’re a lifesaver” you’ll be cashing in later.`)}});}
     if(!S.breakroom[d]&&open) a.push({ic:'☕',l:'Break-room coffee and five minutes with coworkers',s:'15 min. Energy +5, job +1. Once a day.',cat:'work',
       fn:()=>{S.breakroom[d]=true;pass(15);adj('energy',5);adj('standing',1);say(pick(WORK_TALK[S.job]||WORK_TALK.cafe))}});
     if(!open) a.push({ic:'🔒',l:`${J.place} is closed right now`,s:hoursTxt('work'),cat:'work',dis:true,fn:()=>{}});
   }
   if(S.loc==='link'){
-    if(!S.ride[d]) a.push({ic:'🚋',l:'Ride the T Line and back',s:'40 min. Free. Stress −6. The whole hill rides this train. Once a day.',cat:'here',
-      fn:()=>{S.ride[d]=true;S.stats.rides++;pass(40);adj('stress',-6);say(pick(['🚋 Down MLK past the hospitals, around the bend and back. A grandma and a toddler share a window seat and narrate every single dog.','🚋 Two nurses in scrubs asleep against each other, a guy with a guitar who doesn’t play it, and a kid reading a library book with total focus. The train dings. Nobody looks up.','🚋 You ride to the end of the line and back for no reason. The best reason.']));fireHook('ride',{sub:'On the T Line'})}});
-    a.push({ic:'🪑',l:'Sit on the platform and people-watch',s:'20 min. Stress −3.',cat:'rest',fn:()=>{pass(20);adj('stress',-3);say(pick(['🪑 A train every few minutes. Every one brings somebody home.','🪑 A man in a church hat tips it to you. You don’t have a hat, so you nod hard.','🪑 Two teenagers argue about the best burger in Tacoma with the seriousness of a court case.']))}});
+    if(!S.ride[d]) a.push({ic:'🚋',l:'Ride the T Line and back',s:'40 min. Free. Stress −8. The whole hill rides this train. Once a day.',cat:'here',
+      fn:()=>{S.ride[d]=true;S.stats.rides++;pass(40);adj('stress',-8);say(pick(['🚋 Down MLK past the hospitals, around the bend and back. A grandma and a toddler share a window seat and narrate every single dog.','🚋 Two nurses in scrubs asleep against each other, a guy with a guitar who doesn’t play it, and a kid reading a library book with total focus. The train dings. Nobody looks up.','🚋 You ride to the end of the line and back for no reason. The best reason.']));fireHook('ride',{sub:'On the T Line'})}});
+    a.push({ic:'🪑',l:'Sit on the platform and people-watch',s:`20 min. ${cap(calmTxt(3))}.`,cat:'rest',fn:()=>{pass(20);calm(3);say(pick(['🪑 A train every few minutes. Every one brings somebody home.','🪑 A man in a church hat tips it to you. You don’t have a hat, so you nod hard.','🪑 Two teenagers argue about the best burger in Tacoma with the seriousness of a court case.']))}});
   }
   if(S.loc==='peoples'){
     const open=isOpen('peoples'),sw=rp(5);
     if(!S.swim[d]) a.push({ic:'🏊',l:`Swim laps — ${$(sw)}`,s:open&&at(360,1200)?'45 min. Energy −6, stress −14. Once a day.':'Pool hours are 6 AM to 8 PM.',cat:'rest',dis:!open||!at(360,1200)||!canAfford(sw),
       fn:()=>{spend(sw);S.swim[d]=true;S.stats.swims++;pass(45);adj('energy',-6);adj('stress',-14);say(pick(['🏊 Twenty laps in the cool blue. The lifeguard blows the whistle at a cannonball, then grins.','🏊 You swim until your head goes quiet. Then a few more.','🏊 Lap lanes on one side, a swim lesson on the other: six little kids blowing bubbles like it’s their job.']))}});
-    if(!S.hoops[d]) a.push({ic:'🏀',l:'Get in on the pickup game',s:at(1020,1230)?'1 hour. Energy −12, stress −10, community +4. Once a day.':'The pickup game runs about 5 to 8:30 PM.',cat:'people',dis:!at(1020,1230)||S.energy<15,
-      fn:()=>{S.hoops[d]=true;pass(60);adj('energy',-12);adj('stress',-10);adj('community',4);let x=null;if(!S.met.tasha){S.met.tasha=d+1;S.stats.neighbors=metCount();x=NEIGHBORS.find(y=>y.id==='tasha')}
+    if(!S.hoops[d]) a.push({ic:'🏀',l:'Get in on the pickup game',s:at(1020,1230)?'1 hour. Energy −12, stress −10, community +1. Once a day.':'The pickup game runs about 5 to 8:30 PM.',cat:'people',dis:!at(1020,1230)||S.energy<15,
+      fn:()=>{S.hoops[d]=true;pass(60);adj('energy',-12);adj('stress',-10);adj('community',1);let x=null;if(!S.met.tasha){S.met.tasha=d+1;S.stats.neighbors=metCount();x=NEIGHBORS.find(y=>y.id==='tasha')}
         say(x?`🏀 <b>Tasha</b> picks you for her team because you were standing there. You hit one jumper all night and she acts like it was the game-winner. ${x.d}`:pick(['🏀 Next game is to eleven, ones and twos. You hold your own. Somebody calls you by name.','🏀 You get dunked on by a sixteen-year-old. The whole court groans in sympathy. It’s an honor, honestly.','🏀 Tasha calls a foul on herself. The court goes silent with respect. Then trash talk resumes.']))}});
-    if(!S.volunteer[d]) a.push({ic:'🤲',l:'Help out with a community program',s:open&&at(540,1080)?'2 hours. Energy −8, community +6, stress −4. Once a day.':'Programs run 9 AM to 6 PM.',cat:'people',dis:!open||!at(540,1080),
-      fn:()=>{S.volunteer[d]=true;pass(120);adj('energy',-8);adj('community',6);adj('stress',-4);const x=Math.random()<.5?meetHere():null;say(pick(['🤲 You hand out free lunches at the summer meal program. A kid trades you a drawing for an extra milk. You keep the drawing.','🤲 Tutoring at the summer reading program. A third grader reads you a whole chapter book, every word, and then explains it to you.','🤲 You set up chairs for the elders’ lunch and stay for dominoes. You lose, loudly, and are invited back.'])+(x?` You meet <b>${x.n}</b>.`:''))}});
-    a.push({ic:'🌳',l:'Sit in People’s Park',s:'30 min. Stress −5.',cat:'rest',fn:()=>{pass(30);adj('stress',-5);S.stats.walks++;say(pick(['🌳 Shade, a breeze, somebody’s speaker playing Earth, Wind & Fire at a polite volume.','🌳 Pigeons, toddlers, an old man feeding both.','🌳 The courts thump, the pool shrieks, the trees don’t care. Perfect.']))}});
+    if(!S.volunteer[d]) a.push({ic:'🤲',l:'Help out with a community program',s:open&&at(540,1080)?'2 hours. Energy −8, community +3, stress −4. Once a day.':'Programs run 9 AM to 6 PM.',cat:'people',dis:!open||!at(540,1080),
+      fn:()=>{S.volunteer[d]=true;pass(120);adj('energy',-8);adj('community',3);adj('stress',-4);const x=Math.random()<.5?meetHere():null;say(pick(['🤲 You hand out free lunches at the summer meal program. A kid trades you a drawing for an extra milk. You keep the drawing.','🤲 Tutoring at the summer reading program. A third grader reads you a whole chapter book, every word, and then explains it to you.','🤲 You set up chairs for the elders’ lunch and stay for dominoes. You lose, loudly, and are invited back.'])+(x?` You meet <b>${x.n}</b>.`:''))}});
+    a.push({ic:'🌳',l:'Sit in People’s Park',s:`30 min. ${cap(calmTxt(5))}.`,cat:'rest',fn:()=>{pass(30);calm(5);S.stats.walks++;say(pick(['🌳 Shade, a breeze, somebody’s speaker playing Earth, Wind & Fire at a polite volume.','🌳 Pigeons, toddlers, an old man feeding both.','🌳 The courts thump, the pool shrieks, the trees don’t care. Perfect.']))}});
   }
   if(S.loc==='view'){
-    a.push({ic:'🌄',l:'Sit on the bench',s:'30 min. Stress −8.',cat:'rest',fn:()=>{pass(30);adj('stress',-8);say(pick(['🌄 The bay, the cranes, the ferry to Vashon cutting its slow white line. The whole city is down there working, and you’re up here, breathing.','🌄 A container ship eases toward the port. From up here it looks like a toy somebody’s very careful with.','🌄 '+(S.ev.flags.mtn===d?'The mountain is out, all of it, so big it looks painted on.':'Rainier is behind the haze today. Everybody on the bench knows it’s there anyway.')]))}});
-    if(!S.sunset[d]) a.push({ic:'🌅',l:'Watch the sunset',s:at(SUNSET-60,SUNSET+20)?'45 min. Stress −18. Once a day. Worth it every time.':`Come back around ${fmt(SUNSET-45)}.`,cat:'rest',cls:at(SUNSET-60,SUNSET+20)?'primary':'',dis:!at(SUNSET-60,SUNSET+20),
-      fn:()=>{S.sunset[d]=true;S.stats.sunsets++;pass(45);adj('stress',-18);const x=!S.met.harris&&Math.random()<.5;if(x){S.met.harris=d+1;S.stats.neighbors=metCount();adj('community',3)}
-        say(pick(['🌅 The sun drops behind the Olympics and the whole bay goes copper. Rainier catches the last of it, pink as a shell.','🌅 Gold, then orange, then a purple you don’t have a word for. Somebody on the next bench says “Every night,” like a prayer.','🌅 The port lights come on one by one. The mountain goes blue, then gone.'])+(x?' An older man in a pressed shirt shares the bench and hums the whole time: <b>Deacon Harris</b>, choir bass, thirty-one years at the Port. “Best seat in Tacoma,” he says. “Don’t tell anybody.”':''))}});
-    a.push({ic:'🚶',l:'Walk the edge of the hill',s:'45 min. Stress −8, energy −4.',cat:'here',fn:()=>{pass(45);S.stats.walks++;adj('stress',-8);adj('energy',-4);say(pick(['🚶 Old houses with deep porches and new ones with big windows, side by side, everybody’s tomatoes coming in at once.','🚶 Stairs down, stairs back up. Hilltop is a hill. Your legs have noticed.','🚶 A yard sign says “Hilltop is home.” A kid’s chalk on the sidewalk says the same thing with more hearts.']))}});
+    a.push({ic:'🌄',l:'Sit on the bench',s:`30 min. ${cap(calmTxt(8))}.`,cat:'rest',fn:()=>{pass(30);calm(8);say(pick(['🌄 The bay, the cranes, the ferry to Vashon cutting its slow white line. The whole city is down there working, and you’re up here, breathing.','🌄 A container ship eases toward the port. From up here it looks like a toy somebody’s very careful with.','🌄 '+(S.ev.flags.mtn===d?'The mountain is out, all of it, so big it looks painted on.':'Rainier is behind the haze today. Everybody on the bench knows it’s there anyway.')]))}});
+    if(!S.sunset[d]){const ss=sunsetOn(d),ok=at(ss-45,ss+20);a.push({ic:'🌅',l:'Watch the sunset',s:ok?`Sunset ${fmt(ss)}, best from ${fmt(ss-45)}. 45 min. Stress −18. Once a day. Worth it every time.`:m<ss?`Sunset ${fmt(ss)} tonight, best from ${fmt(ss-45)}. Come back then.`:`Sunset was ${fmt(ss)}. Tomorrow’s is a minute or two earlier.`,cat:'rest',cls:ok?'primary':'',dis:!ok,
+      fn:()=>{S.sunset[d]=true;S.stats.sunsets++;pass(45);adj('stress',-18);const x=!S.met.harris&&Math.random()<.5;if(x){S.met.harris=d+1;S.stats.neighbors=metCount();adj('community',MEET_COMMUNITY)}
+        say(pick(['🌅 The sun drops behind the Olympics and the whole bay goes copper. Rainier catches the last of it, pink as a shell.','🌅 Gold, then orange, then a purple you don’t have a word for. Somebody on the next bench says “Every night,” like a prayer.','🌅 The port lights come on one by one. The mountain goes blue, then gone.'])+(x?' An older man in a pressed shirt shares the bench and hums the whole time: <b>Mr. Harris</b>, eighty-one, thirty-one years welding ships on the tideflats. He points out the one he worked on in 1979. “Best seat in Tacoma,” he says. “Don’t tell anybody.”':''))}});}
+    a.push({ic:'🚶',l:'Walk the edge of the hill',s:`45 min. ${cap(calmTxt(8))}, energy −4.`,cat:'here',fn:()=>{pass(45);S.stats.walks++;calm(8);adj('energy',-4);say(pick(['🚶 Old houses with deep porches and new ones with big windows, side by side, everybody’s tomatoes coming in at once.','🚶 Stairs down, stairs back up. Hilltop is a hill. Your legs have noticed.','🚶 A yard sign says “Hilltop is home.” A kid’s chalk on the sidewalk says the same thing with more hearts.']))}});
   }
   if(!(S.loc==='home'&&m>=1290)) a.push({ic:'⏳',l:'Wait a while…',s:'Skip ahead 30, 60 or 120 minutes.',cat:'rest',fn:()=>worldWait()});
   return a;
@@ -1478,7 +1543,7 @@ function actionsHere(){
 const WORK_TALK={
   hospital:['☕ The charge nurse tells you which patient asks for you by name. You pretend that doesn’t make your whole week.','☕ A respiratory therapist shows you pictures of her garden. Every tomato has a name.','☕ Someone brought donuts. Someone always brings donuts. Hospitals run on donuts.'],
   cafe:['☕ The owner shows you how to pour a rosetta. Yours looks like a potato. She says potatoes are a start.','☕ Your coworker has a theory about every regular. Most of the theories are wrong and all of them are great.','☕ Free shift drink, a minute on the back step, the Link going by.'],
-  kitchen:['☕ The pitmaster tells you the greens take a whole day and a whole life to get right. He’s on year thirty.','☕ The dishwasher is the funniest person you’ve ever met. You laugh so hard you have to sit on a milk crate.','☕ Mama herself checks your station, says nothing, nods once. You will remember that nod forever.'],
+  kitchen:['☕ The pitmaster tells you the greens take a whole day and a whole life to get right. He’s on year thirty.','☕ The dishwasher is the funniest person you’ve ever met. You laugh so hard you have to sit on a milk crate.','☕ Miss Odessa herself checks your station, says nothing, nods once. You will remember that nod forever.'],
 };
 function work(late){
   const d=day(),J=job(),m=tod();
@@ -1487,9 +1552,9 @@ function work(late){
   let pay=Math.round(J.pay*frac),tip=0;
   if(J.tips){tip=Math.round((J.tips[0]+Math.random()*(J.tips[1]-J.tips[0]))*(.6+S.standing/250)*frac);S.stats.tips+=tip}
   S.worked[d]=late;S.stats.shifts++;pass(J.end-tod());money(pay+tip);S.stats.earned+=pay+tip;
-  adj('energy',-J.energy);adj('stress',J.stress);
-  if(late){S.stats.late++;adj('standing',-Math.min(12,Math.ceil(late/5)));adj('stress',5);say(`${J.ic} You slip in ${late} minutes late. ${S.job==='hospital'?'The charge nurse just looks at the clock.':S.job==='kitchen'?'The ticket rail is already full. Nobody says a word, which is worse.':'The line is out the door and your coworker is drowning.'} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
-  else{adj('standing',5);say(`${J.ic} ${pick(SHIFT_LINES[S.job]||SHIFT_LINES.cafe)} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
+  adj('energy',-J.energy);adj('stress',shiftStress(J));
+  if(late){S.stats.late++;adj('standing',-Math.min(BAL.late[2],BAL.late[0]+Math.ceil(late/BAL.late[1])));adj('stress',BAL.lateStress);say(`${J.ic} You slip in ${late} minutes late. ${S.job==='hospital'?'The charge nurse just looks at the clock.':S.job==='kitchen'?'The ticket rail is already full. Nobody says a word, which is worse.':'The line is out the door and your coworker is drowning.'} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
+  else{adj('standing',BAL.onTime);say(`${J.ic} ${pick(SHIFT_LINES[S.job]||SHIFT_LINES.cafe)} Paid ${$(pay)}${tip?` plus ${$(tip)} in tips`:''}.`)}
   if(J.staffMeal) say('🍗 Staff meal after close: fried chicken, greens, a square of cornbread. Dinner’s covered tonight.');
   fireHook('shift',{sub:`At ${J.place}`});
 }
@@ -1518,7 +1583,7 @@ function statusTags(){
 function alertBar(){
   const d=day(),m=tod(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)&&m>J.start&&m<J.end-60) return {t:`⏰ You’re late for work at ${J.place} (your shift started at ${fmt(J.start)}).`};
-  if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${J.place} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
+  if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${cap(J.place)} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
   if(d===FAIR_DAY&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
   if(!S.rent.paid&&d>=11) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by Sunday night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
   if(S.food<1&&m>=960) return {t:'🍽️ The fridge is empty and dinner is coming. The corner market on MLK is open until 10 PM.',kind:'info'};
@@ -1568,20 +1633,20 @@ function hoodView(){
 
 // ---- dates and small helpers ----
 function stLong(d){return `${dayName(d)}, Aug ${3+d}`}
-function stMet(id){if(S.met[id])return false;S.met[id]=day()+1;S.stats.neighbors=metCount();adj('community',3);return true}
+function stMet(id){if(S.met[id])return false;S.met[id]=day()+1;S.stats.neighbors=metCount();adj('community',MEET_COMMUNITY);return true}
 const stNb=id=>NEIGHBORS.find(x=>x.id===id);
 
 // ---- title screen ----
 const TITLE={
   start:'Move in on Monday 📦',
-  intro:'You just moved into a third-floor walk-up on Hilltop, in Tacoma, Washington: the old neighborhood up on the hill, with Martin Luther King Jr. Way running down the middle, the Link train ringing past, murals on the walls and the mountain over everything. Two weeks, Monday Aug 3 to Sunday Aug 16, 2026, to settle in.',
+  intro:'You just moved into a third-floor walk-up on Hilltop, in Tacoma, Washington: the old neighborhood up on the hill, with Martin Luther King Jr. Way running down the middle, the Link train ringing past, murals on the walls and the mountain over everything. Two weeks, Monday Aug 3 to Sunday Aug 16, 2026, to settle in. The name is a wink at an old nickname for the city, said with a grin by people who grew up here; the game itself is a love letter to Hilltop: the people who built it, the people who stayed, and the people just arriving.',
   bullets:['Pick a job on day one: a CNA at Tacoma General, a barista at a Hilltop café, or a line cook at a soul-food spot on MLK.','Show up for your shifts. Be late too often, or don’t show, and you’re let go.','Keep food in the fridge, your energy up and your stress down.','Rent is $1,150, due by Sunday night, Aug 16.','Meet your neighbors. The street fair is Saturday, Aug 8.'],
   note:'A game about a real neighborhood. Businesses and neighbors in it are made up.',
   art:()=>`<svg viewBox="0 0 480 250" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%" aria-hidden="true"><defs><linearGradient id="tts" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1a97a"/><stop offset=".5" stop-color="#f8d9b0"/><stop offset="1" stop-color="#d7e6e6"/></linearGradient></defs>
     <rect width="480" height="250" fill="url(#tts)"/><circle cx="90" cy="64" r="22" fill="#fff1c4" opacity=".9"/>
-    <polygon points="200,150 300,58 318,52 336,60 450,150" fill="#a4b2c4"/><polygon points="268,88 300,58 318,52 336,60 364,88 348,82 334,94 318,82 302,96 288,84" fill="#fbfcfd"/>
+    ${rainier(false,318,1,148)}
     <rect y="140" width="480" height="30" fill="#5d93ad"/><path d="M40 152 q24 -4 48 0 M220 160 q24 -4 48 0 M380 150 q24 -4 48 0" stroke="#a6d0df" stroke-width="2" fill="none" opacity=".7"/>
-    ${[330,356,382].map(x=>`<g stroke="#c8452f" stroke-width="2.5" fill="none"><path d="M${x} 142 V116 M${x+14} 142 V116 M${x-14} 116 H${x+28}"/></g>`).join('')}
+    <rect x="18" y="146" width="150" height="4" fill="#8a8d86"/>${boxesOnDock(82,false,146)}${crane(46,false,146,.78)}${crane(110,false,146,.78)}${crane(150,false,146,.7)}
     <path d="M0 250 V176 Q60 150 150 160 Q240 168 300 156 Q380 142 480 160 V250 Z" fill="#4c6b58"/>
     ${[[18,'#b66a4a'],[96,'#d9b45a'],[176,'#6f9aa6'],[300,'#c97a5a'],[392,'#8fae7a']].map(([x,c],i)=>`<g transform="translate(${x},${170-i%2*6})"><rect width="58" height="38" fill="${c}"/><polygon points="-5,2 29,-20 63,2" fill="#5a3328"/><rect x="8" y="10" width="12" height="11" fill="#fbe9b0"/><rect x="38" y="10" width="12" height="11" fill="#fbe9b0"/><rect x="24" y="22" width="10" height="16" fill="#3a2a20"/></g>`).join('')}
     <rect x="252" y="150" width="34" height="60" fill="#8c4a38"/>${[0,1,2].map(r=>`<rect x="258" y="${158+r*14}" width="8" height="8" fill="#fbe9b0"/><rect x="272" y="${158+r*14}" width="8" height="8" fill="#fbe9b0"/>`).join('')}
@@ -1627,14 +1692,17 @@ function onMorning(d){
 }
 function onNight(where,notes,d){
   const J=job();
-  if(where==='collapsed'){S.loc='home';adj('stress',6);notes.push('😵 You were up past midnight. You wake up on the couch with your shoes on and the lamp still burning.')}
+  const bedAt=tod();
+  if(where==='collapsed'){S.loc='home';adj('stress',BAL.midnightStress);adj('standing',-BAL.midnightJob);notes.push(`😵 You were up past midnight. You wake up on the couch with your shoes on and the lamp still burning, and you’ll be dragging all day. Job −${BAL.midnightJob}.`)}
   let hungry=false;
   if(J.staffMeal&&(d in S.worked)) notes.push('🍗 Staff meal at the kitchen covered dinner.');
   else if(S.food>0){S.food--;S.stats.meals++;notes.push(`🍽️ Dinner from the fridge (${S.food} meal${S.food===1?'':'s'} left).`)}
   else{hungry=true;S.stats.hungry++;adj('stress',10);notes.push('🥣 Nothing in the fridge. You go to bed hungry.')}
   adj('energy',(where==='home'?58:28)/(hungry?2:1));
-  if(where==='home') adj('stress',-10);   // a night in your own bed
-  if(isShiftDay(d)&&!(d in S.worked)){const hit=S.stats.missed?12:6;adj('standing',-hit);adj('stress',6);S.stats.missed++;notes.push(`📵 You missed your shift at ${J.place}. ${S.job==='hospital'?'The floor ran short a CNA all day.':S.job==='kitchen'?'They worked the line one cook short.':'Your coworker opened alone.'} ${S.stats.missed===1?'Your manager texts: “Everything okay? Don’t make it a habit.” Job −6.':`Job −${hit}.`}`)}
+  if(where==='home'){const good=!hungry&&bedAt<BAL.goodSleepBy;adj('stress',-(good?BAL.goodSleep:BAL.sleep));   // a night in your own bed; a real night's sleep if you're down before 11
+    if(good) notes.push(`😴 In bed before ${fmt(BAL.goodSleepBy)}: a real night’s sleep. Stress −${BAL.goodSleep}.`)}
+  if(!S.rent.paid&&DF().worry) adj('stress',DF().worry);   // rent on your mind
+  if(isShiftDay(d)&&!(d in S.worked)){const hit=S.stats.missed?BAL.missed[1]:BAL.missed[0];adj('standing',-hit);adj('stress',BAL.missedStress);S.stats.missed++;notes.push(`📵 You missed your shift at ${J.place}. ${S.job==='hospital'?'The floor ran short a CNA all day.':S.job==='kitchen'?'They worked the line one cook short.':'Your coworker opened alone.'} ${S.stats.missed===1?`Your manager texts: “Everything okay? Don’t make it a habit.” Job −${hit}.`:`Job −${hit}.`}`)}
   if(d===S.rent.due&&!S.rent.paid){
     if(S.money>=S.rent.amt){spend(S.rent.amt);S.rent.paid=true;S.rent.paidDay=d;adj('stress',4);notes.push(`🧾 You pay rent from bed at 11:58 PM: ${$(S.rent.amt)}. Cutting it close.`)}
     else{S.evicted=true;notes.push(`🧾 Rent was due tonight and you have ${$(Math.round(S.money))} of ${$(S.rent.amt)}.`)}
@@ -1658,7 +1726,7 @@ function checkLoss(){if(S.standing<=0)return 'fired';if(S.stress>=100)return 'bu
 // ---- random events (03-events.js). Hooks: wake, arrive {at,from}, travel {from,to}, night {where,notes}, ride (the T Line), shift (after work) ----
 const evening=()=>tod()>=1020&&tod()<1290, daytime=()=>tod()>=540&&tod()<1140;
 defEvent({id:'mountain_out',hook:'wake',tile:['🏔️','The mountain is out','good'],chance:0.3,max:4,cooldown:2,cond:()=>day()>0,
-  run:()=>{S.ev.flags.mtn=day();adj('stress',-5);say('🏔️ The mountain is out. Rainier fills the whole south sky, pink with the first light, so big it looks fake. Everybody on the block stops on their porch to look. It’s the thing Tacoma does.')}});
+  run:()=>{S.ev.flags.mtn=day();adj('stress',-5);say('🏔️ The mountain is out. Rainier fills the whole southeast sky, pink with the first light, so big it looks fake. Everybody on the block stops on their porch to look. It’s the thing Tacoma does.')}});
 defEvent({id:'heat_wave',hook:'wake',tile:['🥵','A hot one','bad'],chance:0.12,bad:true,max:2,cooldown:4,cond:()=>day()>0,
   run:()=>{adj('energy',-6);adj('stress',4);say('🥵 Ninety-two by afternoon, they say. Tacoma treats that like weather from another planet. The pool at People’s will be packed, and every box fan on the hill is sold out.')}});
 defEvent({id:'fair_morning',hook:'wake',tile:['🎪','Street fair day','good'],chance:1,max:1,cond:()=>day()===FAIR_DAY,
@@ -1668,9 +1736,9 @@ defEvent({id:'internet_bill',hook:'wake',tile:['🧾','Internet hookup','bad'],c
 defEvent({id:'power_bill',hook:'wake',tile:['🧾','The power bill','bad'],chance:1,max:1,cond:()=>day()===8,
   run:()=>{const c=rp(72);spend(c);say(`🧾 Your first power bill, prorated: ${$(c)}. You had the box fan on all night. Worth every cent.`)}});
 defEvent({id:'priya_hall',hook:'wake',tile:['🩺','The nurse down the hall','good'],chance:0.35,max:1,cond:()=>day()>0&&!S.met.priya,
-  run:()=>{stMet('priya');say(`🩺 In the hallway at dawn you meet <b>Priya</b>, coming home from a night shift as you’re heading out. ${stNb('priya').d} She tells you which washing machine eats quarters.`)}});
+  run:()=>{stMet('priya');say(`🩺 In the hallway at dawn you meet <b>Priya</b>, coming home from a night shift as you’re heading out. ${stNb('priya').d}`)}});
 defEvent({id:'church_choir',hook:'arrive',tile:['🎶','The choir on Sunday','good'],chance:0.6,max:2,cond:c=>dayName(day())==='Sunday'&&tod()>=600&&tod()<780&&['mlk','link','home','peoples'].includes(c.at),
-  run:()=>{adj('stress',-8);adj('community',3);const x=stMet('harris');say(`🎶 The doors of the church on the corner are open and the choir is going full strength: a hundred voices and an organ shaking the windows. You stand on the sidewalk and listen through two songs. ${x?'A man in a pressed suit comes out at the break and shakes your hand: <b>Deacon Harris</b>, choir bass. “You can come in, you know.”':'Deacon Harris waves at you from the steps.'}`)}});
+  run:()=>{adj('stress',-8);adj('community',3);const x=stMet('harris');say(`🎶 The doors of the church on the corner are open and the choir is going full strength: a hundred voices and an organ shaking the windows. You stand on the sidewalk and listen through two songs. ${x?'An old man in a pressed suit comes out at the break and shakes your hand with a welder’s grip: <b>Mr. Harris</b>, choir bass. “You can come in, you know. Or don’t. The music carries.”':'Mr. Harris waves at you from the steps.'}`)}});
 defEvent({id:'link_bell',hook:['arrive','ride'],tile:['🔔','The Link bell','good'],chance:0.25,cooldown:2,cond:c=>c.hook==='ride'||c.at==='link',
   run:()=>{adj('stress',-3);const x=stMet('jaylen');say(x?`🔔 The operator dings the bell twice for a kid on a BMX racing the train down the sidewalk. The kid wins, barely, and pops a wheelie for the passengers: <b>Jaylen</b>, eleven, who then asks you if you’re new, where you’re from, and if you have a dog.`:'🔔 The operator dings the bell at Jaylen racing the train on his BMX. He wins again. The whole car cheers.')}});
 defEvent({id:'link_musician',hook:'ride',tile:['🎷','Music on the train','good'],chance:0.35,cooldown:2,
@@ -1681,26 +1749,42 @@ defEvent({id:'summer_shower',hook:'travel',tile:['🌦️','A rare August shower
   run:()=>{say('🌦️ A sudden warm shower, the first in weeks. The whole hill smells like hot pavement and cut grass. Kids run out into it. So, a little, do you.')}});
 defEvent({id:'lorraine_porch',hook:'arrive',tile:['🍅','Tomatoes from across the street','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&daytime(),
   run:()=>{stMet('lorraine');S.food++;say(`🍅 A woman on the porch across the street calls you over by pointing: <b>Ms. Lorraine</b>. ${stNb('lorraine').d} She sends you home with a bag of tomatoes from her yard “so you eat something real.” Food +1.`)}});
-defEvent({id:'neighbor_bbq',hook:'arrive',tile:['🍖','Big Ron’s smoker','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&evening()&&day()%7>=4,
-  run:()=>{const x=stMet('ron');adj('energy',8);adj('stress',-8);adj('community',4);say(`🍖 The smoke has been drifting up the block all afternoon. ${x?'Two doors down, a very large, very quiet man waves you into his yard with a pair of tongs: <b>Big Ron</b>.':'Big Ron waves you in with the tongs.'} Ribs, links, potato salad, a cooler of pop and six neighbors arguing about the Seahawks. You leave with a foil-wrapped plate.`);chain('bbq_leftovers')}});
+defEvent({id:'neighbor_bbq',hook:'arrive',tile:['🍖','Ron’s smoker','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&evening()&&day()%7>=4,
+  run:()=>{const x=stMet('ron');adj('energy',8);adj('stress',-8);adj('community',4);say(`🍖 The smoke has been drifting up the block all afternoon. ${x?'Two doors down, a man in a Port of Tacoma cap waves you into his yard with a pair of tongs: <b>Ron</b>, who engineers wharves for a living and brisket for love.':'Ron waves you in with the tongs.'} Ribs, links, Tita Rose’s lumpia, potato salad, a cooler of pop and six neighbors arguing about the Seahawks. You leave with a foil-wrapped plate.`);chain('bbq_leftovers')}});
 defEvent({id:'bbq_leftovers',hook:'wake',tile:['🍖','Leftovers','good'],
-  run:()=>{S.food++;say('🍖 Big Ron’s leftover plate is in the fridge. Breakfast of champions. Food +1.')}});
+  run:()=>{S.food++;say('🍖 Ron’s leftover plate is in the fridge. Breakfast of champions. Food +1.')}});
 defEvent({id:'mural_painting',hook:'arrive',tile:['🎨','A mural going up','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&daytime(),
   run:()=>{const x=stMet('marisol');pass(20);adj('stress',-5);adj('community',3);say(`🎨 Scaffolding on the side wall by the bus stop, paint cans, a boombox. ${x?'The painter is <b>Marisol</b>. ':''}She’s painting the old Hilltop, the new one and the people who stayed through all of it. She hands you a roller and points at a patch of sky. “Blue. Don’t overthink it.”`);chain('mural_done')}});
 defEvent({id:'mural_done',hook:'arrive',tile:['🖼️','The mural is finished','good'],cond:c=>c.at==='mlk'&&day()>=2,
   run:()=>{adj('stress',-6);adj('community',2);say('🖼️ The mural is done. Three stories of faces, the Link, the mountain and, up in one corner, a patch of sky that is a little streakier than the rest. Yours. Marisol signed the corner and wrote “and the neighbors” under her name.')}});
 defEvent({id:'free_fridge',hook:'arrive',tile:['🧺','The free community fridge','good'],chance:0.25,max:2,cooldown:4,cond:c=>c.at==='mlk',
   run:()=>{const x=stMet('bev');
-    if(S.food<2){S.food+=2;say(`🧺 Outside the laundromat there’s a little painted fridge that says <b>TAKE WHAT YOU NEED, LEAVE WHAT YOU CAN</b>. ${x?'<b>Auntie Bev</b>, restocking it, ':'Auntie Bev '}looks at you once and hands you two containers of red beans and rice. “You’re new. Eat.” Food +2.`)}
-    else{S.food--;adj('community',4);say(`🧺 The little painted community fridge outside the laundromat is looking empty. You leave a meal of your own in it. ${x?'<b>Auntie Bev</b>, who keeps it stocked, ':'Auntie Bev '}catches you doing it and tells the whole sidewalk. Community +4.`)}}});
+    if(S.food<2){S.food+=2;say(`🧺 Outside the laundromat there’s a little painted fridge that says <b>TAKE WHAT YOU NEED, LEAVE WHAT YOU CAN</b>. ${x?'<b>Bev</b>, a retired librarian restocking it, ':'Bev '}looks at you once and hands you two containers of red beans and rice. “You’re new. Eat.” Food +2.`)}
+    else{S.food--;adj('community',4);say(`🧺 The little painted community fridge outside the laundromat is looking empty. You leave a meal of your own in it. ${x?'<b>Bev</b>, who keeps it stocked, ':'Bev '}catches you doing it and tells the whole sidewalk. Community +4.`)}}});
 defEvent({id:'corner_name',hook:'arrive',tile:['🛒','“Morning!”','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&S.community>=30,
-  run:()=>{adj('stress',-6);say('🛒 Mr. Kim calls your name from the market door before you even get there. So does the guy at the bus stop. So does a woman you’re pretty sure you’ve never met. You live here now.')}});
+  run:()=>{adj('stress',-6);say('🛒 Grace Kim calls your name from the market door before you even get there. So does the guy at the bus stop. So does a woman you’re pretty sure you’ve never met. You live here now.')}});
 defEvent({id:'jaylen_questions',hook:'arrive',tile:['🚲','Questions from Jaylen','good'],chance:0.25,max:2,cooldown:3,cond:c=>['home','peoples'].includes(c.at),
   run:()=>{const x=stMet('jaylen');adj('stress',-3);say(`🚲 ${x?'A kid on a BMX skids to a stop beside you: <b>Jaylen</b>, eleven. ':'Jaylen skids up on his BMX. '}“Is it true Mount Rainier is a volcano? Would it get us up here? What’s your job? Can I have a dollar? Never mind, I don’t need a dollar.” He rides off satisfied.`)}});
 defEvent({id:'ice_cream',hook:'arrive',tile:['🍦','The ice cream truck','good'],chance:0.25,max:2,cooldown:3,cond:c=>['peoples','home'].includes(c.at)&&tod()>=780&&tod()<1170,
   run:()=>{spend(3);adj('stress',-4);adj('energy',3);say('🍦 The ice cream truck’s song comes around the corner and the whole block’s kids appear out of nowhere. You get in line with them. A rocket pop, $3. You’re an adult. You can do this.')}});
 defEvent({id:'block_party',hook:'arrive',tile:['🎉','A block party','good'],chance:0.5,max:1,cond:c=>c.at==='home'&&evening()&&day()>=9&&day()%7>=5,
-  run:()=>{pass(60);adj('community',8);adj('stress',-10);adj('energy',-4);say('🎉 Somebody blocked off the end of the street with sawhorses and folding tables. Kids on bikes, a grill going, a speaker playing everything from Earth, Wind & Fire to Sir Mix-a-Lot, and Ms. Lorraine in a lawn chair running the whole thing. You stay an hour and dance once, badly. Community +8.')}});
+  run:()=>{pass(60);adj('community',8);adj('stress',-10);adj('energy',-4);say('🎉 Somebody blocked off the end of the street with sawhorses and folding tables. Kids on bikes, a grill going, a speaker playing everything from Earth, Wind & Fire to Sir Mix-a-Lot to the Santos kids’ K-pop, Denise running the raffle, and Ms. Lorraine in a lawn chair running everything else. You stay an hour and dance once, badly. Community +8.')}});
+defEvent({id:'bookstore',hook:'arrive',tile:['📚','Hilltop Pages','good'],chance:0.3,max:1,cond:c=>c.at==='mlk'&&tod()>=600&&tod()<1140,
+  run:()=>{const x=stMet('imani');pass(20);adj('stress',-5);say(`📚 A bookstore you hadn’t noticed, two doors up from the barbershop: Hilltop Pages. ${x?'The owner is <b>Imani</b>. ':'Imani waves from the register. '}She asks what you read, frowns at your answer and hands you a paperback of Tacoma poets. “Pay me when you’ve read it. Or don’t, and come to poetry night.”`)}});
+defEvent({id:'pho',hook:'arrive',tile:['🍜','Phở on MLK','good'],chance:0.25,max:1,cond:c=>['mlk','link'].includes(c.at)&&tod()>=660&&tod()<1260,
+  run:()=>{const x=stMet('linh');const c=rp(13);spend(c);adj('energy',10);adj('stress',-5);say(`🍜 The phở shop on MLK has a line out the door and a smell that pulls you into it. ${x?'<b>Linh</b>, who runs it, ':'Linh '}seats you at the counter, brings a bowl of brisket phở you didn’t order and the basil you would have forgotten. ${$(c)}. You’ll be back.`)}});
+defEvent({id:'santos_next_door',hook:'arrive',tile:['🎤','Karaoke next door','good'],chance:0.3,max:1,cond:c=>c.at==='home'&&tod()>=1020&&tod()<1290,
+  run:()=>{const x=stMet('santos');adj('stress',-6);adj('community',1);say(`🎤 Someone next door is singing “Dancing Queen” with total commitment. A knock: ${x?'<b>The Santos family</b> — Tita Rose, Tito Ben and three kids — ':'Tita Rose '}want to know if the new neighbor sings. You do not. You sing anyway. Tita Rose sends you home with a plate of pancit “for tomorrow.” Food +1.`);S.food++}});
+defEvent({id:'denise_elevator',hook:'arrive',tile:['♿','The elevator’s out','info'],chance:0.3,max:1,cond:c=>['link','mlk'].includes(c.at)&&daytime(),
+  run:()=>{const x=stMet('denise');pass(15);adj('community',1);say(`♿ The elevator at the station is out again, and a woman in a wheelchair is on the phone with the transit agency, reading them the work-order number from memory: ${x?'<b>Denise</b>, who chairs the block club’s transit committee. ':'Denise. '}You hold the door of the corner store while she finishes, and she signs you up for the committee’s email list before you can say no.`)}});
+defEvent({id:'malik_desk',hook:'arrive',tile:['🎓','The front desk at People’s','good'],chance:0.35,max:1,cond:c=>c.at==='peoples',
+  run:()=>{const x=stMet('malik');adj('stress',-3);say(`🎓 ${x?'The kid at the front desk of People’s is <b>Malik</b>, home from UW Tacoma for the summer. ':'Malik waves you through the front desk. '}He tells you the pool is least crowded at 6 AM, the pickup game starts “around five, which means 5:20,” and that he is building an app for the block club. “They don’t want one. They need one.”`)}});
+defEvent({id:'eli_newcomer',hook:'arrive',tile:['💻','Another new neighbor','info'],chance:0.3,max:1,cond:c=>['home','view'].includes(c.at)&&day()>=2,
+  run:()=>{const x=stMet('eli');say(`💻 ${x?'A guy with a laptop bag and a very new bike introduces himself: <b>Eli</b>, moved from Seattle last month for the rent. ':'Eli catches you on the sidewalk. '}He asks where the “real Hilltop places” are, then catches himself. “Sorry. That’s a weird question. I just don’t want to be the guy who moves in and doesn’t know anybody.” You point him to Imani’s bookstore and the block club meeting. He writes both down.`)}});
+defEvent({id:'new_building',hook:'arrive',tile:['🏗️','A new building going up','info'],chance:0.3,max:1,cond:c=>['mlk','home'].includes(c.at)&&day()>=3&&daytime(),
+  run:()=>{adj('stress',2);say('🏗️ Where the old tire shop was, a crane and a banner: <b>LUXURY LIVING ON HILLTOP · STUDIOS FROM $1,995</b>. Ms. Lorraine reads it out loud, twice, and doesn’t say anything else. Mr. Harris says his first apartment on this block was $90 a month and it had a hole in the floor. “Both things are true,” he says. “It got better, and it got harder to stay.”')}});
+defEvent({id:'block_club',hook:'arrive',tile:['🗳️','The block club meets','good'],chance:0.6,max:1,cond:c=>c.at==='peoples'&&day()>=6&&(dayName(day())==='Thursday'||tod()>=1080),
+  run:()=>{pass(45);adj('community',3);adj('stress',-2);const x=stMet('lorraine');say(`🗳️ The block club meets in a back room at People’s: folding chairs, a sheet cake, twenty neighbors. ${x?'<b>Ms. Lorraine</b>, who chairs it, ':'Ms. Lorraine '}runs the agenda like a principal: the curb cuts (Denise reports progress), a tenants’-rights clinic next month for anybody whose rent jumped, the street fair cleanup, and who is checking on Mrs. Abernathy after her surgery. Eli takes notes. You volunteer for something before you know what it is. Community +3.`)}});
 defEvent({id:'lost_dog',hook:'arrive',tile:['🐕','A lost dog','info'],chance:0.18,max:1,cond:c=>['peoples','view','mlk'].includes(c.at)&&daytime(),
   run:()=>{modal('🐕 A lost dog','<p>A girl of about eight is taping a hand-drawn poster to a pole: <b>LOST: BISCUIT. VERY FRIENDLY. LIKES CHEESE.</b> Her dad is calling the name down the block.</p>',[
     {l:'Help look for Biscuit',s:'45 minutes. Energy −5.',np:true,fn:()=>{pass(45);adj('energy',-5);adj('community',4);say('🐕 You walk the alleys calling “Biscuit!” with half the block. No luck yet. The dad writes your number on the poster.');chain('dog_found')}},
@@ -1719,20 +1803,21 @@ defEvent({id:'hospital_thanks',hook:'shift',tile:['💐','A thank-you card','goo
 defEvent({id:'cafe_regular',hook:'shift',tile:['💵','A big tip from a regular','good'],chance:0.3,max:2,cooldown:3,cond:()=>S.job==='cafe',
   run:()=>{money(20);S.stats.earned+=20;S.stats.tips+=20;adj('community',2);say('💵 A retired bus driver who comes in every morning leaves a folded twenty in the jar. “For the new kid. You remembered my name.”')}});
 defEvent({id:'kitchen_rush',hook:'shift',tile:['🔥','The Friday rush','info'],chance:0.3,max:2,cooldown:3,cond:()=>S.job==='kitchen',
-  run:()=>{adj('stress',4);adj('standing',4);say('🔥 A church group of thirty walks in at 7 without calling ahead. The kitchen goes quiet, then very fast. You keep up. Mama comes back to the line afterwards and says “Okay. Okay,” and that’s the best review you’ve ever had.')}});
+  run:()=>{adj('stress',4);adj('standing',4);say('🔥 A church group of thirty walks in at 7 without calling ahead. The kitchen goes quiet, then very fast. You keep up. Miss Odessa comes back to the line afterwards and says “Okay. Okay,” and that’s the best review you’ve ever had.')}});
 defEvent({id:'coworker_cover',hook:'shift',tile:['🤝','A coworker’s favor','good'],chance:0.15,max:1,cond:()=>S.standing>=60,
   run:()=>{adj('stress',-5);adj('standing',2);say('🤝 A coworker takes your last hour of side work so you can leave on time. “You’d do it for me.” You would.')}});
 
 // ---- tips: one at a time, first match wins, each once per game ----
 const TIPS=[
-  {id:'welcome',when:()=>day()===0&&S.loc==='home',get t(){return `👋 Welcome to Hilltop, {{name}}! ${isShiftDay(0)?`Work starts at <b>${fmt(job().start)}</b>. Open <b>🧭 Go somewhere</b> below to head to ${job().place}.`:'No shift today. Walk down to <b>MLK</b> and meet the street.'}`}},
+  {id:'welcome',when:()=>day()===0&&S.loc==='home',get t(){return `👋 Welcome to Hilltop, {{name}}! ${isShiftDay(0)?`Work starts at <b>${fmt(job().start)}</b>. Tap <b>Go to work</b>, or pick a place under <b>🧭 Go somewhere</b>.`:'No shift today. Walk down to <b>MLK</b> and meet the street.'}`}},
   {id:'work',when:()=>S.loc==='work'&&isShiftDay(day())&&!(day() in S.worked),t:'💼 Tap <b>Work your shift</b>. The clock jumps to the end of the shift and you get paid. Late costs pay and job standing.'},
+  {id:'tiles',when:()=>S.ev.history.length>0,t:'🔔 Things that happen around you show up as small <b>tiles at the top</b>, just under the bar. Tap ✓ to put one away; they also go in the 📜 <b>Log</b>.'},
   {id:'food',when:()=>S.food<=1,t:'🧺 The fridge is nearly empty. The corner market on <b>MLK</b> sells 4 meals of groceries, 7 AM to 10 PM.'},
   {id:'rent',when:()=>day()>=2&&!S.rent.paid,t:'🧾 Rent is due by Sunday night, Aug 16. Pay it from <b>home</b> as soon as you have it: early takes a weight off.'},
   {id:'stress',when:()=>S.stress>=60,t:'😣 Stress is high. Swim at <b>People’s</b>, sit at the <b>overlook</b>, call home or ride the Link. At 100 you burn out.'},
   {id:'energy',when:()=>S.energy<30,t:'🥱 Low energy. Rest at home, eat a real meal, and get to bed before midnight.'},
   {id:'hood',when:()=>day()>=1,t:'🤝 The <b>Neighbors</b> tab lists who you’ve met. Community counts toward your score, and Hilltop rewards people who show up.'},
-  {id:'sunset',when:()=>tod()>=1080&&day()>=1,t:`🌅 The sunset from the <b>overlook</b> starts around ${fmt(SUNSET-45)}. It’s the best free thing on the hill.`},
+  {id:'sunset',when:()=>tod()>=1080&&day()>=1,get t(){const ss=sunsetNow();return `🌅 Sunset from the <b>overlook</b> is at ${fmt(ss)} tonight, best from ${fmt(ss-45)} (a minute or two earlier every day). It’s the best free thing on the hill.`}},
   {id:'bed',when:()=>S.loc==='home'&&tod()>=1260,t:'🛏️ Go to bed before midnight. Staying up all night costs you.'},
   {id:'todo',when:()=>day()>=2,t:'📋 The <b>To-do</b> tab has your goals. 📅 <b>Week</b> shows your shifts, the fair and rent.'},
 ];
@@ -1750,9 +1835,9 @@ function todoItems(){
   it.push({l:'Optional: the Hilltop Street Fair',s:'Sat Aug 8 on MLK, 10 AM–6 PM.',ok:S.fair,fail:!S.fair&&(d>FAIR_DAY||(d===FAIR_DAY&&m>=FAIR_HOURS[1]))});
   return it;
 }
-const SCORE_W={community:15,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};
-const GRADE_CUTS=[3300,2500,1800,1100];   // A, B, C, D (the same on every difficulty)
-const RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
+const SCORE_W={cash:0.5,community:20,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};   // cash counts half, so the better-paid job doesn't decide the grade
+const GRADE_CUTS=[3850,3000,2200,1500];   // A, B, C, D (the same on every difficulty; tuned with tools/sim.js)
+const RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: half your cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
 
 // ---- achievements: test(ctx) runs after every render ({}), each night ({night,where}) and at the end ({end,lost}) ----
 const ST_SEEN=id=>(S.ev.count[id]||0)>0;
@@ -1779,14 +1864,14 @@ const ACH=[
 const FINISH_TEXT={h1:'{{name}}, you made it through your first two weeks',sub:()=>`Mon Aug 3 to Sun Aug 16, 2026. ${S.rent.paid?'Rent is paid, ':''}${metCount()} neighbor${metCount()===1?'':'s'} know your name, and the Link is still dinging down on MLK.`};
 function scoreParts(){
   const w=SCORE_W,s=S.stats,early=S.rent.paid&&S.rent.paidDay<=6;
-  return [['Cash',S.money,'what’s in the bank'],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
+  return [['Cash',S.money*w.cash,`${$(Math.round(S.money))} in the bank × ½`],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
     ['Stress',-S.stress*w.stress,`${S.stress} × −${w.stress}`],['Shifts',s.shifts*w.shift,`${s.shifts} × ${w.shift}`],
     ['Street fair',S.fair?w.fair:0,S.fair?'went':'missed'],['Rent paid early',early?w.early:0,early?'in the first week':'—'],
     ['Unpacked',S.unpacked>=BOXES?w.unpacked:0,`${S.unpacked} of ${BOXES} boxes`],['Every neighbor',metCount()>=NEIGHBORS.length?w.neighbors:0,`${metCount()} of ${NEIGHBORS.length}`]].map(([k,v,n])=>[k,Math.round(v)||0,n]);
 }
 function scoreOf(){return scoreParts().reduce((a,r)=>a+r[1],0)}
 function gradeOf(sc){
-  if(sc>=GRADE_CUTS[0]) return ['A','Hilltop Local','Mr. Kim saves you the good avocados and Ms. Lorraine tells people you’re family.'];
+  if(sc>=GRADE_CUTS[0]) return ['A','Hilltop Local','Grace saves you the good avocados, Linh starts your order when you walk in, and Ms. Lorraine tells people you’re family.'];
   if(sc>=GRADE_CUTS[1]) return ['B','Settling In','You know which Link car has the working AC and whose porch has the best gossip.'];
   if(sc>=GRADE_CUTS[2]) return ['C','Getting By','Rent’s paid, mostly on time, mostly on caffeine.'];
   if(sc>=GRADE_CUTS[3]) return ['D','Still Unpacking','You live here. You’re not sure you’ve arrived yet.'];
@@ -1813,8 +1898,10 @@ const MIGRATIONS=[];
 //  Numbers come from the game's own constants (JOBS, DIFFS, SCORE_W, GRADE_CUTS, TRAVEL, …) so the guide stays in step.
 //  Write for players: short sentences, plain words, no code terms.
 // ============================================================
-const HELP_W=()=>typeof SCORE_W!=='undefined'?SCORE_W:{community:15,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};
-const HELP_CUTS=()=>typeof GRADE_CUTS!=='undefined'?GRADE_CUTS:[3300,2500,1800,1100];
+const HELP_W=()=>typeof SCORE_W!=='undefined'?SCORE_W:{cash:0.5,community:20,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};
+const HELP_CUTS=()=>typeof GRADE_CUTS!=='undefined'?GRADE_CUTS:[3850,3000,2200,1500];
+const HELP_B=()=>typeof BAL!=='undefined'?BAL:{onTime:2,late:[2,6,15],lateStress:6,missed:[10,16],missedStress:8,midnightJob:3,midnightStress:6,sleep:3,goodSleep:5,goodSleepBy:1380};
+const HELP_HALF=x=>x===0.5?'½':String(x);
 const HELP_RENT=()=>typeof S!=='undefined'&&S&&S.rent?S.rent.amt:1150;
 const hDays=j=>j.days[0]===0?'Monday to Friday':'Wednesday to Sunday';
 const hShifts=j=>Array.from({length:GAME.days},(_,i)=>i).filter(i=>j.days.includes(i%7)).length;
@@ -1831,7 +1918,7 @@ const HSVG_COVER=()=>`<svg viewBox="0 0 320 120" role="img" aria-label="Hilltop:
   ${[[18,'#b66a4a'],[70,'#d9b45a'],[122,'#6f9aa6'],[228,'#c97a5a'],[276,'#8fae7a']].map(([x,c],i)=>`<g transform="translate(${x},${86-i%2*4})"><rect width="34" height="20" fill="${c}"/><polygon points="-3,1 17,-11 37,1" fill="#5a3328"/><rect x="5" y="6" width="7" height="6" fill="#fbe9b0"/><rect x="22" y="6" width="7" height="6" fill="#fbe9b0"/></g>`).join('')}
   <rect y="104" width="320" height="16" fill="#55595d"/><path d="M0 109 H320 M0 113 H320" stroke="#a0a4a8"/>
   <g transform="translate(150,110)"><rect y="-16" width="96" height="14" rx="4" fill="#f4f5f2"/><rect y="-6" width="96" height="3" fill="#2f8f6a"/>${[0,1,2,3].map(i=>`<rect x="${7+i*22}" y="-14" width="14" height="6" rx="1" fill="#5d7f93"/>`).join('')}</g></g></svg>`;
-const HSVG_HUD=()=>{const st=[['Cash','$900','#1f5d63','your money'],['Energy','85','#2f7d4f','high is good'],['Stress','25','#b8402a','high is bad'],['Food','3','#c98a12','meals left'],['Job','65','#24507a','high is safe']];
+const HSVG_HUD=()=>{const st=[['Cash','$900','#1f5d63','your money'],['Energy','85','#2f7d4f','high is good'],['Stress','25','#b8402a','high is bad'],['Food','3','#c98a12','meals left'],['Job','70','#24507a','high is safe']];
   return `<svg viewBox="0 0 340 128" role="img" aria-label="The top bar: Cash, Energy, Stress, Food and Job">
   <rect width="340" height="62" rx="10" fill="#1d3346"/><text x="12" y="20" font-size="12" font-weight="700" fill="#fff" font-family="Fraunces, Georgia, serif">Mon Aug 3</text><text x="328" y="20" font-size="12" font-weight="700" fill="#fff" text-anchor="end" font-family="DM Sans, sans-serif">5:30 AM</text>
   ${st.map(([l,v,c],i)=>`<g transform="translate(${10+i*66},28)"><rect width="60" height="26" rx="6" fill="#fff" fill-opacity=".1"/><text x="6" y="11" font-size="8" fill="#fff" fill-opacity=".8" font-family="DM Sans, sans-serif">${l}</text><text x="6" y="22" font-size="10" font-weight="700" fill="#fff" font-family="DM Sans, sans-serif">${v}</text><rect x="38" y="16" width="16" height="4" rx="2" fill="#fff" fill-opacity=".25"/><rect x="38" y="16" width="${[16,13,4,10,10][i]}" height="4" rx="2" fill="${['#fff','#7fd39a','#ff8a73','#f2c94c','#9ec6ff'][i]}"/></g>`).join('')}
@@ -1857,8 +1944,8 @@ const HSVG_GRADES=()=>{const c=HELP_CUTS(),max=c[0]+900,x=v=>20+v/max*300,G=[['F
 
 // ---- the chapters: [key, title, html] (numbered in this order) ----
 function helpChapters(){
-  const J=JOBS,w=HELP_W(),c=HELP_CUTS(),rent=$(HELP_RENT()),D=DIFFS,N=typeof NEIGHBORS!=='undefined'?NEIGHBORS:[],boxes=typeof BOXES!=='undefined'?BOXES:6;
-  const sun=fmt(typeof SUNSET!=='undefined'?SUNSET:1220),ach=typeof ACH!=='undefined'?ACH:[];
+  const J=JOBS,w=HELP_W(),c=HELP_CUTS(),B=HELP_B(),rent=$(HELP_RENT()),D=DIFFS,N=typeof NEIGHBORS!=='undefined'?NEIGHBORS:[],boxes=typeof BOXES!=='undefined'?BOXES:6;
+  const sun=`${fmt(typeof sunsetOn==='function'?sunsetOn(0):1220)} at the start, ${fmt(typeof sunsetOn==='function'?sunsetOn(GAME.days-1):1200)} by the end`,ach=typeof ACH!=='undefined'?ACH:[];
   const places=['home','mlk','work','link','peoples','view'];
   return [
   ['start','Getting started',`
@@ -1867,8 +1954,8 @@ function helpChapters(){
     <h3>Starting a game</h3>
     <ol><li>Tap the big orange button on the title screen (<b>${esc(TITLE.start)}</b>, or <b>Continue</b> if you have a game saved).</li>
     <li>The first time, type the name everyone in the game will call you.</li>
-    <li>Pick a difficulty. It changes your savings, prices and luck, never the score:</li></ol>
-    ${hTable(['Difficulty','Savings','Prices','Bad luck'],Object.values(D).map(d=>[`${d.ic} ${d.n}`,$(d.money),d.cost===1?'normal':(d.cost<1?`${Math.round((1-d.cost)*100)}% cheaper`:`${Math.round((d.cost-1)*100)}% pricier`),d.bad===1?'normal':(d.bad<1?'less often':'more often')]))}
+    <li>Pick a difficulty. It changes your savings, prices, how hard shifts hit and your luck, never the score:</li></ol>
+    ${hTable(['Difficulty','Savings','Prices','Shifts','Bad luck'],Object.values(D).map(d=>[`${d.ic} ${d.n}`,$(d.money),d.cost===1?'normal':(d.cost<1?`${Math.round((1-d.cost)*100)}% cheaper`:`${Math.round((d.cost-1)*100)}% pricier`),(d.strain||1)===1?'normal':(d.strain<1?'easier':'harder'),d.bad===1?'normal':(d.bad<1?'less often':'more often')]))}
     <ol start="4"><li>Pick your job (chapter 5). You keep it for the whole two weeks.</li><li>Read the welcome note and tap <b>Open the blinds</b>. You’re in.</li></ol>
     ${hTip('The one rule to remember','Time only moves when you act. Nothing happens while you read, so take your time.')}`],
   ['day1','Your first day step by step',`
@@ -1876,11 +1963,11 @@ function helpChapters(){
     <ol class="tut-steps">
     <li><b>Look at the top bar.</b> Cash, Energy, Stress, Food and Job (chapter 3).</li>
     <li><b>Check when you work.</b> The 🧭 <b>Here</b> tab shows a tag like “☕ work 6:30 AM–2:30 PM”. The CNA and barista jobs start today. The line cook starts on Wednesday.</li>
-    <li><b>Walk to work.</b> Tap <b>Go somewhere</b> and pick <b>Work</b>. It’s ${typeof travelMins==='function'?travelMins('home','work'):12} minutes from home. Leave yourself a little room.</li>
+    <li><b>Walk to work.</b> Tap <b>Go to work</b> at the top of the Here tab (or <b>Go somewhere</b> and pick <b>Work</b>). It’s ${typeof travelMins==='function'?travelMins('home','work'):12} minutes from home. Leave yourself a little room.</li>
     <li><b>Tap “Work your shift”.</b> The clock jumps to the end of the shift and you get paid. If you’re early you wait for the start.</li>
     <li><b>Go to MLK Jr Way</b> and buy groceries at the corner market (${$(42)} for 4 meals). Stop and talk on the corner while you’re there: you might meet a neighbor.</li>
     <li><b>Do one thing for yourself.</b> A swim at People’s, the bench at the overlook, the sunset around ${sun}, or a call home.</li>
-    <li><b>Go home and unpack a box</b> (once a day), then <b>Go to bed</b> before midnight. Dinner comes out of the fridge on its own.</li>
+    <li><b>Go home and unpack a box</b> (once a day), then <b>Go to bed</b> before ${fmt(B.goodSleepBy)} for a real night’s sleep. Dinner comes out of the fridge on its own.</li>
     <li><b>Read the morning report.</b> It says what happened overnight and what today holds.</li></ol>
     ${hTip('If you took the kitchen job','Monday and Tuesday are yours. Use them to unpack, stock the fridge, ride the Link and meet people before your first shift on Wednesday at 2:00 PM.')}`],
   ['hud','The HUD stats explained',`
@@ -1891,7 +1978,7 @@ function helpChapters(){
       ['⚡ Energy','85','0 to 100. Being awake drains a little over 1 an hour; shifts drain a lot. Sleep brings it back. Red under 20.'],
       ['😣 Stress','25','0 to 100, and high is bad. Red at 75. At <b>100</b> you burn out and the game ends.'],
       ['🍽️ Food','3','Meals in the fridge. You eat one every night. Red at 0.'],
-      ['💼 Job','65','0 to 100: how work feels about you. Red under 25. At <b>0</b> you’re let go.']])}
+      ['💼 Job','70','0 to 100: how work feels about you. Red under 25. At <b>0</b> you’re let go.']])}
     <p>Two more numbers live off the bar: <b>Community</b> (0–100, starts at 5) on the 🤝 Neighbors tab, and the <b>day</b>, shown as “Mon Aug 3 · Day 1 of ${GAME.days}”.</p>`],
   ['places','Places on Hilltop',`
     <p>Six places, all a short walk apart. Open <b>Go somewhere</b> on the Here tab to move. Walking takes the minutes shown.</p>
@@ -1909,26 +1996,27 @@ function helpChapters(){
     <h3>What you can do where</h3>
     <div class="tut-tw"><table class="tut-t tut-acts"><thead><tr><th scope="col">Action</th><th scope="col">Cost, time</th><th scope="col">Effect</th></tr></thead>
     ${[
-      ['🏠 Your apartment',[['Rest for an hour','free, 1 h','Energy +10, stress −5'],['Cook something proper*','1 meal, 45 min','Energy +14, stress −6'],['Call home*','free, 30 min','Stress −12'],['Unpack a box*','free, 45 min','Energy −4, stress −5']]],
-      ['🛒 MLK Jr Way',[['Groceries','$42, 25 min','Food +4'],['A cold drink and chips','$5, 10 min','Energy +6'],['A teriyaki plate*','$14, 30 min','Energy +15, stress −5'],['A cut at the barbershop (once)','$25, 1 h','Community +6, stress −6'],['Talk on the corner*','free, 30 min','Community +3, maybe a new neighbor'],['Look at the murals','free, 30 min','Stress −6, community +1']]],
-      ['🚋 Hilltop Link',[['Ride the T Line and back*','free, 40 min','Stress −6'],['People-watch on the platform','free, 20 min','Stress −3']]],
-      ['🏊 People’s Center & Park',[['Swim laps*','$5, 45 min','Energy −6, stress −14'],['Pickup game* (energy 15+)','free, 1 h','Energy −12, stress −10, community +4'],['Help out with a program*','free, 2 h','Energy −8, community +6, stress −4'],['Sit in the park','free, 30 min','Stress −5']]],
-      ['🌄 The overlook',[['Sit on the bench','free, 30 min','Stress −8'],['Watch the sunset*','free, 45 min','Stress −18'],['Walk the edge of the hill','free, 45 min','Stress −8, energy −4']]]].map(([pl,rs])=>`<tbody><tr class="tut-grp"><th colspan="3" scope="colgroup">${pl}</th></tr>${rs.map(r=>`<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`).join('')}</table></div>
-    <p class="tut-small">* Once a day. Prices are for the ${D.normal.n} difficulty. ${D.easy.n} is ${Math.round((1-D.easy.cost)*100)}% cheaper and ${D.hard.n} is ${Math.round((D.hard.cost-1)*100)}% pricier. Everywhere, <b>Wait a while</b> skips ahead 30, 60 or 120 minutes.</p>`],
+      ['🏠 Your apartment',[['Rest for an hour†','free, 1 h','Energy +10, stress −5'],['Cook something proper*','1 meal, 45 min','Energy +14, stress −4'],['Call home*','free, 30 min','Stress −8'],['Unpack a box*','free, 45 min','Energy −4, stress −3']]],
+      ['🛒 MLK Jr Way',[['Groceries','$42, 25 min','Food +4'],['A cold drink and chips','$5, 10 min','Energy +6'],['A teriyaki plate*','$14, 30 min','Energy +15, stress −4'],['A cut at the barbershop (once)','$25, 1 h','Community +6, stress −6'],['Talk on the corner*','free, 30 min','A new neighbor (community +3), or +1'],['Look at the murals†','free, 30 min','Stress −6']]],
+      ['🚋 Hilltop Link',[['Ride the T Line and back*','free, 40 min','Stress −8'],['People-watch on the platform†','free, 20 min','Stress −3']]],
+      ['🏊 People’s Center & Park',[['Swim laps*','$5, 45 min','Energy −6, stress −14'],['Pickup game* (energy 15+)','free, 1 h','Energy −12, stress −10, community +1'],['Help out with a program*','free, 2 h','Energy −8, community +3, stress −4'],['Sit in the park†','free, 30 min','Stress −5']]],
+      ['🌄 The overlook',[['Sit on the bench†','free, 30 min','Stress −8'],['Watch the sunset*','free, 45 min','Stress −18'],['Walk the edge of the hill†','free, 45 min','Stress −8, energy −4']]]].map(([pl,rs])=>`<tbody><tr class="tut-grp"><th colspan="3" scope="colgroup">${pl}</th></tr>${rs.map(r=>`<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`).join('')}</table></div>
+    <p class="tut-small">* Once a day. † Full effect twice a day, then about a third. Prices are for the ${D.normal.n} difficulty. ${D.easy.n} is ${Math.round((1-D.easy.cost)*100)}% cheaper and ${D.hard.n} is ${Math.round((D.hard.cost-1)*100)}% pricier. Everywhere, <b>Wait a while</b> skips ahead 30, 60 or 120 minutes.</p>`],
   ['job','Your job and shifts',`
     <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks.</p>
     ${hFig(HSVG_SHIFTS(),'When each shift runs, 5 AM to midnight.')}
-    ${hTable(['Job','Shift','Pay','Each shift costs'],Object.values(J).map(j=>[`${j.ic} ${j.role==='certified nursing assistant'?'CNA':j.role[0].toUpperCase()+j.role.slice(1)}`,`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} (${hShifts(j)} shifts)`,`${$(j.pay)}${j.tips?` + ${$(j.tips[0])}–${$(j.tips[1])} tips`:''}`,`Energy −${j.energy}, stress +${j.stress}`]))}
+    ${hTable(['Job','Shift','Pay','Each shift costs'],Object.values(J).map(j=>[`${j.ic} ${j.role==='certified nursing assistant'?'CNA':j.role[0].toUpperCase()+j.role.slice(1)}`,`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} (${hShifts(j)} shifts)`,`${$(j.pay)}${j.tips?` + ${$(j.tips[0])}–${$(j.tips[1])} tips`:''}`,`Energy −${j.energy}, stress +${j.stress}${DIFFS.hard.strain&&DIFFS.hard.strain!==1?` (+${Math.round(j.stress*DIFFS.hard.strain)} on ${DIFFS.hard.n})`:''}`]))}
     <ul><li><b>🏥 CNA:</b> the best pay and the hardest days. Your alarm is set to ${fmt(J.hospital.alarm)}.</li>
     <li><b>☕ Barista:</b> less pay, cash tips that grow with your job standing. Alarm ${fmt(J.cafe.alarm)}.</li>
     <li><b>🍳 Line cook:</b> evenings, and a <b>staff meal</b> covers dinner on every shift night, so you use less food. Alarm ${fmt(J.kitchen.alarm)}.</li></ul>
     <h3>How a shift works</h3>
     <ul><li>Go to Work on a shift day and tap <b>Work your shift</b>. The clock jumps to the end and you’re paid.</li>
-    <li><b>On time:</b> full pay and Job +5.</li>
-    <li><b>Late:</b> pay for the part you work, Job −1 for every 5 minutes late (up to −12) and stress +5.</li>
+    <li><b>On time:</b> full pay and Job +${B.onTime}.</li>
+    <li><b>Late:</b> pay for the part you work, Job −${B.late[0]} and −1 more for every ${B.late[1]} minutes late (up to −${B.late[2]}), and stress +${B.lateStress}.</li>
     <li>In the last hour of a shift it’s too late to clock in.</li>
-    <li><b>Missed:</b> the first one costs Job −6, each one after that −12, and stress +6 each time.</li>
-    <li><b>Extra hours:</b> on a day off, if your Job is 50 or more, work offers 4 hours for half a shift’s pay (Energy −16, stress +6, Job +3). They start between 9 AM and 1 PM (the kitchen: 9 AM to 6 PM).</li>
+    <li><b>Missed:</b> the first one costs Job −${B.missed[0]}, each one after that −${B.missed[1]}, and stress +${B.missedStress} each time.</li>
+    <li><b>Up past midnight:</b> you drag in tired the next day: Job −${B.midnightJob}.</li>
+    <li><b>Extra hours:</b> on a day off, if your Job is 50 or more, work offers 4 hours for half a shift’s pay (Energy −16, stress +8, Job +3). They start between 9 AM and 1 PM (the kitchen: 9 AM to 6 PM).</li>
     <li><b>Break-room coffee</b> (once a day, 15 min): Energy +5, Job +1.</li></ul>
     ${hWarn('Watch the clock','An alert bar warns you an hour before your shift and when you’re late. Ten on-time shifts is the backbone of a good score.')}`],
   ['food','Food and the fridge',`
@@ -1936,7 +2024,7 @@ function helpChapters(){
     <ul><li>Every night, when the day ends, you eat <b>one meal</b> from the fridge (the kitchen’s staff meal covers shift nights).</li>
     <li><b>With an empty fridge</b> you go to bed hungry: stress +10 and only half the sleep.</li>
     <li><b>Groceries:</b> ${$(42)} at the corner market on MLK buys 4 meals. Open 7 AM to 10 PM.</li>
-    <li><b>Cook something proper</b> at home uses one extra meal for Energy +14 and stress −6.</li>
+    <li><b>Cook something proper</b> at home uses one extra meal for Energy +14 and stress −4.</li>
     <li><b>Eating out</b> doesn’t touch the fridge: a teriyaki plate (${$(14)}) is a lift, not dinner.</li>
     <li>Neighbors help, too: tomatoes from across the street, a barbecue plate and the free community fridge on MLK can each add a meal or two. A power blip at night can spoil one.</li></ul>
     ${hTip('Rule of thumb',`Shop when you’re down to 1 meal. Three grocery runs (about ${$(126)}) keep you fed for the whole two weeks.`)}`],
@@ -1944,15 +2032,16 @@ function helpChapters(){
     <p>Work wears you down. The neighborhood picks you back up.</p>
     <h3>Energy</h3>
     <ul><li>Being awake costs about 1 energy every 50 minutes. Shifts cost ${Object.values(J).map(j=>`${j.energy} (${j.ic})`).join(', ')}.</li>
-    <li>A night in your own bed gives <b>+58</b> and stress −10. Hungry, you get half.</li>
-    <li>Stay up past midnight and you wake up on the couch: only +28 and stress +6.</li>
+    <li>A night in your own bed gives <b>+58</b> energy and only stress −${B.sleep}. In bed before <b>${fmt(B.goodSleepBy)}</b> (and not hungry), it’s a real night’s sleep: stress −${B.goodSleep}. Hungry, you get half the energy.</li>
+    <li>Stay up past midnight and you wake up on the couch: only +28, stress +${B.midnightStress} and Job −${B.midnightJob}.</li>
     <li>Going to bed with energy under 15 adds stress +6.</li>
     <li>Rest, a proper meal, a teriyaki plate, a cold drink and break-room coffee all help during the day.</li></ul>
     <h3>Stress</h3>
-    <ul><li>It goes up with shifts, being late, missed shifts, hunger, bills and bad nights.</li>
-    <li>It comes down with: the sunset (−18), a swim (−14), a call home (−12), the pickup game (−10), the bench or a walk on the edge of the hill (−8), the murals or the Link (−6), and the Street Fair (−20).</li>
+    <ul><li>It goes up with shifts (the biggest part), being late, missed shifts, hunger, bad nights and, until rent is paid, a little every night (${Object.values(D).map(d=>`${d.ic} +${d.worry||0}`).join(', ')}).</li>
+    <li>Sleep barely touches it. It comes down with the things you do for yourself: the sunset (−18), a swim (−14), the pickup game (−10), a call home or a ride on the Link (−8), the bench or a walk on the edge of the hill (−8), the murals (−6), and the Street Fair (−20).</li>
+    <li>The ones marked † in chapter 4 (rest, the bench, the park, the platform, the murals, the hill walk) work fully twice a day; after that each gives about a third.</li>
     <li>At <b>100</b> you burn out and the game ends. At 70 the Here tab marks you “stressed”; the morning report warns you at 80.</li></ul>
-    ${hTip('One thing a day',`Do one thing for yourself every day. A ${$(5)} swim after work takes off more stress than a whole shift puts on.`)}`],
+    ${hTip('One thing a day',`Do one thing for yourself every day. A ${$(5)} swim after work and a call home take off about what a hard shift puts on.`)}`],
   ['rent','Rent',`
     <p>Rent is the big one: <b>${rent}</b>, due by the end of <b>Sunday, Aug 16</b>, the last day.</p>
     <ul><li>Pay it at home with <b>Pay rent</b> as soon as you have the money.</li>
@@ -1966,16 +2055,19 @@ function helpChapters(){
   ['hood','Neighbors and community',`
     <p>Hilltop is a neighborhood that notices who shows up. <b>Community</b> (0 to 100) measures how many people know you, and how well. Each point is worth <b>${w.community}</b> on your score.</p>
     <ul><li><b>Stop and talk on the corner</b> on MLK, <b>help out</b> at People’s, play <b>pickup</b>, get a <b>haircut</b>, go to the <b>Street Fair</b> and say yes when a neighbor waves you over.</li>
-    <li>Meeting someone new adds community +3. There are <b>${N.length} neighbors</b>. You often meet them in their own places:</li></ul>
+    <li>Meeting someone new adds community +${typeof MEET_COMMUNITY!=='undefined'?MEET_COMMUNITY:2}. There are <b>${N.length} neighbors</b>. You often meet them in their own places:</li></ul>
     ${hTable(['Neighbor','Where you might meet them'],N.map(x=>[`${x.ic} ${x.n}`,x.at.map(k=>k==='work'?'work':L[k].name).join(', ')]))}
     ${hTip('Everybody',`Meet all ${N.length} for a +${w.neighbors} bonus. The 🤝 Neighbors tab shows who you know and how many are left.`)}`],
   ['events','Events',`
     <p>Things happen on the hill. Some are good, some aren’t, and most are a little of both. They show up as small tiles, in the 📜 Log, and in the ☀️ morning report.</p>
     ${hTable(['Event','When','What happens'],[
-      ['🎪 Hilltop Street Fair','Sat Aug 8, 10 AM–6 PM on MLK',`${$(20)}, 2 hours: stress −20, community +10, +${w.fair} score`],
+      ['🎪 Hilltop Street Fair','Sat Aug 8, 10 AM–6 PM on MLK',`${$(20)}, 2 hours: stress −20, community +8, +${w.fair} score`],
       ['🏔️ The mountain is out','some mornings','Stress −5'],
       ['🍅 Tomatoes from across the street','arriving home in the day','Food +1, meet Ms. Lorraine'],
-      ['🍖 Big Ron’s smoker','evenings, late in the week','Energy +8, stress −8, community +4, leftovers tomorrow'],
+      ['🍖 Ron’s smoker','evenings, late in the week','Energy +8, stress −8, community +4, leftovers tomorrow'],
+      ['📚 🍜 🎤 New faces','on MLK, at the Link, at home','A bookstore, a phở shop, karaoke next door: a new neighbor each'],
+      ['🗳️ The block club','People’s, Thursdays and evenings, second week','Community +3: curb cuts, a tenants’-rights clinic, who needs a hand'],
+      ['🏗️ A new building','on MLK or your block','Stress +2: the hill is changing'],
       ['🎨 A mural going up','on MLK in the day','Stress −5, community +3; later the finished mural'],
       ['🧺 The free community fridge','on MLK','Food +2 if you’re low, or give a meal for community +4'],
       ['🎶 The choir on Sunday','Sunday late morning','Stress −8, community +3'],
@@ -2004,24 +2096,24 @@ function helpChapters(){
     <h3>Three ways it ends early</h3>
     <ul><li><b>Let go:</b> your Job reaches 0.</li><li><b>Burned out:</b> your stress reaches 100.</li><li><b>Out of the apartment:</b> rent unpaid at the end of Aug 16, or cash below −$500.</li></ul>
     <h3>The score</h3>
-    <div class="tut-formula">cash + community × ${w.community} + job × ${w.standing} − stress × ${w.stress} + shifts × ${w.shift}</div>
+    <div class="tut-formula">cash × ${HELP_HALF(w.cash)} + community × ${w.community} + job × ${w.standing} − stress × ${w.stress} + shifts × ${w.shift}</div>
     ${hTable(['Bonus','Points'],[['Went to the Street Fair',`+${w.fair}`],['Rent paid in the first week',`+${w.early}`],[`All ${boxes} boxes unpacked`,`+${w.unpacked}`],[`Met all ${N.length} neighbors`,`+${w.neighbors}`]])}
     <h3>Grades</h3>
     ${hFig(HSVG_GRADES(),'The grade cutoffs. The same on every difficulty.')}
     ${hTable(['Grade','Score','Title'],[['A',`${grp(c[0])}+`,'Hilltop Local'],['B',`${grp(c[1])}+`,'Settling In'],['C',`${grp(c[2])}+`,'Getting By'],['D',`${grp(c[3])}+`,'Still Unpacking'],['F',`below ${grp(c[3])}, or ended early`,'Starting Over']])}
-    <p>An example: ${$(1400)} cash, community 60, job 90, stress 20 and 10 shifts is 1,400 + 900 + 720 − 100 + 600 = <b>3,520</b>, an A. The end screen shows every line of your own score.</p>
+    ${(()=>{const ex=[800*w.cash,65*w.community,90*w.standing,-20*w.stress,10*w.shift,w.unpacked],t=ex.reduce((a,b)=>a+b,0),g=t>=c[0]?'an A':t>=c[1]?'a B':t>=c[2]?'a C':t>=c[3]?'a D':'an F';return `<p>An example: ${$(800)} cash, community 65, job 90, stress 20, 10 shifts and every box unpacked is ${ex.map((v,i)=>(i?(v<0?' − ':' + '):'')+grp(Math.abs(v))).join('')} = <b>${grp(t)}</b>, ${g}. The end screen shows every line of your own score.</p>`})()}
     ${ach.length?`<h3>Achievements</h3><p>${ach.length} to earn, kept on this device across all your games (⚙️ Settings → Achievements):</p><ul class="tut-cols">${ach.map(a=>`<li>${a.ic} <b>${a.n}</b>: ${a.d}</li>`).join('')}</ul>`:''}`],
   ['tips','Tips and strategy',`
     <ol class="tut-steps">
-    <li><b>Never miss a shift.</b> Each one is worth ${$(J.cafe.pay)}–${$(J.hospital.pay)} in pay, Job +5 and ${w.shift} points. Check the alarm before bed.</li>
-    <li><b>Get to bed before midnight.</b> Couch nights cost you twice: less energy and more stress.</li>
+    <li><b>Never miss a shift.</b> Each one is worth ${$(J.cafe.pay)}–${$(J.hospital.pay)} in pay, Job +${B.onTime} and ${w.shift} points. Check the alarm before bed.</li>
+    <li><b>Get to bed before ${fmt(B.goodSleepBy)}.</b> That’s the only sleep that really lowers stress. Couch nights after midnight cost energy, stress and Job.</li>
     <li><b>Shop at 1 meal.</b> An empty fridge is stress +10 and half a night’s sleep.</li>
     <li><b>Pay rent in the first week</b> if you can: stress −10 and +${w.early} points.</li>
     <li><b>One thing for yourself every day.</b> Swims and sunsets keep stress far from 100.</li>
     <li><b>Talk on the corner every day.</b> It’s free and it’s how you meet people. Each community point is ${w.community} points of score.</li>
-    <li><b>Unpack one box a day</b> for the first ${boxes} days: stress −5 each and +${w.unpacked} at the end.</li>
+    <li><b>Unpack one box a day</b> for the first ${boxes} days: stress −3 each and +${w.unpacked} at the end.</li>
     <li><b>Keep Saturday, Aug 8 open</b> for the Street Fair.</li>
-    <li><b>Mind the math at the end.</b> Every point of stress costs ${w.stress} points, so a last-day sunset (stress −18) is worth ${18*w.stress} points, the same as ${$(18*w.stress)} in the bank.</li></ol>
+    <li><b>Mind the math at the end.</b> Every point of stress costs ${w.stress} points, so a last-day sunset (stress −18) is worth ${18*w.stress} points, the same as ${$(18*w.stress/(w.cash||1))} in the bank.</li></ol>
     ${hTip('Kitchen players','You have mornings free. Swim, volunteer and talk on the corner before your 2:00 PM shift, and remember the staff meal saves groceries.')}`],
   ['settings','Settings, accessibility and saving',`
     <p>Open <b>⚙️ Settings</b> from the gear on the title screen or in the game.</p>
@@ -2048,7 +2140,7 @@ function helpChapters(){
     <dt>Can I change my job?</dt><dd>No. You keep the job you pick for the two weeks. Start a new game to try another.</dd>
     <dt>I can’t clock in. Why?</dt><dd>It’s not a shift day, the shift is in its last hour, or you already worked today. The 📅 Week tab shows your shift days.</dd>
     <dt>Why is an action greyed out?</dt><dd>It’s closed right now, you can’t afford it, or it’s once a day and you already did it. The line under it says which.</dd>
-    <dt>Does difficulty change my grade?</dt><dd>No. The score and the cutoffs are the same on every difficulty. Only savings, prices and luck change.</dd>
+    <dt>Does difficulty change my grade?</dt><dd>No. The score and the cutoffs are the same on every difficulty. Only savings, prices, how hard shifts hit and luck change, so the same play scores lower on a Tight Month.</dd>
     <dt>I went to bed hungry. What now?</dt><dd>Get groceries first thing tomorrow. The market opens at 7 AM.</dd>
     <dt>Where did my save go?</dt><dd>Check 💾 Save slots. Saves are kept in this browser; private windows and clearing site data remove them.</dd>
     <dt>Are the places real?</dt><dd>Hilltop, MLK Jr Way, the Link, People’s Community Center and the views are real. The businesses, neighbors and events are made up.</dd>
@@ -2193,6 +2285,7 @@ window.feedbackModal=feedbackModal;
 const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
+  '0.1.2':['⚖️ A real challenge now: shifts are more stressful and sleep helps less, so swims, sunsets, calls home and Link rides matter. New grade cutoffs: a steady player gets a B, an A takes care and showing up for the neighborhood.','🏔️ Rainier redrawn as the big glaciated mountain Tacoma actually sees, with the port cranes on the bay.','🤝 New neighbors: a bookstore owner, a phở shop, the Santos family, a transit organizer, a college student, a newcomer from Seattle, and more to the ones you knew.','🔔 Event tiles wait while a pop-up is open, and stay below the top bar.','🧭 Day one: a Go to work button at home, and the sunset time on the overlook.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
 const LASTVER_KEY=KEY('lastVersion');

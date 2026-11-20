@@ -8,6 +8,7 @@
 const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
+  '0.1.2':['⚖️ A real challenge now: shifts are more stressful and sleep helps less, so swims, sunsets, calls home and Link rides matter. New grade cutoffs: a steady player gets a B, an A takes care and showing up for the neighborhood.','🏔️ Rainier redrawn as the big glaciated mountain Tacoma actually sees, with the port cranes on the bay.','🤝 New neighbors: a bookstore owner, a phở shop, the Santos family, a transit organizer, a college student, a newcomer from Seattle, and more to the ones you knew.','🔔 Event tiles wait while a pop-up is open, and stay below the top bar.','🧭 Day one: a Go to work button at home, and the sunset time on the overlook.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
 const LASTVER_KEY=KEY('lastVersion');

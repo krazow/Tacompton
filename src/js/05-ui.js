@@ -29,7 +29,7 @@ function render(){
   const al=typeof alertBar==='function'?alertBar():null;
   if(al) h+=`<div class="alertbar ${al.kind||''}">${al.t}</div>`;
   const atCabin=tab==='home'&&(S.loc==='shop'||artOn());   // the Home tab names the cabin (45-names.js) when the scene shows it
-  h+=`<div class="scene">${sceneSVG()}${artScene()}<div class="place"><h2>${atCabin?`🏠 ${esc(cabinName())}`:`${loc.ic} ${loc.name}`}</h2><div>${atCabin?L.shop.desc:`${loc.desc||''}${loc.hours?' · '+hoursTxt(S.loc):''}`}</div></div></div>`;
+  h+=`<div class="scene">${sceneSVG()}${artScene()}${tab==='act'?`<div class="place"><h2>${atCabin?`🏠 ${esc(cabinName())}`:`${loc.ic} ${loc.name}`}</h2><div>${atCabin?L.shop.desc:`${loc.desc||''}${loc.hours?' · '+hoursTxt(S.loc):''}`}</div></div>`:''}</div>`;   // the place card only on the Here tab
   const xt=(EXTRA_TABS||[]).find(t=>t.k===tab);
   h+=`<div class="content">${tab==='act'?actView():tab==='todo'?todoView():tab==='log'?logView():xt?xt.view():actView()}</div>`;
   const pending=todoItems().filter(x=>x.urgent&&!x.ok).length,tabs=allTabs();
@@ -56,7 +56,7 @@ function actView(){
       .forEach(c=>{h+=`<div class="sect">${ACT_CATS[c]}</div>`+groups[c].map(btn).join('')});
   } else if(acts.length) h+='<div class="sect">Do something</div>'+acts.map(btn).join('');
   const dests=Object.keys(L).filter(k=>k!==S.loc&&!L[k].hidden);
-  const p=prefs().goOpen,open=p===null||p===undefined?acts.length<=5:p;
+  const p=prefs().goOpen,open=p===null||p===undefined?(day()===0||acts.length<=5):p;   // open on day one, so a new player sees where to go
   h+=`<details class="go" ${open?'open':''} ontoggle="setPref('goOpen',this.open)"><summary>🧭 Go somewhere (${dests.length})</summary>`;
   dests.forEach(k=>{const m=travelMins(S.loc,k),i=ACTS.push(()=>go(k))-1;
     h+=`<div class="dest compact"><div class="dn"><b>${L[k].ic} ${L[k].name}</b><span>${L[k].hours?hoursTxt(k):L[k].desc||''}</span></div><div class="chips"><button class="chip" onclick="ACT(${i})" aria-label="Go to ${esc(L[k].name)} · ${m} min">Go · ${m} min</button></div></div>`});

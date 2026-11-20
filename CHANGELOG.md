@@ -3,6 +3,22 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+### Changed
+- Balance: the two weeks are a real game now. Shifts cost more stress (CNA +20, line cook +16, barista +12), sleep takes off only −3 (−5 in bed before 11 PM), so a swim, the sunset, a call home or a Link ride matter. Community grows more slowly, late and missed shifts cost more Job, and a night past midnight costs Job −3. The rest, bench, park, platform, murals and hill walk work fully twice a day.
+- Score: cash counts half and community ×20, so the better-paid job doesn't decide the grade. New grade cutoffs from a simulation (`node tools/sim.js`): A 3,850, B 3,000, C 2,200, D 1,500. A sensible player gets a B, a careful and social one an A, a sloppy one a C or D.
+- Tight Month is harder: $450 savings, prices +20%, shifts hit 20% harder and unpaid rent weighs on you every night.
+- Mount Rainier is redrawn as the broad, glaciated massif Tacoma sees (Liberty Cap, Little Tahoma), on the title, the overlook, home and the Link; the Port of Tacoma cranes replace the gate-like shapes. It sits to the southeast.
+- More neighbors, beyond the usual cast: Imani at the bookstore, Linh at the phở shop, the Santos family next door, Denise from the transit committee, Malik from UW Tacoma, Eli who just moved up from Seattle, and Ron, Mr. Harris, Grace Kim, Bev, Tasha and Dre with fuller lives. The block club and a new building on the block give the changing neighborhood an honest place in the story.
+- "What's the game about?" explains the name. The soul-food spot is now Odessa's Table.
+- Day one opens 🧭 Go somewhere, and home shows a **Go to work (12 min)** button on shift days. The sunset is listed with its time and "best from", and moves from 8:20 PM to 8:00 PM over the two weeks. A one-time tip explains the event tiles.
+
+### Fixed
+- Event tiles no longer cover pop-ups or the top bar or catch taps meant for a pop-up: they wait while a pop-up is open and come back after it closes.
+- The difficulty picker no longer says "(last time)" before you've ever picked one.
+- Keyboard number badges are hidden on touch screens; the place card shows only on the Here tab, in one line on a phone; MLK's storefront signs fit a 400 px screen.
+
 ## 0.1.1 (2026-11-19)
 
 ### Added

@@ -12,7 +12,8 @@ function nameModal(opts={}){
   setTimeout(()=>{const i=document.getElementById('nmIn');if(i){i.focus();i.select()}},60);
 }
 function diffModal(then){
-  const cur=prefs().diff;
+  // "(last time)" only once a difficulty has really been picked before (prefs default to normal, which isn't a choice)
+  const cur=(()=>{try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}').diff||null}catch(e){return null}})();
   modal('🎚️ Pick a difficulty','',Object.keys(DIFFS).map(k=>({l:`${DIFFS[k].ic} ${DIFFS[k].n}${k===cur?' (last time)':''}`,s:DIFFS[k].d,fn:()=>{setPref('diff',k);then(k)}})));
 }
 // Name (first time only) → difficulty → play. Add more pickers to this chain if your game needs them.
