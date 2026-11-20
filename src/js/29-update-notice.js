@@ -8,6 +8,7 @@
 const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
+  '0.2.0':['🎒 New: <b>Growing Up</b>, a second way to play from the start page. You’re 12, your family just moved to Hilltop, and you have one week (Aug 24–30, 2026) before the first day of middle school.','🤝 Chapter 1: meet five kids who could become your best friend, help out at home, get ready for school (supplies, the route, a haircut, the forms, an outfit) and be home by 8:30 PM.','🏫 New places for Growing Up: your family’s apartment, the Reading Room and Summit View Middle School. The first day of school is the finale.','🏘️ The two-week adult game is unchanged, and your saved games keep working.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
 const LASTVER_KEY=KEY('lastVersion');
