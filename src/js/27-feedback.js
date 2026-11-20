@@ -5,7 +5,7 @@
 //  Offline or unreachable → the message is queued in localStorage and sent when the game is online again.
 // ============================================================
 const FEEDBACK={
-  formId:'mdeeqzbq',                            // Formspree form: https://formspree.io/f/mdeeqzbq
+  formId:'xkjrzdjw',                            // Formspree form: https://formspree.io/f/xkjrzdjw
   subject:'Tacompton Feedback',
   maxLen:4000,
   qKey:()=>`${GAME.id}.feedbackQueue`,

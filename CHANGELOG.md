@@ -11,6 +11,7 @@ are taken from it.
 - Five kids to meet (Marcus, Ana, Tavita, Linh and Zay), any of whom can become your best friend, and Growing Up events: shooting hoops, the barbecue across the street, the ice cream truck, a mural going up, the Link bell, a back-to-school supply giveaway at People's, a rainy day and more.
 - New places drawn for Growing Up (with night versions): the family apartment, the Reading Room and Summit View Middle School; Growing Up achievements, its own best score, and a "Growing Up" chapter in the Help guide.
 - The adult game, "Two weeks on Hilltop", still starts with Move in on Monday, and existing saves load as before (see Changed for its new balance).
+- 💬 Send feedback now sits right under ❓ Help on the start page, and messages go to the new feedback form.
 
 ### Changed
 - Balance: the two weeks are a real game now. Shifts cost more stress (CNA +20, line cook +16, barista +12), sleep takes off only −3 (−5 in bed before 11 PM), so a swim, the sunset, a call home or a Link ride matter. Community grows more slowly, late and missed shifts cost more Job, and a night past midnight costs Job −3. The rest, bench, park, platform, murals and hill walk work fully twice a day.
