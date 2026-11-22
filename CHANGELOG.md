@@ -20,6 +20,9 @@ are taken from it.
 - Lifetime ends at old age with a life summary: stages, work, people and moments.
 - ⚙️ Settings → 🎮 Game options: lengthen or shorten the game (or finish here), change the difficulty one step a week, event pop-ups, tips, full weeks or highlights (3 days of each key week), and rename your character. Starting age and mode show grayed out, with the reason.
 - 🏅 Best scores: scores are per month played, each length keeps its own best, and the list shows every run's length and starting age.
+- 🌦️ Seasons and weather in the longer games: a daily roll by season. Tacoma rain and drizzle from October through spring, gray days and sun breaks, windstorms, a rare snow day in winter (school closes, and you can sled the hill), the first sunny day of spring that brings the whole block outside, and summer wildfire-smoke days. The weather shows over every place's drawing and as a tag on the Here tab, nudges your stats each morning, and changes outdoor plans: a little bonus in the sun, a little damp in the rain, and some are off in heavy rain, windstorms and smoke.
+- 🌅 Sunrise and sunset all year, in both modes: about 7:55 AM and 4:20 PM in late December, 5:15 AM and 9:10 PM in late June. The sky in every scene follows them.
+- 🏘️ A neighborhood that changes over the years: city news in the summaries between key weeks (new murals, The Juniper's apartments and bakery on MLK, the teriyaki spot closing and Kusina 253 opening in its place, a bigger street fair, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit's plan: design from 2027, opening forecast for 2043). Rents go up a few percent every August, and each birthday notes how much the block has changed. Quick play is unchanged.
 
 ### Changed
 - Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.
