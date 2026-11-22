@@ -107,12 +107,31 @@ defHood({
 // ---- events (Eastside only) ----
 const eaAt=(c,...k)=>!isGrow()&&hoodOf(c.at)==='eastside'&&(!k.length||k.includes(c.at));
 defEvent({id:'ea_ship_arrives',hook:'arrive',tile:['🚢','A giant ship comes in','good'],chance:0.4,max:2,cooldown:2,cond:c=>eaAt(c,'ea_port'),
-  run:()=>{pass(15);adj('stress',-7);say('🚢 You pull in just as a container ship the size of a city block rounds the point. The cranes stop. The tugs whistle. A crane operator forty feet up the leg waves at nobody in particular, and you wave back at him anyway.')}});
+  run:()=>{say('🚢 You pull in just as a container ship the size of a city block rounds the point. The cranes stop. The tugs whistle.')},
+  choices:()=>stopWatch({mins:15,calm:7,text:'🚢 A crane operator forty feet up the leg waves at nobody in particular, and you wave back at him anyway. The ship slides to the wharf as if it weighed nothing.'}),
+  dflt:1});
 defEvent({id:'ea_shift_change',hook:'arrive',tile:['⚓','Shift change at the port','good'],chance:0.45,max:1,cond:c=>eaAt(c,'ea_port')&&((tod()>=870&&tod()<960)||(tod()>=1110&&tod()<1200)),
-  run:()=>{const x=stMet('ea_roz');adj('stress',-3);adj('community',1);say(`⚓ Trucks and hard hats pour out of the gate while a fresh crew walks in, high-fives all the way down the line. ${x?'A woman at the viewpoint fence points out which crane is hers: <b>Roz</b>. ':'Roz waves from the gate. '}“Four hours on, you won’t sit down. Eight hours later you won’t want to.” She grins. “I love it.”`)}});
+  run:()=>{say('⚓ Trucks and hard hats pour out of the gate while a fresh crew walks in, high-fives all the way down the line.')},
+  choices:()=>[
+    {ic:'🗣️',l:'Stay and talk with the crews',s:'20 min. Community +3, stress −3. You might meet Roz',fn:()=>{pass(20);const x=stMet('ea_roz');adj('stress',-3);adj('community',3);say(`⚓ ${x?'A woman at the viewpoint fence points out which crane is hers: <b>Roz</b>. ':'Roz waves from the gate. '}“Four hours on, you won’t sit down. Eight hours later you won’t want to.” She grins. “I love it.”`)}},
+    {ic:'👋',l:'Wave from the fence',s:'5 min. Community +1, stress −3',fn:()=>{pass(5);adj('stress',-3);adj('community',1);say('👋 A few hard hats wave back. Somebody whistles two notes of a song you almost know.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You let the shift change flow past you.')}}],
+  dflt:2});
 defEvent({id:'ea_quince',hook:'arrive',tile:['🎂','A quinceañera invitation','good'],chance:0.4,max:1,cond:c=>eaAt(c,'ea_portland','ea_taco')&&day()>=2,
-  run:()=>{const x=stMet('ea_reyes');adj('community',4);adj('stress',-5);S.food++;say(`🎂 ${x?'A girl in a paint-splattered T-shirt stops you on the sidewalk: <b>Camila Reyes</b>, who turns fifteen next weekend. ':'Camila Reyes stops you on the sidewalk. '}She hands you a hand-painted invitation to her quinceañera at the Family Hall. “Come. Eat. You do not have to dance. Abuela Lupe will make you anyway.” Her mother presses a foil-wrapped tamal into your hand for the road. Food +1.`)}});
+  run:()=>{say('🎂 A girl in a paint-splattered T-shirt stops you on the sidewalk: Camila Reyes, who turns fifteen next weekend. She holds out a hand-painted invitation to her quinceañera at the Family Hall.')},
+  choices:()=>[
+    {ic:'🎂',l:'Say you will come',s:'10 min. Community +4, stress −3, food +1. Plan to stay and dance a little',fn:()=>{setEventFlag('ea_quince','going');pass(10);const x=stMet('ea_reyes');adj('community',4);adj('stress',-3);S.food++;say(`🎂 “Come. Eat. You do not have to dance. Abuela Lupe will make you anyway.” Her mother presses a foil-wrapped tamal into your hand for the road. Food +1.${x?' '+NEIGHBORS.find(n=>n.id==='ea_reyes').d:''}`)}},
+    {ic:'🫔',l:'Take the tamal, thank them, and go',s:'3 min. Community +1, food +1',fn:()=>{setEventFlag('ea_quince','thanks');pass(3);adj('community',1);S.food++;say('🫔 You can’t promise the weekend, but you can promise to eat the tamal. Camila approves. Food +1.')}},
+    {ic:'🙏',l:'Decline kindly',s:'No time. Nothing changes',fn:()=>{setEventFlag('ea_quince','no');say('🙏 “Another year,” you say. Camila shrugs, grins and says Abuela will keep your seat anyway.')}}],
+  dflt:1});
 defEvent({id:'ea_garden_harvest',hook:'arrive',tile:['🍅','The garden is coming in','good'],chance:0.4,max:1,cond:c=>eaAt(c,'ea_portland')&&daytime(),
-  run:()=>{S.food+=2;adj('community',3);adj('stress',-4);say('🍅 The Family Hall garden is exploding: tomatoes, tomatillos, squash, a row of chiles in every color. A crew of kids and aunties is filling boxes for the whole avenue. Somebody puts one in your arms. Food +2.')}});
+  run:()=>{say(`🍅 The Family Hall garden is exploding: tomatoes, tomatillos, squash, a row of chiles in every color. A crew of kids and aunties is filling boxes for the whole avenue.${eventFlag('ea_quince')==='going'?' Camila waves a trowel at you: “Abuela says you still owe her a dance.”':''}`)},
+  choices:()=>{const going=eventFlag('ea_quince')==='going';return[
+    {ic:'🧺',l:'Help fill the boxes',s:'30 min. Energy −6, food +2, community +'+(going?5:4)+', stress −4',fn:()=>{pass(30);adj('energy',-6);S.food+=2;adj('community',going?5:4);adj('stress',-4);say('🧺 You lift, sort and carry until your back remembers every squash. Somebody puts a full box in your arms. Food +2.')}},
+    {ic:'🍅',l:'Take a box and say thanks',s:'5 min. Food +1, community +1, stress −3',fn:()=>{pass(5);S.food++;adj('community',1);adj('stress',-3);say('🍅 A grandmother hands you a box with both hands. “For your table.” Food +1.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wave at the crew and keep going.')}}]},
+  dflt:2});
 defEvent({id:'ea_river_heron',hook:'arrive',tile:['🪶','A heron at the river mouth','good'],chance:0.25,max:1,cond:c=>eaAt(c,'ea_port')&&daytime(),
-  run:()=>{adj('stress',-5);say('🪶 A great blue heron lands on a piling right in front of a hundred-ton crane, folds itself up like an umbrella and looks at you with total disapproval. The Puyallup River slides by below, the way it has since long before any of this was built.')}});
+  run:()=>{say('🪶 A great blue heron lands on a piling right in front of a hundred-ton crane and folds itself up like an umbrella.')},
+  choices:()=>stopWatch({mins:10,calm:7,text:'🪶 It looks at you with total disapproval. The Puyallup River slides by below, the way it has since long before any of this was built.'}),
+  dflt:1});

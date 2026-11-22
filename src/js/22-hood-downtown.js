@@ -138,16 +138,35 @@ defHood({
 const dtHere=c=>!isGrow()&&hoodOf(c.at)==='downtown';
 defEvent({id:'downtown_concert_crowd',hook:'arrive',tile:['🚋','A Link full of concert fans','good'],chance:0.4,max:2,cooldown:2,
   cond:c=>dtHere(c)&&hoodOf(c.from)!=='downtown'&&dtShowNight(day())&&tod()>=1020&&tod()<1260,
-  run:()=>{adj('stress',-3);adj('community',1);say('🚋 The Link car is packed with people in band shirts and sparkly jackets, all headed to the Dome. A grandmother in a vintage tour tee explains the whole discography to a stranger who is taking notes. By the last stop you know three songs you didn’t know this morning.')}});
+  run:()=>{say('🚋 The Link car is packed with people in band shirts and sparkly jackets, all headed to the Dome. A grandmother in a vintage tour tee is explaining the whole discography to a stranger who is taking notes.')},
+  choices:()=>[
+    {ic:'🎶',l:'Join the singalong',s:'15 min. Energy −4, stress −6, community +3',fn:()=>{pass(15);adj('energy',-4);adj('stress',-6);adj('community',3);say('🎶 By the last stop the whole car knows the chorus and a man in a sparkly jacket is conducting. You know three songs you didn’t know this morning.')}},
+    {ic:'🗣️',l:'Chat with the grandmother',s:'5 min. Stress −3, community +1',fn:()=>{pass(5);adj('stress',-3);adj('community',1);say('🗣️ She has seen forty-one shows at the Dome and ranks them for you in order. You nod like a student.')}},
+    {ic:'🎧',l:'Keep to yourself',s:'No time. Stress −1',fn:()=>{adj('stress',-1);say('🎧 You watch the glow sticks swing past the window and let the crowd carry on without you.')}}],
+  dflt:2});
 defEvent({id:'downtown_free_museum',hook:'arrive',tile:['🎟️','Free day at the Museum of Glass','good'],chance:0.35,max:1,
   cond:c=>!isGrow()&&c.at==='dt_glass'&&dtMuseumOpen(day())&&isOpen('dt_glass'),
-  run:()=>{dtSet('free',day());adj('stress',-2);say('🎟️ A sign at the door: “Free community day. Thanks, Tacoma.” The line is school groups, grandmas, and a guy in a Dome hockey jersey who has apparently never seen glass do that. Admission is on the house today.')}});
+  run:()=>{dtSet('free',day());say('🎟️ A sign at the door: “Free community day. Thanks, Tacoma.” The line is school groups, grandmas, and a guy in a Dome hockey jersey who has apparently never seen glass do that. Admission is on the house today.')},
+  choices:()=>[
+    {ic:'🔥',l:'Catch the Hot Shop right now',s:'45 min. Energy −3, stress −8, community +1. You might meet Calla',fn:()=>{pass(45);adj('energy',-3);adj('stress',-8);adj('community',1);const x=dtMeet('dt_calla',day());say(x?`🔥 The furnace glows under the cone and a woman with a headset narrates every step: <b>Calla</b>. ${dtNb('dt_calla').d}`:'🔥 Calla talks the crowd through a gather of glowing glass, rolled and turned until it is a bowl. Free, today, thanks to Tacoma.')}},
+    {ic:'🖼️',l:'Peek at the galleries',s:'15 min. Stress −4',fn:()=>{pass(15);adj('stress',-4);say('🖼️ A quick loop through the galleries, bright glass on dark walls. You leave a little lighter than you came.')}},
+    {ic:'📌',l:'Save it for later',s:'No time. Free admission stays on for the Hot Shop today',fn:()=>{adj('stress',-1);say('📌 You tell yourself you will come back before the day is out. The free Hot Shop will still be there.')}}],
+  dflt:2});
 defEvent({id:'downtown_busker',hook:'arrive',tile:['🎷','A busker on Pacific','good'],chance:0.35,max:2,cooldown:2,
   cond:c=>dtHere(c)&&c.at==='dt_pacific'&&tod()>=600&&tod()<1230,
-  run:()=>{adj('stress',-4);say(pick(['🎷 Somebody is playing a violin by the old brick wall, a fiddle tune that makes a pigeon walk faster. A man in a suit stops, loosens his tie and taps his foot. You do too.','🎷 A saxophone and a drum bucket, two teenagers, one song they have clearly rehearsed for hours. They are very good. They know it. They bow like it’s Carnegie Hall.']))}});
+  run:()=>{say('🎷 Somewhere down the block a violin starts up, a fiddle tune that makes a pigeon walk faster.')},
+  choices:()=>stopWatch({mins:15,calm:6,community:1,text:'🎷 You stop by the old brick wall. A man in a suit loosens his tie and taps his foot, and you do too. Two teenagers with a saxophone take a bow like it’s Carnegie Hall.'}),
+  dflt:1});
 defEvent({id:'downtown_market',hook:'arrive',tile:['🍑','The farmers’ market','good'],chance:0.5,max:2,
   cond:c=>dtHere(c)&&c.at==='dt_pacific'&&((day()%7)===3)&&tod()>=600&&tod()<1080,
-  run:()=>{const c=rp(8);if(canAfford(c)){spend(c);S.food++;adj('stress',-3);say(`🍑 Thursday: a row of white tents down the avenue, stone fruit stacked in pyramids, and a woman handing out samples of peach on a toothpick. You buy a basket for ${$(c)} and tuck it into your bag. Food +1.`)}else{adj('stress',-2);say('🍑 Thursday: a row of white tents down the avenue and a peach sample on a toothpick. You are broke, but the sample is free. It’s the best thing you’ve eaten all week.')}}});
+  run:()=>{say('🍑 Thursday: a row of white tents down the avenue, stone fruit stacked in pyramids, and a woman handing out peach samples on a toothpick.')},
+  choices:()=>{const c=rp(8);return[
+    {ic:'🍑',l:`Buy a basket for ${$(c)}`,s:'10 min. Food +1, stress −3',dis:!canAfford(c),fn:()=>{spend(c);pass(10);S.food++;adj('stress',-3);say(`🍑 You buy a basket for ${$(c)} and tuck it into your bag. Food +1.`)}},
+    {ic:'🗣️',l:'Taste the samples and talk to the growers',s:'10 min. Free. Community +2, stress −2',fn:()=>{pass(10);adj('community',2);adj('stress',-2);say('🗣️ A grower tells you which peach is for eating now and which is for next Tuesday. You leave with the knowledge and a sticky chin.')}},
+    {ic:'🚶',l:'Keep going',s:'No time or money',fn:()=>{say('🚶 You nod to the peach lady and keep walking.')}}]},
+  dflt:2});
 defEvent({id:'downtown_soundcheck',hook:'arrive',tile:['🔊','Sound check at the Dome','info'],chance:0.4,max:2,cooldown:2,
   cond:c=>dtHere(c)&&c.at==='dt_dome'&&tod()>=840&&tod()<1140,
-  run:()=>{adj('stress',-3);say('🔊 The doors are propped open and a drummer is testing every drum, one at a time, down the line. Thump. Thump. A roadie waves you in for ten seconds to “feel the room.” It feels like standing inside a heartbeat.')}});
+  run:()=>{say('🔊 The doors are propped open and a drummer is testing every drum, one at a time, down the line. Thump. Thump.')},
+  choices:()=>stopWatch({mins:10,calm:6,text:'🔊 A roadie waves you in for ten seconds to “feel the room.” It feels like standing inside a heartbeat.'}),
+  dflt:1});
