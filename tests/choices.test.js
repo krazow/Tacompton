@@ -20,6 +20,7 @@ async function setup(ctx) {
   const { page, errors } = await open(ctx);
   await newGame(page);
   await page.evaluate(DEF);
+  await page.evaluate(() => EV.forEach(e => { if (e.choices && !/^t_/.test(e.id)) e.cond = () => false; }));   // content events with choices stay quiet here
   await page.evaluate(() => { closeModals(); clearTiles(); S.t = S.cur * 1440 + 600; S.money = 500; S.stress = 40; S.ev.pending = []; tab = 'act'; render(); });
   return { page, errors };
 }
