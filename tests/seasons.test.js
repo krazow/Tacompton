@@ -124,4 +124,20 @@ module.exports = [
     assert.match(r.desc, /the teriyaki spot/);
     noErrors(errors);
   } },
+  { name: 'Growing Up’s neighborhoods (from 14) get the weather overlay and the outdoor rules too', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await startLife(page, '2y', 15);
+    const r = await page.evaluate(() => {
+      S.cur = dayIndexOf(2027, 8, 20); S.t = S.cur * 1440 + 780; S.age = Math.max(S.age, 16); S.loc = 'ru_beach'; closeModals(); tab = 'act';
+      const res = {};
+      for (const k of ['smoke', 'sun', 'snow']) { S.wxSet = { [day()]: k }; render(); const a = actionsHere().filter(x => !/Wait a while/.test(x.l));
+        res[k] = { fx: (document.querySelector('.scene svg .wx-fx') || { dataset: {} }).dataset.wx || null, n: a.length, off: a.filter(x => x.dis && /smoke/i.test(x.s || '')).length, tag: !!document.querySelector('.status .tag.wx') }; }
+      return { mode: MODE, hidden: !!L.ru_beach.hidden, res };
+    });
+    assert.strictEqual(r.mode, 'grow'); assert.strictEqual(r.hidden, false);
+    assert.strictEqual(r.res.smoke.fx, 'smoke'); assert.strictEqual(r.res.snow.fx, 'snow'); assert.ok(r.res.smoke.tag);
+    assert.ok(r.res.smoke.n > 0 && r.res.smoke.off === r.res.smoke.n, 'every beach action is off in smoke: ' + JSON.stringify(r.res.smoke));
+    assert.strictEqual(r.res.sun.off, 0);
+    noErrors(errors);
+  } },
 ];

@@ -24,6 +24,10 @@ are taken from it.
 - 🌅 Sunrise and sunset all year, in both modes: about 7:55 AM and 4:20 PM in late December, 5:15 AM and 9:10 PM in late June. The sky in every scene follows them.
 - 🏘️ A neighborhood that changes over the years: city news in the summaries between key weeks (new murals, The Juniper's apartments and bakery on MLK, the teriyaki spot closing and Kusina 253 opening in its place, a bigger street fair, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit's plan: design from 2027, opening forecast for 2043). Rents go up a few percent every August, and each birthday notes how much the block has changed. Quick play is unchanged.
 
+- 🗺️ Growing Up: Tacoma opens up as you grow. At 14 a Youth ORCA card (riders 18 and under ride free) opens the Stadium District (a walk) and Downtown & the Dome District (the free Link); Proctor, Ruston & Point Defiance and the South End at 15; Old Town, the West End and the Eastside at 16; Fern Hill and Northeast Tacoma at 17. The neighborhoods' own places and drawings, with kid versions of what to do there, trips through the hubs, curfew (10 PM) and a Head home button with the time to leave.
+- 💼 A first job at 16: the Copper Kettle café on Pacific Ave (Tue/Thu after school, Saturdays) or the Museum of Glass gift shop (weekends), at Washington's minimum wage, paid into Money. Shifts keep paying between key weeks; miss three and they let you go.
+- Kid-friendly happenings around town (a frisbee game, a harbor seal, the glassblowers, a lost little kid), Running Start at TCC at 16, and two achievements: Youth ORCA and First Paycheck. Growing Up's Go somewhere groups places by neighborhood, like the adult game.
+
 ### Changed
 - Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.
 
