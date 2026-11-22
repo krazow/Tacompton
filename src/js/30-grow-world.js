@@ -64,7 +64,8 @@ GROW.newState=()=>({
 // ---- small shared helpers ----
 const G_BOXES=3;                                            // your room's boxes
 const G_CURFEW=1230;                                        // 8:30 PM: home by then (middle school)
-const gCurfew=()=>typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?1320:G_CURFEW;   // 10 PM from 14 (high school)
+const G_CURFEW_HIGH=1320;                                   // 10 PM: from 14 (high school)
+const gCurfew=()=>typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?G_CURFEW_HIGH:G_CURFEW;
 const G_SUNSET=1205;                                        // about 8:05 PM at the end of August
 // the first day of school (the finale of the first week): the first isSchoolDay() of the run, Mon Aug 31, 2026 (day 7) from an Aug 24 start
 const gSchoolDay=()=>{const sd=lifeStartDate();for(let i=0;i<40;i++)if(schoolOn(dAt(sd,i)))return i;return 7};
@@ -253,7 +254,7 @@ GROW.actionsHere=()=>{
       say(pick(['🧸 Nia runs a pretend restaurant out of a moving box. You order the special. It is a sock. Five stars.','🧸 You and Nia build a fort out of every couch cushion and both of your blankets. Mom pretends not to see it.','🧸 Nia wants to know if middle school has recess. You say yes. You are not sure. You will find out.','🖍️ You and Nia chalk a hopscotch court on the sidewalk. The kid from downstairs joins in. Nia is in charge.']))}});
     if(!S.grandma[d]&&gAt(540,1260)) a.push({ic:'📞',l:'Call Grandma',s:'20 min. She wants to hear everything. Mood +6.',cat:'family',fn:()=>{pass(20);S.grandma[d]=true;adj('mood',6);
       say(pick(['📞 Grandma asks if the new place has a yard. You say it has a view of a volcano. She says, “Well, la-di-da.”','📞 Grandma tells you she was nervous her first day of seventh grade too, in 1971, and she turned out fine. Mostly.','📞 Grandma puts you on speaker so the whole kitchen back home can say hi. It’s loud. It’s great.']))}});
-    if(S.boxes<G_BOXES) a.push({ic:'📦',l:`Unpack a box in your room (${S.boxes} of ${G_BOXES})`,s:S.unpack[d]?'One a day. The rest can wait until tomorrow.':'30 min. Mood +4, energy −3. Your room starts to feel like yours.',cat:'here',dis:!!S.unpack[d],fn:()=>{pass(30);S.unpack[d]=true;S.boxes++;adj('mood',4);adj('energy',-3);
+    if(gCh1()&&S.boxes<G_BOXES) a.push({ic:'📦',l:`Unpack a box in your room (${S.boxes} of ${G_BOXES})`,s:S.unpack[d]?'One a day. The rest can wait until tomorrow.':'30 min. Mood +4, energy −3. Your room starts to feel like yours.',cat:'here',dis:!!S.unpack[d],fn:()=>{pass(30);S.unpack[d]=true;S.boxes++;adj('mood',4);adj('energy',-3);
       say(S.boxes>=G_BOXES?'📦 The last box: your posters, your trophy from second-grade soccer, the lamp shaped like a moon. It’s your room now.':pick(['📦 Clothes, mostly. You find a hoodie you forgot you had. It still fits. Barely.','📦 Books and a jar of rocks from the old house. You put the rocks on the windowsill, facing the mountain.']))}});
     if(lifeLong()&&!gCh1()&&isSchoolDay(d)&&!S.hw[d]) a.push({ic:'📚',l:'Do your homework',s:'45 min at the kitchen table. Grades +3, mood −1. Once a school day.',cat:'school',cls:m<1080?'primary':'',fn:()=>{pass(45);S.hw[d]=true;S.grades=clamp(gGrades()+3,0,100);adj('mood',-1);adj('energy',-3);
       say(pick(['📚 Math, then a reading log, then a worksheet that was due yesterday. Done. Nia “helps.”','📚 You actually understand the science homework. You check it twice anyway.','📚 An essay outline, three sentences at a time. Mom reads it and says it’s good. It is, mostly.']))}});

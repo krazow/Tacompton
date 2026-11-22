@@ -62,8 +62,8 @@ const rentEarly=d=>d<=S.rent.due-7;                        // paid a week or mor
 const FAIR_HOURS=[600,1080];                               // 10 AM – 6 PM
 // Sunset over the Olympics: about 8:20 PM on Mon Aug 3, about 8:00 PM by Sun Aug 16 (a minute and a half earlier each day).
 // In the longer games the sunset follows the calendar (about 4:20 PM in late December, 9:10 PM in late June).
-const sunsetOn=d=>{if(typeof lifeLong!=='function'||!lifeLong())return Math.round(1220-(clamp(d,0,13))*20/13);
-  const o=dateOf(d),doy=dayIndexOf(o.y,o.m,o.d)-dayIndexOf(o.y,1,1);return Math.round(1125+146*Math.sin(2*Math.PI*(doy-80)/365))};
+const sunsetCal=d=>{const o=dateOf(d),doy=dayIndexOf(o.y,o.m,o.d)-dayIndexOf(o.y,1,1);return Math.round(1125+146*Math.sin(2*Math.PI*(doy-80)/365))};   // the calendar's (the guide reads it too)
+const sunsetOn=d=>{if(typeof lifeLong!=='function'||!lifeLong())return Math.round(1220-(clamp(d,0,13))*20/13);return sunsetCal(d)};
 const SUNSET=1220;                                         // day one's sunset (the Help guide's timeline uses it)
 const sunsetNow=()=>sunsetOn(typeof S!=='undefined'&&S?day():0);
 // How work, sleep and the night treat you (the Help guide reads these).
