@@ -7,6 +7,9 @@ are taken from it.
 
 ### Added
 - 🤔 Your call: events can now ask what you do. A decision shows as a tile you can tap ("Tap to decide"), in a Decide card at the top of the Here tab and in the morning report. Pick an option, or choose Not now: anything left undecided goes the cautious way at bedtime, and the Log says so. Setbacks that can't wait ask right away. At most two decisions wait at once, and saves keep them.
+- 🎒 Growing Up's events are choices now. Shoot hoops with Marcus (a full game or a few shots), help hang the barbecue lights or make lemonade, a tooth-fairy note for Nia, puddles or a blanket fort on the rainy day, Uno or a story when the power goes out, talking to Mom when the butterflies hit, and a thank-you call to Grandma. The mountain and the Link bell are a one-tap "Stop and watch".
+- Choices follow you: the finished mural remembers whether you painted your patch of sky or watched, the barbecue lights come on, your family comes to the giveaway if you sent them the flyer, and Nia carries your card to second grade.
+- Around Tacoma, kid events are choices too: join the frisbee game, tip the busker, play keeper, paint a corner of a mural, or stop and watch the eagle, the seal, the band and the Hot Shop. A lost little kid can't wait: that one asks right away.
 - 🗺️ The rest of Tacoma: six new neighborhoods beyond Hilltop, each with its own places, drawings by day and night, neighbors, things to do and events. Stadium District, Downtown & the Dome District, Proctor & the North End, the Eastside & the Port, the South End & the Lincoln District, and Ruston & Point Defiance.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
 - "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.

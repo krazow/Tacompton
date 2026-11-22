@@ -257,18 +257,46 @@ LIFE_HOOKS.skip.push((from,to,ch,notes)=>{if(!isGrow()||S.age>=18)return;const g
   if(pay){gEarn(pay);g.shifts+=wk;g.paid+=pay}
   notes.push(`${J.ic} ${ch==='work'?'Extra':'Your'} shifts at ${J.n}${pay?`: ${$(pay)} into your Money`:''}.`)});
 
-// ---- kid-appropriate things that happen in the neighborhoods ----
+// ---- kid-appropriate things that happen in the neighborhoods: choices (gOpt, gPass and gWatch are in 31-grow-story.js) ----
 const ghEv=(id,places,tile,run,o)=>gEvent(Object.assign({id,hook:'arrive',tile,chance:0.3,cooldown:10,cond:c=>places.includes(c.at)&&S.loc===c.at&&tod()<gCurfew()-30,run},o||{}));
-ghEv('gh_frisbee',['st_park'],['🥏','A frisbee at your feet','good'],()=>{pass(20);adj('mood',4);adj('energy',-2);say('🥏 A frisbee lands at your feet. “Little help?” Twenty minutes later you’re on a team with three college kids and a golden retriever, and you’re winning.')});
-ghEv('gh_band',['st_castle'],['🎺','The band practices','good'],()=>{adj('mood',4);say('🎺 The Stadium marching band is practicing on the field below the castle. One long wobbly tuba note, a drum major yelling “again from bar twelve!”, and then, suddenly, it clicks. You clap. They bow, then groan, then start bar twelve again.')},{cond:c=>c.at==='st_castle'&&S.loc==='st_castle'&&season()==='fall'&&tod()>=900&&tod()<1140});
-ghEv('gh_busker',['dt_pacific'],['🎷','A busker on Pacific Ave','good'],()=>{const c=Math.min(1,Math.floor(S.money));if(c)gSpend(c);adj('mood',4);say(`🎷 A saxophone player outside Union Station takes requests. You ask for the song your dad sings in the kitchen. He knows it.${c?` You drop ${$(c)} in the case.`:''}`)});
-ghEv('gh_hotshop',['dt_glass'],['🔥','A free look at the furnace','good'],()=>{adj('mood',3);S.grades=clamp(gGrades()+1,0,100);say('🔥 Through the big window of the Hot Shop you watch a glassblower pull a glowing thread a meter long and twist it into a spiral. A little kid next to you says “whoa” for both of you.')});
-ghEv('gh_eagle',['ru_park','ru_beach','ne_point'],['🦅','A bald eagle','good'],()=>{adj('mood',5);say('🦅 A bald eagle lands on a snag right above you, huge and unbothered, and stays there long enough for everybody on the path to stop and whisper.')});
-ghEv('gh_seal',['ot_dock','ru_beach','ne_point'],['🦭','A harbor seal','good'],()=>{adj('mood',4);say('🦭 A harbor seal pokes its head out of the water, looks at you for a long time, and sinks without a ripple. You stay another ten minutes in case it comes back. It does.')});
-ghEv('gh_lost',['pr_market','dt_dome','ru_zoo','st_park','fh_garden'],['🧒','A lost little kid','good'],()=>{pass(15);adj('mood',5);adj('family',2);say('🧒 A little boy is standing very still and very close to tears. You crouch down, ask his name, and walk him to the nearest grown-up in a vest. His mom finds him in four minutes and hugs you too. Family +2 when you tell the story at dinner.')},{cooldown:30});
-ghEv('gh_samples',['pr_market'],['🍯','Free samples','good'],()=>{adj('mood',3);adj('energy',3);say('🍯 Honey on a tiny spoon, a cube of cheese, a slice of apple you can’t pronounce. You make the rounds twice. Nobody minds.')});
-ghEv('gh_soccer',['so_c'],['⚽','They need a keeper','good'],()=>{pass(30);adj('mood',5);adj('energy',-4);say('⚽ The pickup game needs a goalkeeper. You stop exactly one shot, with your face, and the whole field cheers like it was the World Cup. It kind of was.')});
-ghEv('gh_mural',['so_a','ea_portland'],['🎨','A mural going up','good'],()=>{pass(20);adj('mood',4);say('🎨 A crew is painting a mural on the side of a market: a grandmother, a dragon, a bus, a mountain. The artist lets you fill in a corner of the sky. It’s your second mural. You’re basically a professional.')},{cooldown:60});
+ghEv('gh_frisbee',['st_park'],['🥏','A frisbee at your feet','good'],()=>say('🥏 A frisbee lands at your feet. “Little help?” Three college kids and a golden retriever are one player short.'),
+  {choices:()=>[
+    gOpt({ic:'🥏',l:'Join their game',mins:25,e:-4,mo:5,txt:'🥏 Twenty-five minutes later you’re on a team with three college kids and a golden retriever, and you’re winning.'}),
+    gOpt({ic:'↩️',l:'Throw it back and keep walking',mo:1,txt:'↩️ You throw it back. It flies perfectly, for once. They cheer.'})],dflt:1});
+ghEv('gh_band',['st_castle'],['🎺','The band practices','good'],()=>say('🎺 The Stadium marching band is practicing on the field below the castle: one long wobbly tuba note, and a drum major yelling “again from bar twelve!”'),
+  {cond:c=>c.at==='st_castle'&&S.loc==='st_castle'&&season()==='fall'&&tod()>=900&&tod()<1140,
+   choices:()=>gWatch(15,4,'🎺 You sit on the grass and wait, and then, suddenly, it clicks. You clap. They bow, then groan, then start bar twelve again.'),dflt:1});
+ghEv('gh_busker',['dt_pacific'],['🎷','A busker on Pacific Ave','good'],()=>say('🎷 A saxophone player outside Union Station is taking requests.'),
+  {choices:()=>[
+    gOpt({ic:'🎶',l:'Ask for the song Dad sings, and tip a dollar',mins:10,cost:1,mo:5,txt:'🎷 You ask for the song your dad sings in the kitchen. He knows it. You drop a dollar in the case and text Dad a video.'}),
+    gOpt({ic:'👂',l:'Listen to one song',mins:5,mo:2,txt:'🎷 One song, slow and gold. A man in a suit stops beside you and nods along.'}),
+    gPass('Keep going','🎷 The music follows you halfway down the block.')],dflt:2});
+ghEv('gh_hotshop',['dt_glass'],['🔥','A free look at the furnace','good'],()=>say('🔥 Through the big window of the Hot Shop, a glassblower is pulling a glowing thread out of the furnace.'),
+  {choices:()=>{const w=gWatch(15,3,'🔥 She pulls the thread a meter long and twists it into a spiral. A little kid next to you says “whoa” for both of you.'),f=w[0].fn;
+    w[0]=Object.assign({},w[0],{s:w[0].s.replace(/\.$/,', grades +1.'),fn:()=>{f();S.grades=clamp(gGrades()+1,0,100)}});return w},dflt:1});
+ghEv('gh_eagle',['ru_park','ru_beach','ne_point'],['🦅','A bald eagle','good'],()=>say('🦅 A bald eagle lands on a snag right above you, huge and unbothered.'),
+  {choices:()=>gWatch(10,5,'🦅 It stays long enough for everybody on the path to stop and whisper. Then it lifts off without a sound.'),dflt:1});
+ghEv('gh_seal',['ot_dock','ru_beach','ne_point'],['🦭','A harbor seal','good'],()=>say('🦭 A harbor seal pokes its head out of the water and looks at you for a long time.'),
+  {choices:()=>gWatch(10,4,'🦭 It sinks without a ripple. You wait another ten minutes in case it comes back. It does.'),dflt:1});
+ghEv('gh_lost',['pr_market','dt_dome','ru_zoo','st_park','fh_garden'],['🧒','A lost little kid','good'],()=>say('🧒 A little boy is standing very still and very close to tears. He can’t find his mom.'),
+  {cooldown:30,urgent:true,choices:()=>[
+    gOpt({ic:'🤝',l:'Stay with him and find a grown-up in a vest',mins:15,mo:5,fa:2,txt:'🧒 You crouch down, ask his name, and walk him to the nearest grown-up in a vest. His mom finds him in four minutes and hugs you too. Family +2 when you tell the story at dinner.'}),
+    gOpt({ic:'📣',l:'Wave down the nearest grown-up in a vest',mins:3,mo:2,txt:'📣 You wave until a staff member jogs over. She takes his hand and thanks you. You hear his mom’s happy shout a minute later.'})],dflt:1});
+ghEv('gh_samples',['pr_market'],['🍯','Free samples','good'],()=>say('🍯 Honey on a tiny spoon, a cube of cheese, a slice of apple you can’t pronounce.'),
+  {choices:()=>[
+    gOpt({ic:'🍎',l:'Make the rounds (twice)',mins:20,e:3,mo:3,txt:'🍯 You make the rounds twice. Nobody minds. The honey man gives you a third spoon.'}),
+    gOpt({ic:'🍯',l:'Buy a little jar of honey for home',mins:5,cost:4,fa:3,mo:2,txt:'🍯 A tiny jar with a hand-written label. Dad puts it on the pancakes Saturday and says it’s the best honey in Washington.'}),
+    gPass('Keep going','🍯 One spoon, a thank-you, and you keep walking.')],dflt:2});
+ghEv('gh_soccer',['so_c'],['⚽','They need a keeper','good'],()=>say('⚽ The pickup game needs a goalkeeper. Everybody looks at you.'),
+  {choices:()=>[
+    gOpt({ic:'🧤',l:'Get in goal',mins:30,e:-5,mo:5,txt:'⚽ You stop exactly one shot, with your face, and the whole field cheers like it was the World Cup. It kind of was.'}),
+    gOpt({ic:'📣',l:'Cheer from the sideline',mins:15,mo:2,txt:'📣 You cheer for both teams. Somebody’s grandma shares her orange slices.'}),
+    gPass('Not today','⚽ Somebody’s little cousin goes in goal instead. He’s great.')],dflt:2});
+ghEv('gh_mural',['so_a','ea_portland'],['🎨','A mural going up','good'],()=>say('🎨 A crew is painting a mural on the side of a market: a grandmother, a dragon, a bus, a mountain.'),
+  {cooldown:60,choices:()=>{const again=eventFlag('g_mural')==='helped';return [
+    gOpt({ic:'🖌️',l:'Ask if you can paint a corner of sky',mins:25,e:-3,mo:5,txt:again?'🎨 The artist hands you a brush: you know how to feather the edges now, the way Ana showed you. It’s your second mural. You’re basically a professional.':'🎨 The artist lets you fill in a corner of the sky. Blue, she says. Don’t overthink it.'}),
+    gOpt({ic:'👀',l:'Watch for a few minutes',mins:10,mo:2,txt:'🎨 The dragon gets its scales while you watch, one by one.'}),
+    gPass('Keep walking','🎨 You’ll see it finished next time.')]},dflt:2});
 
 // ---- tips, achievements and the end screen ----
 G_TIPS.push(
