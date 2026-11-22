@@ -87,12 +87,26 @@ defHood({
 // ---- events ----
 const soDay=()=>day()%7;
 defEvent({id:'so_bread_6am',hook:'arrive',tile:['🥖','Bread at six','good'],chance:0.45,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_a'&&tod()>=330&&tod()<480,
-  run:()=>{adj('energy',7);adj('stress',-4);const m=stMet('so_sophea');say(`🥖 The whole block smells like a bakery at six in the morning: yeast, butter, toasted coconut. A rack of baguettes is coming out the back door still crackling. ${m?`You meet <b>Sophea</b> as she carries it past. ${stNb('so_sophea').d}`:'Sophea nods and hands you the heel of a loaf.'} Energy +7.`)}});
+  run:()=>{say('🥖 The whole block smells like a bakery at six in the morning: yeast, butter, toasted coconut. A rack of baguettes is coming out the back door still crackling.')},
+  choices:()=>{const p=rp(4);return [
+    {ic:'🥖',l:`Buy a warm loaf and stay — ${$(p)}`,s:'20 min. Energy +7, stress −4, may meet Sophea.',dis:!canAfford(p),fn:()=>{spend(p);pass(20);adj('energy',7);adj('stress',-4);const m=stMet('so_sophea');say(`🥖 You tear the loaf on the curb while the steam rises. ${m?`You meet <b>Sophea</b> as she carries the next rack past. ${stNb('so_sophea').d}`:'Sophea nods and tops it with a smear of butter.'}`)}},
+    {ic:'🤲',l:'Take the heel of a loaf and go',s:'5 min. Energy +3. Sophea hands it over free.',fn:()=>{pass(5);adj('energy',3);say('🥖 Sophea nods and hands you the heel of a loaf. It is gone before the corner.')}},
+    {ic:'🚶',l:'Keep to your morning',s:'Nothing changes.',fn:()=>{say('🥖 The smell follows you for two blocks.')}}]},dflt:2});
 defEvent({id:'so_night_market',hook:'arrive',tile:['🏮','Summer night market','good'],chance:0.5,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_a'&&[4,5].includes(soDay())&&tod()>=1080&&tod()<1320,
-  run:()=>{const c=rp(8),ok=canAfford(c);if(ok)spend(c);adj('stress',-9);adj('community',3);adj('energy',ok?6:0);say(`🏮 It is the summer night market: string lights over S 38th, grills on every curb, a lion-drum thump somewhere out of sight. Skewers, sticky rice, mango and a line for fried bananas that wraps the block. ${ok?`You spend ${$(c)} and leave with a paper bag and a satisfied heart.`:'You are out of cash, and a vendor hands you a free sample anyway.'}`)}});
+  run:()=>{say('🏮 It is the summer night market: string lights over S 38th, grills on every curb, a lion-drum thump somewhere out of sight.')},
+  choices:()=>{const c=rp(8);return [
+    {ic:'🍢',l:`Eat your way down the block — ${$(c)}`,s:'1 hour. Energy +6, stress −9, community +3.',dis:!canAfford(c),fn:()=>{spend(c);pass(60);adj('energy',6);adj('stress',-9);adj('community',3);say('🏮 Skewers, sticky rice, mango and a line for fried bananas that wraps the block. You leave with a paper bag and a satisfied heart.')}},
+    {ic:'🚶',l:'Stroll the stalls and sample',s:'20 min. Free. Stress −4, community +1.',fn:()=>{pass(20);adj('stress',-4);adj('community',1);say('🏮 A vendor hands you a free sample, then another. You thank everyone and buy nothing, and nobody minds.')}},
+    {ic:'🌙',l:'Head home early',s:'Nothing changes.',fn:()=>{say('🏮 The drum follows you down the block.')}}]},dflt:2});
 defEvent({id:'so_lion_dance',hook:'arrive',tile:['🦁','Lion-dance practice','good'],chance:0.35,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&['so_a','so_b'].includes(c.at)&&tod()>=1020&&tod()<1200,
-  run:()=>{adj('stress',-5);adj('community',2);say('🦁 A drum, a gong and a pair of cymbals go off behind the market and a dozen teenagers in sneakers rehearse their lion-dance routine on the sidewalk. The lion’s head is red and gold and two feet wide, and the kid inside it flirts with a lamppost. You clap when they land the jump.')}});
+  run:()=>{say('🦁 A drum, a gong and a pair of cymbals go off behind the market: a dozen teenagers in sneakers are rehearsing their lion-dance routine on the sidewalk.')},
+  choices:()=>stopWatch({mins:15,calm:5,community:2,text:'🦁 The lion’s head is red and gold and two feet wide, and the kid inside it flirts with a lamppost. You clap when they land the jump.'}),dflt:1});
 defEvent({id:'so_pickup_kids',hook:'arrive',tile:['⚽','Kids need a ringer','good'],chance:0.4,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_c'&&soDay()>=5&&tod()>=540&&tod()<1140,
-  run:()=>{adj('community',2);adj('stress',-4);const m=stMet('so_coach');say(`⚽ A gang of eight-year-olds in oversized jerseys spots you and decides you are goalie. ${m?`<b>Coach Danilo</b> laughs from the sideline. ${stNb('so_coach').d}`:'Coach Danilo laughs from the sideline.'} You let in six goals and save one, and the one is a national holiday.`)}});
+  run:()=>{say('⚽ A gang of eight-year-olds in oversized jerseys spots you and decides you are goalie.')},
+  choices:()=>[
+    {ic:'🧤',l:'Play goalie for the game',s:'45 min. Energy −8, stress −6, community +3.',fn:()=>{pass(45);adj('energy',-8);adj('stress',-6);adj('community',3);const m=stMet('so_coach');say(`⚽ ${m?`<b>Coach Danilo</b> laughs from the sideline. ${stNb('so_coach').d} `:'Coach Danilo laughs from the sideline. '}You let in six goals and save one, and the one is a national holiday.`)}},
+    {ic:'📣',l:'Cheer from the sideline',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('⚽ You are appointed Official Cheerer. You are very good at it.')}},
+    {ic:'🚶',l:'Wave and keep going',s:'Nothing changes.',fn:()=>{say('⚽ “Next time!” eight voices shout at once.')}}],dflt:2});
 defEvent({id:'so_friday_lights',hook:'arrive',tile:['💡','The Bowl lights up','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_b'&&tod()>=1140&&tod()<1320,
-  run:()=>{adj('stress',-6);adj('community',1);say('💡 The big light towers at Lincoln Bowl flicker on for a summer scrimmage. A drumline tests one cadence, then another. The sky goes violet over the bleachers and the whole neighborhood seems to lean in.')}});
+  run:()=>{say('💡 The big light towers at Lincoln Bowl flicker on for a summer scrimmage. A drumline tests one cadence, then another.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'💡 The sky goes violet over the bleachers and the whole neighborhood seems to lean in. You stay for a full cadence and feel it in your chest.'}),dflt:1});

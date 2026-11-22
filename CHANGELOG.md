@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🎲 Choices in the neighborhood events (Proctor, Ruston, South End, Stadium District, West End): 23 events now offer 2–3 trade-offs (stay or stop by, spend or save), the quiet moments get a one-tap Stop and watch, and the plant sale and class signup day have follow-ups.
 - 🗺️ The rest of Tacoma: six new neighborhoods beyond Hilltop, each with its own places, drawings by day and night, neighbors, things to do and events. Stadium District, Downtown & the Dome District, Proctor & the North End, the Eastside & the Port, the South End & the Lincoln District, and Ruston & Point Defiance.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
 - "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.

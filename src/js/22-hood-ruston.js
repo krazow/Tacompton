@@ -88,10 +88,20 @@ defHood({
 // ---- events (arrive hook, only in Ruston) ----
 const ruHere=c=>!isGrow()&&hoodOf(c.at)==='ruston';
 defEvent({id:'ruston_eagle',hook:'arrive',tile:['🦅','A bald eagle overhead','good'],chance:0.4,max:2,cooldown:2,cond:c=>ruHere(c)&&tod()>=420&&tod()<1140,
-  run:()=>{adj('stress',-6);say('🦅 A shadow crosses the path. You look up: a bald eagle, huge and unhurried, wheeling over the treetops with two crows yelling at it. You stand there, mouth open, until it is gone.')}});
+  run:()=>{say('🦅 A shadow crosses the path. You look up: a bald eagle, huge and unhurried, wheeling over the treetops with two crows yelling at it.')},
+  choices:()=>stopWatch({mins:15,calm:6,text:'🦅 You stand there, mouth open, until it is a dot over the Sound. The crows go home. A jogger stops beside you and says, “Every time.”'}),dflt:1});
 defEvent({id:'ruston_seal',hook:'arrive',tile:['🦭','A seal on the beach','good'],chance:0.45,max:1,cond:c=>c.at==='ru_beach'&&!isGrow(),
-  run:()=>{adj('stress',-5);adj('community',1);say('🦭 A round gray head pops up just offshore and regards you with enormous dark eyes. A seal. A small crowd gathers, whispering. It stays a full minute, then vanishes with a quiet ripple. Everybody agrees it was looking at them.')}});
+  run:()=>{say('🦭 A round gray head pops up just offshore and regards you with enormous dark eyes. A seal.')},
+  choices:()=>stopWatch({mins:10,calm:5,community:1,text:'🦭 A small crowd gathers, whispering. It stays a full minute, then vanishes with a quiet ripple. Everybody agrees it was looking at them.'}),dflt:1});
 defEvent({id:'ruston_dog',hook:'arrive',tile:['🐶','A stranger’s dog','good'],chance:0.3,max:1,cond:c=>ruHere(c)&&(c.at==='ru_park'||c.at==='ru_beach'),
-  run:()=>{pass(40);adj('energy',-3);adj('stress',-7);adj('community',1);say('🐶 A fluffy dog with no leash and a great deal of confidence adopts you. Its owner, a few yards behind, calls “Sorry! He chooses people!” You walk the path together, dog first, owner chatting. Forty minutes pass, and you wave goodbye like old friends.')}});
+  run:()=>{say('🐶 A fluffy dog with no leash and a great deal of confidence adopts you. Its owner, a few yards behind, calls “Sorry! He chooses people!”')},
+  choices:()=>[
+    {ic:'🚶',l:'Walk the path together',s:'40 min. Energy −3, stress −7, community +1.',fn:()=>{pass(40);adj('energy',-3);adj('stress',-7);adj('community',1);say('🐶 You walk the path together, dog first, owner chatting. Forty minutes pass, and you wave goodbye like old friends.')}},
+    {ic:'🎾',l:'Throw a stick a few times',s:'10 min. Stress −3, energy −1.',fn:()=>{pass(10);adj('stress',-3);adj('energy',-1);say('🐶 Six throws, six triumphant returns, one deeply proud dog. The owner thanks you and steers him back to the trail.')}},
+    {ic:'🙋',l:'Give a pat and move on',s:'Nothing changes.',fn:()=>{say('🐶 One good ear scratch and the dog accepts your apology.')}}],dflt:2});
 defEvent({id:'ruston_concert',hook:'arrive',tile:['🎶','Concert in the park','good'],chance:0.4,max:1,cond:c=>ruHere(c)&&c.at!=='ru_zoo'&&tod()>=1020&&tod()<1230,
-  run:()=>{adj('stress',-8);adj('community',2);say('🎶 From a clearing in the trees comes music: a summer concert, a brass band on a small stage, families on blankets and kids twirling in the grass. You stand at the edge and tap your foot. Someone slides over and makes room on a blanket.')}});
+  run:()=>{say('🎶 From a clearing in the trees comes music: a summer concert, a brass band on a small stage, families on blankets and kids twirling in the grass.')},
+  choices:()=>[
+    {ic:'🧺',l:'Take the spot on the blanket',s:'1 hour. Energy −2, stress −8, community +2.',fn:()=>{pass(60);adj('energy',-2);adj('stress',-8);adj('community',2);say('🎶 Someone slides over and makes room on a blanket. You learn the second verse by the end, and you sing it.')}},
+    {ic:'👏',l:'Stand at the edge for a song or two',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('🎶 You tap your foot through two songs and clap with everyone at the end.')}},
+    {ic:'🚶',l:'Let it play behind you',s:'Nothing changes.',fn:()=>{say('🎶 The trumpets follow you down the path, fainter at each bend.')}}],dflt:2});
