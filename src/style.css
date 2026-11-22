@@ -385,3 +385,12 @@ html.tut-open,html.tut-open body{overflow:hidden}
 .title .t-life .t-ic{background:rgba(255,255,255,.18)}
 .title .t-life .t-tx span{color:rgba(255,255,255,.8)}
 .life-sum h1{margin-bottom:6px}
+
+/* ---- choices: decision tiles, the Decide card, the choice sheet (03-events.js) ---- */
+.tile.decide{border-left-color:var(--accent);padding:0 10px 0 0}
+.tile .tdec{flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:none;border:0;padding:10px 0 10px 12px;text-align:left;font:inherit;color:inherit;min-height:44px;cursor:pointer}
+.tile .tdec .tt span{color:var(--accent);font-weight:700}
+.decide{margin-bottom:6px}
+.decide button.act.decide-btn{border:2px solid var(--accent)}
+.modal .ch-q{font-weight:700;margin-top:10px}
+.modal .ch-note{font-size:12.5px;color:var(--mute);margin-top:4px}

@@ -16,7 +16,7 @@
 function baseState(){
   return Object.assign({name:profileName()||GAME.defaultName,diff:'normal',t:GAME.wake,cur:0,loc:GAME.startLoc,alarm:GAME.wake,
     log:[],prios:[],tips:{seen:[]},over:false,daily:null,achGame:[],stats:{},
-    ev:{last:{},count:{},history:[],force:[],flags:{}}},newState());
+    ev:{last:{},count:{},history:[],force:[],flags:{},pending:[]}},newState());
 }
 function newGame(diff){
   clearTiles();closeModals();
@@ -52,6 +52,7 @@ function endDay(where){
   if(!S||S.over) return;
   const d=day(),notes=[];
   closeModals();
+  choiceNight(notes);   // 03-events.js: decisions still waiting take their default
   onNight(where,notes,d);
   const nctx={where,notes,fired:[]};fireHook('night',nctx);   // fired: the night's event ids (40-art.js picks a picture for the report)
   const card=dayCard(d);
@@ -79,7 +80,11 @@ function morningReport(D,d){
   const lines=D.lines.map(l=>`<p>${l}</p>`).join('');
   const art=artMorning(Object.assign({},D,{items}));   // 40-art.js: a picture on top (the cabin's, the morning's or the night's events) and one over your guides' trips
   const body=`${art.top}<div class="digest">${sec(`🌙 ${dayName(d)} night`,art.night)}${sec('☀️ This morning',ev+lines)}${rq?`<div class="dig"><span class="di" aria-hidden="true">📞</span><div><b>${rq} booking request${rq>1?'s':''} waiting</b><p>${(S.reqs||[]).map(q=>`The ${q.r.who}: ${reqKey(q.r)}, ${dlabel(q.r.d)}`).join('<br>')}</p></div></div>`:''}</div>`;
-  modal(`☀️ Morning report · ${dayName(S.cur)}`,body,[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{}},...(rq?[{l:`📞 Review requests in Bookings`,s:'They wait a day or two.',fn:()=>setTab('book')}]:[])]);
+  const dec=pendingList().filter(p=>!p.urgent);   // decisions waiting (03-events.js): decide here, on the Here tab, or let them default tonight
+  const decH=dec.length?`<div class="dig"><span class="di" aria-hidden="true">🤔</span><div><b>${dec.length===1?'A decision is':`${dec.length} decisions are`} waiting</b><p>${dec.map(p=>`${p.ic} ${p.title}`).join('<br>')}</p><p>Decide now, or later on the Here tab. Anything left goes the cautious way tonight.</p></div></div>`:'';
+  modal(`☀️ Morning report · ${dayName(S.cur)}`,body.replace(/<\/div>$/,decH+'</div>'),[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{}},
+    ...dec.map(p=>({l:`🤔 Decide: ${p.title}`,s:'Opens the choices.',stay:true,fn:()=>openChoice(p.id)})),
+    ...(rq?[{l:`📞 Review requests in Bookings`,s:'They wait a day or two.',fn:()=>setTab('book')}]:[])]);
   sfx('info');
   D.held.forEach(q=>modal(...q));
 }

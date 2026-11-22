@@ -309,7 +309,9 @@ function helpChapters(){
       ['💡 🔊 Bad nights','at home','A power blip spoils a meal; a loud night costs energy −10'],
       ['🚋 A car on the tracks','on the way','+10 minutes, stress +3'],
       ['💐 💵 🔥 At work','after a shift','A thank-you card, a big tip or a rush: usually Job up']])}
-    <p class="tut-small">Event pop-ups are off at first: each one shows as a tile and a log line. Turn on an OK window for each in ⚙️ Settings.</p>`],
+    <h3>🤔 Your call</h3>
+    <p>Many events ask what you do: help out or keep walking, pay now or wait, stop and watch or keep going. Their tile says <b>Tap to decide</b>, and the choice also waits in a <b>Decide</b> card at the top of the 🧭 Here tab and in the ☀️ morning report. Every option costs or gives something: time, money, energy, stress, your job or your neighbors. Not sure yet? Pick <b>Not now</b>. Anything you haven’t decided by bedtime goes the cautious way, and the 📜 Log says so. A few setbacks can’t wait, and ask you right away. At most two decisions wait at once.</p>
+    <p class="tut-small">Event pop-ups are off at first: each one shows as a tile and a log line. Turn on an OK window for each in ⚙️ Settings (decisions then open as soon as they happen).</p>`],
   ['tabs','The Week and Neighbors tabs',`
     <p>The tabs along the bottom: <b>🧭 Here</b> (what you can do where you are), <b>📅 Week</b>, <b>🤝 Neighbors</b>, <b>📋 To-do</b> and <b>📜 Log</b>.</p>
     <h3>📅 Week</h3>
