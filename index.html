@@ -277,6 +277,7 @@ button.act,.ghost,.big{min-height:44px}
 .digest .dig .di{font-size:22px;line-height:1.2}
 .digest .dig p{margin:3px 0 0;font-size:14px}
 .digest .sect{margin-top:10px}
+.digest .dig.urgent{border:2px solid var(--bad,#c0392b);border-radius:10px;padding:8px 10px;margin-bottom:6px}
 /* illustrations (40-art.js; art/README.md "How pictures are shown"). The 16:9 art is cropped to a banner whose height is reserved
    before the image arrives (no layout shift): half the column's width (2:1), at most 30% of the screen's height so the text and the
    buttons stay in view; 16:9 on tall, wide screens (tablets). The placeholder is the picture's own average color (inline), the image
@@ -646,7 +647,7 @@ function tileBox(){let el=document.getElementById('tiles');if(!el){el=document.c
 // it stays a little longer, and a queued one is dropped once you've decided.
 function showTile(ic,title,sub,kind,when,opt){
   if(!S||S.over) return;
-  const dec=opt&&opt.decide;if(dec&&!isPending(dec)){tileFlush();return}
+  const dec=opt&&opt.decide;if(dec&&!choiceWaiting(dec)){tileFlush();return}
   if(DIGEST&&!DIGEST.open){DIGEST.items.push({ic,title,lines:sub?[sub]:[],kind,tile:true});return}   // a toast that would pop up while you wake: it goes in the morning report
   if(modalSays(title)) return;
   when=when||`${dayName(day()).slice(0,3)} ${fmt(S.t)}`;
@@ -657,12 +658,13 @@ function showTile(ic,title,sub,kind,when,opt){
   tileTop(box);
   const t=document.createElement('div');t.className='tile '+(kind||'info');
   title=withName(title);sub=withName(sub);sfx(kind==='good'?'good':kind==='bad'?'bad':'info');
-  const inner=`<span class="ti">${ic}</span><span class="tt"><small>${dec?'Your call':{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>`;
+  const inner=`<span class="ti">${ic}</span><span class="tt"><small>${dec?(AMB[dec]?'A moment':'Your call'):{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>`;
   if(dec)t.classList.add('decide');
-  t.innerHTML=dec?`<button class="tdec" aria-label="${esc(plain(title))}: tap to decide">${inner}</button><button class="ok" aria-label="Later">✓</button>`:`${inner}<button class="ok" aria-label="Got it">✓</button>`;
+  t.innerHTML=dec?`<button class="tdec" aria-label="${esc(plain(title))}: ${AMB[dec]?'tap to stop and watch':'tap to decide'}">${inner}</button><button class="ok" aria-label="Later">✓</button>`:`${inner}<button class="ok" aria-label="Got it">✓</button>`;
   let gone=false;const close=tap=>{if(gone)return;
     if(tap!==true&&tileBlocked()){setTimeout(close,800);return}   // hidden behind a pop-up: keep it until the pop-up is gone
-    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260)};
+    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260);
+    if(dec&&AMB[dec])choiceDrop(dec)};   // an ambient moment's tile went away untapped: Keep going
   t.querySelector('.ok').onclick=()=>close(true);t.onclick=e=>{if(e.target===t)close(true)};
   if(dec)t.querySelector('.tdec').onclick=()=>{gone=true;t.remove();openChoice(dec)};
   setTimeout(close,dec?TILE_MS*2:tileQ.length>=2?TILE_MS-1200:TILE_MS);box.appendChild(t);
@@ -708,7 +710,7 @@ function fireHook(hook,ctx={}){
     if(!open&&!forced) continue;
     if(!forced){
       if((S.ev.count[e.id]||0)>=e.max) continue;
-      if(e.choices&&(isPending(e.id)||pendingList().length>=CHOICE_MAX)) continue;   // decisions waiting: no more choice events for now
+      if(e.choices&&(isPending(e.id)||AMB[e.id]||(!e.urgent&&!evAmbient(e,ctx)&&pendingList().length>=CHOICE_MAX))) continue;   // decisions waiting: no more choice events for now (urgent ones ask at once, and moments don't count)
       if(S.ev.last[e.id]!=null&&day()-S.ev.last[e.id]<e.cooldown) continue;
       const p=(typeof e.chance==='function'?e.chance(ctx):e.chance)*(e.bad?DF().bad:1);
       if(!(Math.random()<p)) continue;
@@ -766,9 +768,19 @@ function eventPopup(hook,items,capped){
 //   urgent:true     opens the choice sheet at once, even with pop-ups off (setbacks that can't wait)
 // When it fires: run() runs, a pending decision goes in S.ev.pending ({id,day,title,ic,lines,hook,urgent}), and its tile says
 // "Tap to decide". The sheet opens from the tile, the Decide card on the Here tab, or the morning report. At night, anything still
-// pending gets its dflt option ("You let it go: …"). At most CHOICE_MAX pending: further choice events don't fire (a forced one takes
+// pending gets its dflt option ("You let it go: …"). At most CHOICE_MAX pending (urgent ones aside: they ask at once): further choice events don't fire (a forced one takes
 // its default at once). Saves keep S.ev.pending; the options are rebuilt from the event after a reload.
-const CHOICE_MAX=2;
+// An urgent event on the night hook goes at the top of the morning report and its sheet opens right after the report closes.
+// Ambient moments (choices from stopWatch, whose array carries .ambient) never take a pending slot: they live in AMB (not saved)
+// while their tile shows. The tile is tappable for its lifetime; once it goes (or at night) "Keep going" is applied silently.
+const CHOICE_MAX=3;
+const AMB={};   // id → {id,title,ic,lines,hook}: ambient moments you can still stop for
+function evAmbient(e,ctx){   // does this event's choices() come from stopWatch? (probed once, then cached on the event)
+  if(e._amb!==undefined)return e._amb;
+  try{const o=e.choices(Object.assign({},ctx,{probe:true}));e._amb=!!(o&&o.ambient)}catch(err){return false}
+  return e._amb}
+const choiceWaiting=id=>isPending(id)||!!AMB[id];
+window.choicesWaiting=()=>pendingList().map(p=>p.id).concat(Object.keys(AMB));
 const untag=h=>String(h||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
 const CHOICE_CACHE={};   // id → {ctx, opts}: the options as built when the event fired (not saved; rebuilt after a reload)
 function eventFlag(id){return S&&S.ev&&S.ev.flags?S.ev.flags[id]:undefined}
@@ -781,7 +793,7 @@ function stopWatch(o={}){
   if(cv)bits.push(grow?`mood +${cv}`:(typeof calmTxt==='function'?calmTxt(cv):`stress −${cv}`));
   if(en)bits.push(`energy ${en>0?'+':'−'}${Math.abs(en)}`);
   if(co&&!grow)bits.push(`community +${co}`);
-  return [
+  const r=[
     {ic:'👀',l:'Stop and watch',s:bits.join(', ').replace(/^./,c=>c.toUpperCase())+'.',fn:()=>{
       pass(mins);
       if(cv){if(grow)adj('mood',cv);else if(typeof calm==='function')calm(cv);else adj('stress',-cv)}
@@ -789,6 +801,7 @@ function stopWatch(o={}){
       if(co&&!grow&&'community' in S)adj('community',co);
       if(o.text)say(o.text)}},
     {ic:'🚶',l:'Keep going',s:o.pass||'No time spent. The moment goes on without you.',fn:()=>{}}];
+  r.ambient=true;return r;
 }
 function pendingList(){if(!S.ev.pending)S.ev.pending=[];return S.ev.pending}
 const isPending=id=>pendingList().some(p=>p.id===id);
@@ -810,7 +823,14 @@ function choiceFired(e,ctx,lines,forced){
   const [ic,title]=e.tile||['📍',e.id.replace(/_/g,' ')];
   CHOICE_CACHE[e.id]={ctx,opts};
   const P=pendingList();
-  if(isPending(e.id)||P.length>=CHOICE_MAX){   // forced past the limit: it takes its default now
+  if(opts.ambient){e._amb=true;   // a moment: no pending slot
+    if(ctx.hook==='night'){choiceDrop(e.id);return}   // nobody is out to see it
+    AMB[e.id]={id:e.id,title,ic,lines:lines.slice(0,4),hook:ctx.hook,amb:true};
+    if(DIGEST){DIGEST.items.push({ic,title,lines,amb:e.id});return}   // the morning report offers it (morningReport)
+    if(popupsOn())openChoice(e.id);
+    else showTile(ic,title,'Tap to stop and watch',e.tile?e.tile[2]:'good',null,{decide:e.id});
+    return}
+  if(isPending(e.id)||(!e.urgent&&P.length>=CHOICE_MAX)){   // forced past the limit: it takes its default now
     if(!isPending(e.id)){P.push({id:e.id,day:day(),title,ic,lines,hook:ctx.hook});choiceApply(e.id,choiceDflt(e.id),'full')}
     return}
   P.push({id:e.id,day:day(),title,ic,lines:lines.slice(0,4),hook:ctx.hook,urgent:!!e.urgent});
@@ -821,9 +841,9 @@ function choiceFired(e,ctx,lines,forced){
 }
 // Apply option i of a pending decision. how: 'pick' (you chose), 'night' (defaulted), 'full' (too many pending)
 function choiceApply(id,i,how){
-  const P=pendingList(),k=P.findIndex(p=>p.id===id);if(k<0)return false;
+  const P=pendingList(),k=P.findIndex(p=>p.id===id),amb=k<0&&AMB[id];if(k<0&&!amb)return false;
   const opts=choiceOpts(id)||[],o=opts[i];
-  P.splice(k,1);delete CHOICE_CACHE[id];
+  if(amb)delete AMB[id];else P.splice(k,1);delete CHOICE_CACHE[id];
   if(!o)return false;
   const p0=S.ev.choiceLog||(S.ev.choiceLog={});p0[id]=i;   // the last option taken for each event (follow-ups can read it)
   EV_RUNNING=id;try{o.fn&&o.fn()}catch(err){console.error(err)}finally{EV_RUNNING=null}
@@ -831,20 +851,24 @@ function choiceApply(id,i,how){
 }
 // Open the choice sheet for a pending decision (one sheet at a time: it queues behind any open pop-up)
 function openChoice(id){
-  const p=pendingList().find(x=>x.id===id);if(!p)return;
-  const opts=choiceOpts(id);if(!opts||!opts.length){pendingList().splice(pendingList().indexOf(p),1);return}
-  const d=choiceDflt(id),e=EV.find(x=>x.id===id),urgent=!!(e&&e.urgent);
+  const p=pendingList().find(x=>x.id===id)||AMB[id];if(!p)return;
+  const opts=choiceOpts(id);if(!opts||!opts.length){if(p.amb)delete AMB[id];else pendingList().splice(pendingList().indexOf(p),1);return}
+  const d=choiceDflt(id),e=EV.find(x=>x.id===id),urgent=!!(e&&e.urgent&&!p.amb);
   const body=`<div class="choice-sheet" data-ev="${esc(id)}" data-dflt="${d}" hidden></div>`+(p.lines||[]).map(l=>`<p>${l}</p>`).join('')+
-    `<p class="ch-q">What do you do?</p>`+(urgent?'':`<p class="ch-note">If you don’t decide by tonight: ${esc(untag(opts[d].l))}.</p>`);
-  const btns=opts.map((o,i)=>({l:`${o.ic?o.ic+' ':''}${o.l}`,s:o.s||'',dis:!!o.dis,np:true,fn:()=>{if(!isPending(id))return;uiNarr=[];choiceApply(id,i,'pick');afterAction()}}));
-  if(!urgent)btns.push({l:'Not now',s:'It waits on the Here tab until tonight.',fn:()=>{}});
+    (p.amb?'':`<p class="ch-q">What do you do?</p>`+(urgent?'':`<p class="ch-note">If you don’t decide by tonight: ${esc(untag(opts[d].l))}.</p>`));
+  const btns=opts.map((o,i)=>({l:`${o.ic?o.ic+' ':''}${o.l}`,s:o.s||'',dis:!!o.dis,np:true,fn:()=>{if(!choiceWaiting(id))return;uiNarr=[];choiceApply(id,i,'pick');afterAction()}}));
+  if(!urgent&&!p.amb)btns.push({l:'Not now',s:'It waits on the Here tab until tonight.',fn:()=>{}});
   modalSwap(`${p.ic} ${p.title}`,body,btns,urgent);
 }
 window.openChoice=openChoice;
 // The default option of the open choice sheet (for bots and tests), or −1 when no choice sheet is open
 window.choiceBtn=()=>{const m=document.getElementById('mbg'),c=m&&m.querySelector('.choice-sheet');return c?+c.dataset.dflt:-1};
 // Night: every decision still pending takes its default. Lines go to notes (the morning report) and the log.
+// A moment that passed without you: "Keep going", silently
+function choiceDrop(id){if(!AMB[id]){delete CHOICE_CACHE[id];return}choiceApply(id,choiceDflt(id),'gone')}
+window.choiceDrop=choiceDrop;
 function choiceNight(notes){
+  Object.keys(AMB).forEach(choiceDrop);
   const P=pendingList().slice();
   for(const p of P){const opts=choiceOpts(p.id)||[],d=choiceDflt(p.id),o=opts[d];
     const n0=uiNarr.length,l0=S.log.length;
@@ -881,6 +905,7 @@ function baseState(){
 }
 function newGame(diff){
   clearTiles();closeModals();
+  for(const k in AMB)delete AMB[k];
   S=baseState();S.diff=DIFFS[diff]?diff:'normal';
   if(typeof DF().money==='number'&&'money' in S) S.money=DF().money;
   uiNarr=[];tab='act';
@@ -940,14 +965,20 @@ function morningReport(D,d){
   const rq=(S.reqs||[]).length;
   const lines=D.lines.map(l=>`<p>${l}</p>`).join('');
   const art=artMorning(Object.assign({},D,{items}));   // 40-art.js: a picture on top (the cabin's, the morning's or the night's events) and one over your guides' trips
-  const body=`${art.top}<div class="digest">${sec(`🌙 ${dayName(d)} night`,art.night)}${sec('☀️ This morning',ev+lines)}${rq?`<div class="dig"><span class="di" aria-hidden="true">📞</span><div><b>${rq} booking request${rq>1?'s':''} waiting</b><p>${(S.reqs||[]).map(q=>`The ${q.r.who}: ${reqKey(q.r)}, ${dlabel(q.r.d)}`).join('<br>')}</p></div></div>`:''}</div>`;
+  // urgent decisions that came up overnight (03-events.js): first in the report, and their sheet opens as soon as it closes
+  const urg=pendingList().filter(p=>p.urgent&&p.hook==='night');
+  const urgH=urg.map(p=>`<div class="dig urgent"><span class="di" aria-hidden="true">${p.ic}</span><div><b>Needs an answer now: ${p.title}</b>${(p.lines||[]).map(l=>`<p>${l}</p>`).join('')}<p>This one can’t wait. It opens as soon as you close the report.</p></div></div>`).join('');
+  const amb=items.filter(it=>it.amb&&AMB[it.amb]).map(it=>it.amb);   // moments this morning: stop for one from here, or they pass when you wake up
+  const body=`${art.top}<div class="digest">${urgH}${sec(`🌙 ${dayName(d)} night`,art.night)}${sec('☀️ This morning',ev+lines)}${rq?`<div class="dig"><span class="di" aria-hidden="true">📞</span><div><b>${rq} booking request${rq>1?'s':''} waiting</b><p>${(S.reqs||[]).map(q=>`The ${q.r.who}: ${reqKey(q.r)}, ${dlabel(q.r.d)}`).join('<br>')}</p></div></div>`:''}</div>`;
   const dec=pendingList().filter(p=>!p.urgent);   // decisions waiting (03-events.js): decide here, on the Here tab, or let them default tonight
   const decH=dec.length?`<div class="dig"><span class="di" aria-hidden="true">🤔</span><div><b>${dec.length===1?'A decision is':`${dec.length} decisions are`} waiting</b><p>${dec.map(p=>`${p.ic} ${p.title}`).join('<br>')}</p><p>Decide now, or later on the Here tab. Anything left goes the cautious way tonight.</p></div></div>`:'';
-  modal(`☀️ Morning report · ${dayName(S.cur)}`,body.replace(/<\/div>$/,decH+'</div>'),[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{}},
+  modal(`☀️ Morning report · ${dayName(S.cur)}`,body.replace(/<\/div>$/,decH+'</div>'),[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{amb.forEach(choiceDrop)}},
     ...dec.map(p=>({l:`🤔 Decide: ${p.title}`,s:'Opens the choices.',stay:true,fn:()=>openChoice(p.id)})),
+    ...amb.map(id=>({l:`${AMB[id].ic} ${AMB[id].title}`,s:'A moment: stop and watch, or keep going.',stay:true,fn:()=>openChoice(id)})),
     ...(rq?[{l:`📞 Review requests in Bookings`,s:'They wait a day or two.',fn:()=>setTab('book')}]:[])]);
   sfx('info');
   D.held.forEach(q=>modal(...q));
+  urg.forEach(p=>openChoice(p.id));
 }
 // Travel. Long trips get the full-screen transition.
 function go(dest){
@@ -1128,7 +1159,7 @@ function loadSave(n){
     saveNotice='Your saved game couldn’t be read, so it was set aside. Start a new game.';return null}
 }
 function adopt(d){
-  S=d.S;uiNarr=d.uiNarr;tab=d.tab;
+  S=d.S;uiNarr=d.uiNarr;tab=d.tab;for(const k in AMB)delete AMB[k];
   render();
   if(d.newer&&newerWarned!==d.newer){newerWarned=d.newer;modal('⚠️ Save from a newer version',`<p>This save is from ${esc(GAME.title)} ${esc(d.newer)}, newer than this copy (${APP_VERSION}). Update to keep everything: whatever this copy doesn’t know about is ignored, and may be lost if you keep playing here.</p>`,[{l:'Continue anyway',fn:()=>{}}])}
   if(d.notes&&d.notes.length) modal('Save loaded',`<p>Welcome back. Note: ${d.notes.join('; ')}.</p>`,[{l:'Continue',fn:()=>{}}]);
@@ -2536,7 +2567,7 @@ defEvent({id:'link_delay',hook:'travel',tile:['🚋','A car on the tracks','bad'
   choices:()=>[
     {ic:'⏳',l:'Wait it out',s:'+12 minutes. Stress +4.',fn:()=>{stPass(12);adj('stress',4);say('⏳ Twelve minutes later the keys turn up in the driver’s other jacket. The train dings, the block applauds, and you’re late-ish.')}},
     {ic:'🚶',l:'Get off and walk the rest',s:'+5 minutes. Energy −6.',fn:()=>{stPass(5);adj('energy',-6);say('🚶 You hop off and power-walk the hill. You beat the train. You also need to sit down.')}},
-    {ic:'🔑',l:'Help look for the keys',s:'+15 minutes. Community +3, stress +4.',fn:()=>{stPass(15);adj('community',3);adj('stress',4);say('🔑 You find them, under the passenger seat, with two kids and a guy from the barbershop. The driver tries to give you twenty dollars. The barber says “Nah, that’s Hilltop,” for all of you.')}}],dflt:0});
+    {ic:'🔑',l:'Help look for the keys',s:'+15 minutes. Community +3, stress +4.',fn:()=>{stPass(15);adj('community',3);adj('stress',4);say('🔑 You find them, under the passenger seat, with two kids and a guy from the barbershop. The driver tries to give you twenty dollars. The barber says “Nah, that’s Hilltop,” for all of you.')}}],dflt:1});   // walking is the default: it keeps you on time for a shift
 defEvent({id:'summer_shower',hook:'travel',tile:['🌦️','A rare August shower','info'],chance:0.06,max:1,urgent:true,
   run:()=>{say('🌦️ A sudden warm shower, the first in weeks. The whole hill smells like hot pavement and cut grass. Kids run out into it.')},
   choices:()=>[
@@ -4407,7 +4438,7 @@ function helpChapters(){
       ['🚋 A car on the tracks','on the way','+10 minutes, stress +3'],
       ['💐 💵 🔥 At work','after a shift','A thank-you card, a big tip or a rush: usually Job up']])}
     <h3>🤔 Your call</h3>
-    <p>Many events ask what you do: help out or keep walking, pay now or wait, stop and watch or keep going. Their tile says <b>Tap to decide</b>, and the choice also waits in a <b>Decide</b> card at the top of the 🧭 Here tab and in the ☀️ morning report. Every option costs or gives something: time, money, energy, stress, your job or your neighbors. Not sure yet? Pick <b>Not now</b>. Anything you haven’t decided by bedtime goes the cautious way, and the 📜 Log says so. A few setbacks can’t wait, and ask you right away. At most two decisions wait at once.</p>
+    <p>Many events ask what you do: help out or keep walking, pay now or wait, stop and watch or keep going. Their tile says <b>Tap to decide</b>, and the choice also waits in a <b>Decide</b> card at the top of the 🧭 Here tab and in the ☀️ morning report. Every option costs or gives something: time, money, energy, stress, your job or your neighbors. Not sure yet? Pick <b>Not now</b>. Anything you haven’t decided by bedtime goes the cautious way, and the 📜 Log says so. A few setbacks can’t wait, and ask you right away (one that comes up overnight is first in the morning report, and asks as soon as you close it). At most three decisions wait at once. Small moments (the mountain coming out, a heron on the river) are a tile you can tap to <b>Stop and watch</b>; they don’t wait in the Decide card, and if you let the tile go you just keep going.</p>
     <p class="tut-small">Event pop-ups are off at first: each one shows as a tile and a log line. Turn on an OK window for each in ⚙️ Settings (decisions then open as soon as they happen).</p>`],
   ['tabs','The Week and Neighbors tabs',`
     <p>The tabs along the bottom: <b>🧭 Here</b> (what you can do where you are), <b>📅 Week</b>, <b>🤝 Neighbors</b>, <b>📋 To-do</b> and <b>📜 Log</b>.</p>
@@ -4631,7 +4662,7 @@ const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
   '0.3.0':['🗺️ New: <b>the rest of Tacoma</b>. Ten neighborhoods beyond Hilltop: Stadium, Downtown & the Dome, Proctor, the Eastside & the Port, the South End & Lincoln, Ruston & Point Defiance, Old Town, Fern Hill, Northeast Tacoma and the West End.','🚌 Walk, ride the free Link or take the bus across town. <b>Go somewhere</b> now groups places by neighborhood.'],
-  '0.4.0':['🌱 New: <b>New life</b> on the title screen. Pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age: 12, 15 or 18.','⭐ The longer games play the key weeks, with a summary of what changed between them, and one choice about how you spend the time.','🎂 A birthday every year. High school at 14, a part-time job at 16, and at 18 graduation, then work, college or a trade program, and your own apartment, all in the same save.','🎮 ⚙️ Settings → Game options: game length, difficulty, highlights, pop-ups, tips and your name.','🏅 Scores per month played, a best score for each length, and Quick play is the game you know, with your saves.','🗺️ Growing Up: Tacoma opens up as you grow. A Youth ORCA card at 14 (free rides under 18) for the Stadium District and Downtown, more neighborhoods every year after, and a first job downtown at 16.','🌦️ Seasons in the longer games: Tacoma rain, sun breaks, windstorms, a rare snow day that closes school, the first sunny day of spring and summer smoke days, with sunrise and sunset that follow the year.','🏘️ Hilltop changes over the years: new buildings, a shop that closes and a new one that opens, rents that rise, a growing street fair, and the planned T Line extension to TCC.','🏫 School years: Go to school on school days (8:15 AM to 2:45 PM), homework after, and the key weeks land on the school calendar: the fall concert, winter break and testing week at Summit View; orientation, finals, prom with your friends and a summer job at Hilltop High.','📖 Two new chapters in ❓ Help: <b>Game lengths and ages</b> and <b>Growing up</b>.','📈 Raises and promotions in the longer games: yearly cost-of-living raises, merit raises at six-month reviews, and real titles (Senior CNA, LPN, RN; shift lead, café manager; sous chef, kitchen manager). College leads to IT support downtown and the trade program to an electrician apprenticeship. Rents rise every year now, so keep up.'],
+  '0.4.0':['🌱 New: <b>New life</b> on the title screen. Pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age: 12, 15 or 18.','⭐ The longer games play the key weeks, with a summary of what changed between them, and one choice about how you spend the time.','🎂 A birthday every year. High school at 14, a part-time job at 16, and at 18 graduation, then work, college or a trade program, and your own apartment, all in the same save.','🎮 ⚙️ Settings → Game options: game length, difficulty, highlights, pop-ups, tips and your name.','🏅 Scores per month played, a best score for each length, and Quick play is the game you know, with your saves.','🗺️ Growing Up: Tacoma opens up as you grow. A Youth ORCA card at 14 (free rides under 18) for the Stadium District and Downtown, more neighborhoods every year after, and a first job downtown at 16.','🌦️ Seasons in the longer games: Tacoma rain, sun breaks, windstorms, a rare snow day that closes school, the first sunny day of spring and summer smoke days, with sunrise and sunset that follow the year.','🏘️ Hilltop changes over the years: new buildings, a shop that closes and a new one that opens, rents that rise, a growing street fair, and the planned T Line extension to TCC.','🏫 School years: Go to school on school days (8:15 AM to 2:45 PM), homework after, and the key weeks land on the school calendar: the fall concert, winter break and testing week at Summit View; orientation, finals, prom with your friends and a summer job at Hilltop High.','📖 Two new chapters in ❓ Help: <b>Game lengths and ages</b> and <b>Growing up</b>.','🤔 Events ask what you do: tap a tile to decide, or find it in the Decide card on the Here tab. Setbacks that can’t wait ask right away, and anything left goes the cautious way at bedtime. Small moments are a one-tap Stop and watch.','📈 Raises and promotions in the longer games: yearly cost-of-living raises, merit raises at six-month reviews, and real titles (Senior CNA, LPN, RN; shift lead, café manager; sous chef, kitchen manager). College leads to IT support downtown and the trade program to an electrician apprenticeship. Rents rise every year now, so keep up.'],
   '0.2.0':['💬 <b>Send feedback</b> sits right under Help on the start page.','🎒 New: <b>Growing Up</b>, a second way to play from the start page. You’re 12, your family just moved to Hilltop, and you have one week (Aug 24–30, 2026) before the first day of middle school.','🤝 Chapter 1: meet five kids who could become your best friend, help out at home, get ready for school (supplies, the route, a haircut, the forms, an outfit) and be home by 8:30 PM.','🏫 New places for Growing Up: your family’s apartment, the Reading Room and Summit View Middle School. The first day of school is the finale.','🏘️ The two-week adult game is unchanged, and your saved games keep working.','⚖️ A real challenge now: shifts are more stressful and sleep helps less, so swims, sunsets, calls home and Link rides matter. New grade cutoffs: a steady player gets a B, an A takes care and showing up for the neighborhood.','🏔️ Rainier redrawn as the big glaciated mountain Tacoma actually sees, with the port cranes on the bay.','🤝 New neighbors: a bookstore owner, a phở shop, the Santos family, a transit organizer, a college student, a newcomer from Seattle, and more to the ones you knew.','🔔 Event tiles wait while a pop-up is open, and stay below the top bar.','🧭 Day one: a Go to work button at home, and the sunset time on the overlook.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
@@ -5302,7 +5333,7 @@ gEvent({id:'g_nia_card',hook:'night',tile:['💌','A card from Nia','good'],chan
     gOpt({ic:'🖍️',l:'Make her a card back, by flashlight',e:-5,fa:5,mo:2,fn:()=>setEventFlag('g_nia_card','back'),
       txt:'🖍️ GOOD LUCK IN SECOND GRADE, with an owl in a tiny backpack. You slide it under her door. A whisper comes back: “I can see the flashlight.”'}),
     gOpt({ic:'📌',l:'Tape it to your door and go to sleep',e:3,mo:3,txt:'📌 You tape the card to your door, where you’ll see it on the way out. Lights off.'})],
-  dflt:1});
+  dflt:1,urgent:true});
 
 // the flyer: tell your family, or spread the word (the giveaway remembers)
 gEvent({id:'g_flyer',hook:'arrive',tile:['📄','A flyer on the door','info'],chance:0.5,max:1,cond:c=>['mlk','peoples','library'].includes(c.at)&&day()<gSat(),
@@ -5341,7 +5372,7 @@ gEvent({id:'g_nerves',hook:'night',tile:['💭','Butterflies','info'],chance:0.6
     gOpt({ic:'🎒',l:'Get up and pack your backpack',s:'It won’t fix the list, but it’s a start.',e:-5,mo:gReady()>=60?3:4,txt:'🎒 You pack, unpack and pack it again in a better order. Then you can sleep.'}),
     gOpt({ic:'🗣️',l:'Go find Mom and talk about it',e:-3,fa:4,mo:3,txt:'🗣️ Mom is still up with tea. She tells you about her first day at a new school, which involved a lunch tray and a lot of spaghetti. You laugh. You sleep.'}),
     gOpt({ic:'💤',l:'Count the cars going by until you fall asleep',mo:gReady()>=60?1:-4,txt:gReady()>=60?'💤 Eleven cars. You’re out.':'💤 Forty-two cars. Check the To-do tab tomorrow.'})],
-  dflt:2});
+  dflt:2,urgent:true});   // a night decision: first thing in the morning report
 
 gEvent({id:'g_power_out',hook:'night',tile:['🔦','The power goes out','good'],chance:0.12,max:1,cond:c=>c.where==='home',
   run:()=>say('🔦 The power goes out at nine. The whole block goes dark at once, and somewhere down the street somebody cheers.'),
@@ -5349,7 +5380,7 @@ gEvent({id:'g_power_out',hook:'night',tile:['🔦','The power goes out','good'],
     gOpt({ic:'🃏',l:'Uno on the floor by flashlight',e:-4,fa:6,mo:3,txt:'🃏 Dad finds a flashlight, Mom finds the cards, and the four of you play Uno on the floor until it comes back. Nobody wants it to.'}),
     gOpt({ic:'👻',l:'Tell Nia a (not too scary) story',e:-3,fa:4,mo:4,txt:'👻 A story about a ghost who is afraid of the dark. Nia laughs so hard she hiccups, and then she’s asleep.'}),
     gOpt({ic:'😴',l:'Take the hint and go to bed early',e:6,fa:1,txt:'😴 No lights, no screens, nothing to do but sleep. You do it really well.'})],
-  dflt:2});
+  dflt:2,urgent:true});
 
 gEvent({id:'g_zay_shortcut',hook:'arrive',tile:['🛹','A shortcut','good'],chance:0.7,max:1,cond:c=>c.at==='school'&&gMet('zay')&&!S.shortcut,
   run:()=>say('🛹 Zay is skating the curb in front of the school. “You walk the long way? Nah. I know the alley stairs that skip the steepest block.”'),

@@ -212,7 +212,7 @@ gEvent({id:'g_nia_card',hook:'night',tile:['💌','A card from Nia','good'],chan
     gOpt({ic:'🖍️',l:'Make her a card back, by flashlight',e:-5,fa:5,mo:2,fn:()=>setEventFlag('g_nia_card','back'),
       txt:'🖍️ GOOD LUCK IN SECOND GRADE, with an owl in a tiny backpack. You slide it under her door. A whisper comes back: “I can see the flashlight.”'}),
     gOpt({ic:'📌',l:'Tape it to your door and go to sleep',e:3,mo:3,txt:'📌 You tape the card to your door, where you’ll see it on the way out. Lights off.'})],
-  dflt:1});
+  dflt:1,urgent:true});
 
 // the flyer: tell your family, or spread the word (the giveaway remembers)
 gEvent({id:'g_flyer',hook:'arrive',tile:['📄','A flyer on the door','info'],chance:0.5,max:1,cond:c=>['mlk','peoples','library'].includes(c.at)&&day()<gSat(),
@@ -251,7 +251,7 @@ gEvent({id:'g_nerves',hook:'night',tile:['💭','Butterflies','info'],chance:0.6
     gOpt({ic:'🎒',l:'Get up and pack your backpack',s:'It won’t fix the list, but it’s a start.',e:-5,mo:gReady()>=60?3:4,txt:'🎒 You pack, unpack and pack it again in a better order. Then you can sleep.'}),
     gOpt({ic:'🗣️',l:'Go find Mom and talk about it',e:-3,fa:4,mo:3,txt:'🗣️ Mom is still up with tea. She tells you about her first day at a new school, which involved a lunch tray and a lot of spaghetti. You laugh. You sleep.'}),
     gOpt({ic:'💤',l:'Count the cars going by until you fall asleep',mo:gReady()>=60?1:-4,txt:gReady()>=60?'💤 Eleven cars. You’re out.':'💤 Forty-two cars. Check the To-do tab tomorrow.'})],
-  dflt:2});
+  dflt:2,urgent:true});   // a night decision: first thing in the morning report
 
 gEvent({id:'g_power_out',hook:'night',tile:['🔦','The power goes out','good'],chance:0.12,max:1,cond:c=>c.where==='home',
   run:()=>say('🔦 The power goes out at nine. The whole block goes dark at once, and somewhere down the street somebody cheers.'),
@@ -259,7 +259,7 @@ gEvent({id:'g_power_out',hook:'night',tile:['🔦','The power goes out','good'],
     gOpt({ic:'🃏',l:'Uno on the floor by flashlight',e:-4,fa:6,mo:3,txt:'🃏 Dad finds a flashlight, Mom finds the cards, and the four of you play Uno on the floor until it comes back. Nobody wants it to.'}),
     gOpt({ic:'👻',l:'Tell Nia a (not too scary) story',e:-3,fa:4,mo:4,txt:'👻 A story about a ghost who is afraid of the dark. Nia laughs so hard she hiccups, and then she’s asleep.'}),
     gOpt({ic:'😴',l:'Take the hint and go to bed early',e:6,fa:1,txt:'😴 No lights, no screens, nothing to do but sleep. You do it really well.'})],
-  dflt:2});
+  dflt:2,urgent:true});
 
 gEvent({id:'g_zay_shortcut',hook:'arrive',tile:['🛹','A shortcut','good'],chance:0.7,max:1,cond:c=>c.at==='school'&&gMet('zay')&&!S.shortcut,
   run:()=>say('🛹 Zay is skating the curb in front of the school. “You walk the long way? Nah. I know the alley stairs that skip the steepest block.”'),

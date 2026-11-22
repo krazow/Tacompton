@@ -71,12 +71,12 @@ module.exports = [
     }
     noErrors(errors);
   } })),
-  { name: 'a lost little kid can’t wait (urgent); night events wait for the morning report; ambient moments are “Stop and watch” with “Keep going” as the default', fn: async ctx => {
+  { name: 'a lost little kid can’t wait (urgent); urgent night events open right after the morning report; ambient moments are “Stop and watch” with “Keep going” as the default', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page, 12);
     const r = await page.evaluate(() => {
       const g = id => EV.find(x => x.id === id);
-      return { urgent: ['gh_lost'].map(id => !!g(id).urgent).concat(['g_nerves', 'g_power_out', 'g_nia_card'].map(id => !g(id).urgent)),
+      return { urgent: ['gh_lost'].map(id => !!g(id).urgent).concat(['g_nerves', 'g_power_out', 'g_nia_card'].map(id => !!g(id).urgent && g(id).hook === 'night')),
         watch: ['g_link_bell', 'g_mountain', 'gh_band', 'gh_eagle', 'gh_seal', 'gh_hotshop'].map(id => { const c = g(id).choices(); return [c.length, g(id).dflt, /watch/i.test(c[0].l), /keep going/i.test(c[1].l)]; }) };
     });
     assert.ok(r.urgent.every(Boolean), JSON.stringify(r.urgent));

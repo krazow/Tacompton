@@ -20,6 +20,7 @@ function baseState(){
 }
 function newGame(diff){
   clearTiles();closeModals();
+  for(const k in AMB)delete AMB[k];
   S=baseState();S.diff=DIFFS[diff]?diff:'normal';
   if(typeof DF().money==='number'&&'money' in S) S.money=DF().money;
   uiNarr=[];tab='act';
@@ -79,14 +80,20 @@ function morningReport(D,d){
   const rq=(S.reqs||[]).length;
   const lines=D.lines.map(l=>`<p>${l}</p>`).join('');
   const art=artMorning(Object.assign({},D,{items}));   // 40-art.js: a picture on top (the cabin's, the morning's or the night's events) and one over your guides' trips
-  const body=`${art.top}<div class="digest">${sec(`🌙 ${dayName(d)} night`,art.night)}${sec('☀️ This morning',ev+lines)}${rq?`<div class="dig"><span class="di" aria-hidden="true">📞</span><div><b>${rq} booking request${rq>1?'s':''} waiting</b><p>${(S.reqs||[]).map(q=>`The ${q.r.who}: ${reqKey(q.r)}, ${dlabel(q.r.d)}`).join('<br>')}</p></div></div>`:''}</div>`;
+  // urgent decisions that came up overnight (03-events.js): first in the report, and their sheet opens as soon as it closes
+  const urg=pendingList().filter(p=>p.urgent&&p.hook==='night');
+  const urgH=urg.map(p=>`<div class="dig urgent"><span class="di" aria-hidden="true">${p.ic}</span><div><b>Needs an answer now: ${p.title}</b>${(p.lines||[]).map(l=>`<p>${l}</p>`).join('')}<p>This one can’t wait. It opens as soon as you close the report.</p></div></div>`).join('');
+  const amb=items.filter(it=>it.amb&&AMB[it.amb]).map(it=>it.amb);   // moments this morning: stop for one from here, or they pass when you wake up
+  const body=`${art.top}<div class="digest">${urgH}${sec(`🌙 ${dayName(d)} night`,art.night)}${sec('☀️ This morning',ev+lines)}${rq?`<div class="dig"><span class="di" aria-hidden="true">📞</span><div><b>${rq} booking request${rq>1?'s':''} waiting</b><p>${(S.reqs||[]).map(q=>`The ${q.r.who}: ${reqKey(q.r)}, ${dlabel(q.r.d)}`).join('<br>')}</p></div></div>`:''}</div>`;
   const dec=pendingList().filter(p=>!p.urgent);   // decisions waiting (03-events.js): decide here, on the Here tab, or let them default tonight
   const decH=dec.length?`<div class="dig"><span class="di" aria-hidden="true">🤔</span><div><b>${dec.length===1?'A decision is':`${dec.length} decisions are`} waiting</b><p>${dec.map(p=>`${p.ic} ${p.title}`).join('<br>')}</p><p>Decide now, or later on the Here tab. Anything left goes the cautious way tonight.</p></div></div>`:'';
-  modal(`☀️ Morning report · ${dayName(S.cur)}`,body.replace(/<\/div>$/,decH+'</div>'),[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{}},
+  modal(`☀️ Morning report · ${dayName(S.cur)}`,body.replace(/<\/div>$/,decH+'</div>'),[{l:`☀️ Wake up: ${dayName(S.cur)}, ${fmt(S.t)}`,fn:()=>{amb.forEach(choiceDrop)}},
     ...dec.map(p=>({l:`🤔 Decide: ${p.title}`,s:'Opens the choices.',stay:true,fn:()=>openChoice(p.id)})),
+    ...amb.map(id=>({l:`${AMB[id].ic} ${AMB[id].title}`,s:'A moment: stop and watch, or keep going.',stay:true,fn:()=>openChoice(id)})),
     ...(rq?[{l:`📞 Review requests in Bookings`,s:'They wait a day or two.',fn:()=>setTab('book')}]:[])]);
   sfx('info');
   D.held.forEach(q=>modal(...q));
+  urg.forEach(p=>openChoice(p.id));
 }
 // Travel. Long trips get the full-screen transition.
 function go(dest){

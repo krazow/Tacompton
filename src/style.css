@@ -258,6 +258,7 @@ button.act,.ghost,.big{min-height:44px}
 .digest .dig .di{font-size:22px;line-height:1.2}
 .digest .dig p{margin:3px 0 0;font-size:14px}
 .digest .sect{margin-top:10px}
+.digest .dig.urgent{border:2px solid var(--bad,#c0392b);border-radius:10px;padding:8px 10px;margin-bottom:6px}
 /* illustrations (40-art.js; art/README.md "How pictures are shown"). The 16:9 art is cropped to a banner whose height is reserved
    before the image arrives (no layout shift): half the column's width (2:1), at most 30% of the screen's height so the text and the
    buttons stay in view; 16:9 on tall, wide screens (tablets). The placeholder is the picture's own average color (inline), the image

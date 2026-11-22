@@ -165,7 +165,7 @@ defEvent({id:'link_delay',hook:'travel',tile:['🚋','A car on the tracks','bad'
   choices:()=>[
     {ic:'⏳',l:'Wait it out',s:'+12 minutes. Stress +4.',fn:()=>{stPass(12);adj('stress',4);say('⏳ Twelve minutes later the keys turn up in the driver’s other jacket. The train dings, the block applauds, and you’re late-ish.')}},
     {ic:'🚶',l:'Get off and walk the rest',s:'+5 minutes. Energy −6.',fn:()=>{stPass(5);adj('energy',-6);say('🚶 You hop off and power-walk the hill. You beat the train. You also need to sit down.')}},
-    {ic:'🔑',l:'Help look for the keys',s:'+15 minutes. Community +3, stress +4.',fn:()=>{stPass(15);adj('community',3);adj('stress',4);say('🔑 You find them, under the passenger seat, with two kids and a guy from the barbershop. The driver tries to give you twenty dollars. The barber says “Nah, that’s Hilltop,” for all of you.')}}],dflt:0});
+    {ic:'🔑',l:'Help look for the keys',s:'+15 minutes. Community +3, stress +4.',fn:()=>{stPass(15);adj('community',3);adj('stress',4);say('🔑 You find them, under the passenger seat, with two kids and a guy from the barbershop. The driver tries to give you twenty dollars. The barber says “Nah, that’s Hilltop,” for all of you.')}}],dflt:1});   // walking is the default: it keeps you on time for a shift
 defEvent({id:'summer_shower',hook:'travel',tile:['🌦️','A rare August shower','info'],chance:0.06,max:1,urgent:true,
   run:()=>{say('🌦️ A sudden warm shower, the first in weeks. The whole hill smells like hot pavement and cut grass. Kids run out into it.')},
   choices:()=>[

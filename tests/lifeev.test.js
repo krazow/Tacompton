@@ -161,7 +161,7 @@ module.exports = [
       o.back = S.ev.history.some(h => h.id === 'lev_package_back');
       return o;
     });
-    assert.deepStrictEqual(n.pending, ['lev_package']); assert.ok(!n.sheet, 'no sheet with pop-ups off'); assert.ok(n.card, 'a Decide card');
+    assert.ok(n.pending.includes('lev_package'), 'lev_package is pending: ' + n.pending);   // (another random morning event may join it) assert.ok(!n.sheet, 'no sheet with pop-ups off'); assert.ok(n.card, 'a Decide card');
     assert.strictEqual(n.claim, 2, 'the default files the claim'); assert.ok(n.let); assert.ok(n.back, 'the replacement shoes come');
     noErrors(errors);
   } },

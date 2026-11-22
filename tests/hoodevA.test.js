@@ -90,10 +90,10 @@ module.exports = [
         const e = EV.find(x => x.id === id); if (!L[pl[0]]) return { id, skip: 'no place ' + pl[0] };
         // dtMuseumOpen / show nights need the right weekday: shift the day instead of the clock where it matters
         fireHook('arrive', { at: pl[0], from: pl[1], sub: '' });
-        const fired = S.ev.pending.some(p => p.id === id);
+        const fired = choicesWaiting().includes(id);   // a decision is pending; a moment waits on its tile
         const n = fired ? choiceOpts(id).length : 0;
         if (fired && i < n) choiceApply(id, i, 'test');
-        return { id, fired, n, i, left: S.ev.pending.some(p => p.id === id) };
+        return { id, fired, n, i, left: choicesWaiting().includes(id) };
       }, [id, i, PLACE[id]]);
       out.push(r);
     }

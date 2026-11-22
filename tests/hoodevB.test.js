@@ -30,7 +30,7 @@ module.exports = [
           for (let i = 0; i < opts.length; i++) {
             setup(); const o = e.choices()[i]; res.text += ' ' + o.l + ' ' + o.s + ' ' + e.tile[1];
             if (o.dis) { res.err += 'option ' + i + ' disabled with plenty of money; '; continue; }
-            const before = snapKey(); o.fn(); const after = snapKey(); if (before === after && !/Nothing changes/.test(o.s)) res.err += 'option ' + i + ' did nothing; ';
+            const before = snapKey(); o.fn(); const after = snapKey(); if (before === after && !/Nothing changes/.test(o.s) && !(kind === 'ambient' && /Keep going/.test(o.l))) res.err += 'option ' + i + ' did nothing; ';
             seen.add(after); closeModals();
           }
           res.distinct = seen.size;
