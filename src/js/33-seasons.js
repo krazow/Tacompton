@@ -191,7 +191,6 @@ const CITY=[
 const cityOn=f=>!!(typeof S!=='undefined'&&S&&S.city&&S.city.f&&S.city.f[f]);
 window.cityOn=cityOn;
 const cityState=()=>S.city||(S.city={done:{},f:{},rentF:1,rentAp:null,news:0,pend:[]});
-const CITY_RENT_CAP=1.2;   // rents climb about 20% in all, then the city's tenant protections hold them (wages in the game don't grow)
 const cityRentPct=y=>3+Math.floor(wxHash('rent'+y)*3);   // 3, 4 or 5 percent each August
 const cityR5=v=>Math.round(v/5)*5;
 // the city between the last catch-up and day `to`: news lines (pushed to out, or said), rent each August
@@ -201,10 +200,9 @@ function cityCatchUp(to,out){
   const y0=dateOf(0).y,y1=dateOf(to).y;
   if(!isGrow()&&C.rentAp==null)C.rentAp=C.rentF;   // the first adult lease is what it is (at 18, or after graduation): raises count from there
   for(let y=Math.max(2027,y0);y<=y1;y++){const id='rent'+y;if(C.done[id]||dayIndexOf(y,8,1)>to||dayIndexOf(y,8,1)<=0)continue;
-    C.done[id]=true;if(C.rentF>=CITY_RENT_CAP)continue;
-    const p=cityRentPct(y);C.rentF=Math.min(CITY_RENT_CAP,C.rentF*(1+p/100));
-    lines.push(isGrow()?`🏠 Your parents’ lease renews with rent up ${p}%. Dad does the math at the kitchen table twice. Rents are climbing all over Hilltop.`:`__rent${p}`);
-    if(C.rentF>=CITY_RENT_CAP)lines.push('🏛️ After a winter of packed council meetings (the block club rented a bus), the city passes new tenant protections: yearly rent increases are capped from here on, with more notice and relocation help.')}
+    C.done[id]=true;
+    const p=cityRentPct(y);C.rentF*=1+p/100;   // no cap: wages rise too now (raises and promotions, 35-careers.js)
+    lines.push(isGrow()?`🏠 Your parents’ lease renews with rent up ${p}%. Dad does the math at the kitchen table twice. Rents are climbing all over Hilltop.`:`__rent${p}`);}
   for(const c of CITY){if(C.done[c.id])continue;const di=dayIndexOf(...c.at);if(di>to)continue;C.done[c.id]=true;if(c.f)C.f[c.f]=true;C.news++;C.talk=c.talk;if(di>=0)lines.push(c.t)}
   // adult rent follows the yearly raises (also after Growing Up's move-in, which starts a new lease)
   if(!isGrow()&&S.rent){
