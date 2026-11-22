@@ -3567,15 +3567,31 @@ defHood({
 });
 
 // ---- events ----
-const inHood=c=>hoodOf(c.at)===KEY;
+const inHood=c=>!isGrow()&&hoodOf(c.at)===KEY;
 defEvent({id:'proctor_peaches',hook:'arrive',tile:['🍑','The best peaches of the summer','good'],chance:0.45,max:1,cond:c=>c.at==='pr_market'&&marketOpen(),
-  run:()=>{S.food++;adj('stress',-5);say('🍑 A hand-lettered sign: FIRST OF THE ELBERTAS. The woman at the stall cuts one open and the whole aisle smells like July. You are given a slice, then another, then a bag. Food +1, stress −5.')}});
+  run:()=>{say('🍑 A hand-lettered sign: FIRST OF THE ELBERTAS. The woman at the stall cuts one open and the whole aisle smells like July.')},
+  choices:()=>{const p=rp(5);return [
+    {ic:'🛍️',l:`Buy a whole bag — ${$(p)}`,s:'15 min. Food +2, stress −5.',dis:!canAfford(p),fn:()=>{spend(p);pass(15);S.food+=2;adj('stress',-5);say('🍑 A paper bag, heavy and warm from the sun. You eat one on the walk and the juice runs to your elbow. Food +2.')}},
+    {ic:'🗣️',l:'Take a slice and chat',s:'10 min. Free. Stress −4, community +1.',fn:()=>{pass(10);adj('stress',-4);adj('community',1);say('🍑 You are handed a slice, then another, and learn which orchard they came from and why this week is the week. You leave sticky and informed.')}},
+    {ic:'🚶',l:'Keep walking',s:'Nothing changes.',fn:()=>{say('🍑 You breathe the peach air in passing and keep your errands.')}}]},dflt:2});
 defEvent({id:'proctor_movie_night',hook:'arrive',tile:['🎞️','Free movie night','good'],chance:0.4,max:1,cond:c=>c.at==='pr_main'&&tod()>=1080&&tod()<1260,
-  run:()=>{adj('stress',-8);adj('community',3);say('🎞️ A bedsheet on the side of the hardware store, a projector on a milk crate and forty folding chairs. Free movie night. Walt hands out popcorn from a paint bucket (new, he swears). Stress −8, community +3.')}});
+  run:()=>{say('🎞️ A bedsheet on the side of the hardware store, a projector on a milk crate and forty folding chairs. Free movie night. Walt hands out popcorn from a paint bucket (new, he swears).')},
+  choices:()=>[
+    {ic:'🍿',l:'Stay for the whole movie',s:'2 hours. Energy −3, stress −8, community +3.',fn:()=>{pass(120);adj('energy',-3);adj('stress',-8);adj('community',3);say('🎞️ You laugh with forty strangers at the same joke, and Walt tops up your popcorn without asking.')}},
+    {ic:'🪑',l:'Watch the first reel',s:'40 min. Stress −4, community +1.',fn:()=>{pass(40);adj('stress',-4);adj('community',1);say('🎞️ You stay for the opening and slip out while the crowd is still laughing. Walt waves with a handful of popcorn.')}},
+    {ic:'🚶',l:'Pass for tonight',s:'Nothing changes.',fn:()=>{say('🎞️ You listen to the soundtrack drift down the block as you go.')}}],dflt:2});
 defEvent({id:'proctor_garage_sale',hook:'arrive',tile:['🏷️','A garage sale','good'],chance:0.4,max:1,cond:c=>inHood(c)&&c.at!=='pr_market'&&tod()>=540&&tod()<1020&&day()%7>=5,
-  run:()=>{const p=rp(3);if(canAfford(p)){spend(p);adj('stress',-4);adj('community',2);say(`🏷️ A garage sale, folding tables on a lawn: lamps, a bread machine, a box of vinyl and a sign that says EVERYTHING MUST GO, FOR REAL THIS TIME. You pay ${$(p)} for a brass reading lamp that will look great in your apartment. Stress −4, community +2.`)}else{adj('community',2);say('🏷️ A garage sale, folding tables on a lawn. You can’t buy anything today, but you chat with the whole street about the bread machine. Community +2.')}}});
+  run:()=>{say('🏷️ A garage sale, folding tables on a lawn: lamps, a bread machine, a box of vinyl and a sign that says EVERYTHING MUST GO, FOR REAL THIS TIME.')},
+  choices:()=>{const p=rp(3);return [
+    {ic:'💡',l:`Buy the brass reading lamp — ${$(p)}`,s:'20 min. Stress −4, community +2.',dis:!canAfford(p),fn:()=>{spend(p);pass(20);adj('stress',-4);adj('community',2);say('🏷️ A brass reading lamp that will look great in your apartment, and a handshake with the seller.')}},
+    {ic:'🗣️',l:'Browse and chat with the street',s:'15 min. Free. Stress −2, community +2.',fn:()=>{pass(15);adj('stress',-2);adj('community',2);say('🏷️ You chat with half the street about the bread machine and buy nothing. It was still a good morning.')}},
+    {ic:'🚶',l:'Walk on by',s:'Nothing changes.',fn:()=>{say('🏷️ You wave at the seller and keep going.')}}]},dflt:2});
 defEvent({id:'proctor_lemonade',hook:'arrive',tile:['🍋','A lemonade stand','good'],chance:0.4,max:1,cond:c=>inHood(c)&&c.at!=='pr_market'&&tod()>=600&&tod()<1080,
-  run:()=>{const p=rp(1);if(canAfford(p)){spend(p);adj('energy',3);adj('stress',-4);adj('community',1);say(`🍋 Two kids with a card table, a hand-painted sign (LEMONADE 4 SALE, “ice cold, 90% sugar”) and a very serious cash box. You pay ${$(p)} and are given a change you didn’t ask for and a review: “You’re our best customer.” Energy +3, stress −4.`)}else{adj('stress',-3);say('🍋 Two kids with a lemonade stand insist you take a cup on the house. “Customer service,” says the older one. Stress −3.')}}});
+  run:()=>{say('🍋 Two kids with a card table, a hand-painted sign (LEMONADE 4 SALE, “ice cold, 90% sugar”) and a very serious cash box.')},
+  choices:()=>{const p=rp(1);return [
+    {ic:'🥤',l:`Buy a cup — ${$(p)}`,s:'5 min. Energy +3, stress −4, community +1.',dis:!canAfford(p),fn:()=>{spend(p);pass(5);adj('energy',3);adj('stress',-4);adj('community',1);say('🍋 You are given a cup, your change and a review: “You’re our best customer.”')}},
+    {ic:'💬',l:'Stop and hear about the business',s:'10 min. Free. Stress −3.',fn:()=>{pass(10);adj('stress',-3);say('🍋 They explain their pricing, their supply chain and a rival stand two streets over. A volunteer cup appears in your hand “on the house.”')}},
+    {ic:'🚶',l:'Wave and keep going',s:'Nothing changes.',fn:()=>{say('🍋 “Maybe next time!” the older one calls after you.')}}]},dflt:2});
 })();
 // ============================================================
 //  TACOMPTON, neighborhood pack: Ruston & Point Defiance.
@@ -3667,13 +3683,23 @@ defHood({
 // ---- events (arrive hook, only in Ruston) ----
 const ruHere=c=>!isGrow()&&hoodOf(c.at)==='ruston';
 defEvent({id:'ruston_eagle',hook:'arrive',tile:['🦅','A bald eagle overhead','good'],chance:0.4,max:2,cooldown:2,cond:c=>ruHere(c)&&tod()>=420&&tod()<1140,
-  run:()=>{adj('stress',-6);say('🦅 A shadow crosses the path. You look up: a bald eagle, huge and unhurried, wheeling over the treetops with two crows yelling at it. You stand there, mouth open, until it is gone.')}});
+  run:()=>{say('🦅 A shadow crosses the path. You look up: a bald eagle, huge and unhurried, wheeling over the treetops with two crows yelling at it.')},
+  choices:()=>stopWatch({mins:15,calm:6,text:'🦅 You stand there, mouth open, until it is a dot over the Sound. The crows go home. A jogger stops beside you and says, “Every time.”'}),dflt:1});
 defEvent({id:'ruston_seal',hook:'arrive',tile:['🦭','A seal on the beach','good'],chance:0.45,max:1,cond:c=>c.at==='ru_beach'&&!isGrow(),
-  run:()=>{adj('stress',-5);adj('community',1);say('🦭 A round gray head pops up just offshore and regards you with enormous dark eyes. A seal. A small crowd gathers, whispering. It stays a full minute, then vanishes with a quiet ripple. Everybody agrees it was looking at them.')}});
+  run:()=>{say('🦭 A round gray head pops up just offshore and regards you with enormous dark eyes. A seal.')},
+  choices:()=>stopWatch({mins:10,calm:5,community:1,text:'🦭 A small crowd gathers, whispering. It stays a full minute, then vanishes with a quiet ripple. Everybody agrees it was looking at them.'}),dflt:1});
 defEvent({id:'ruston_dog',hook:'arrive',tile:['🐶','A stranger’s dog','good'],chance:0.3,max:1,cond:c=>ruHere(c)&&(c.at==='ru_park'||c.at==='ru_beach'),
-  run:()=>{pass(40);adj('energy',-3);adj('stress',-7);adj('community',1);say('🐶 A fluffy dog with no leash and a great deal of confidence adopts you. Its owner, a few yards behind, calls “Sorry! He chooses people!” You walk the path together, dog first, owner chatting. Forty minutes pass, and you wave goodbye like old friends.')}});
+  run:()=>{say('🐶 A fluffy dog with no leash and a great deal of confidence adopts you. Its owner, a few yards behind, calls “Sorry! He chooses people!”')},
+  choices:()=>[
+    {ic:'🚶',l:'Walk the path together',s:'40 min. Energy −3, stress −7, community +1.',fn:()=>{pass(40);adj('energy',-3);adj('stress',-7);adj('community',1);say('🐶 You walk the path together, dog first, owner chatting. Forty minutes pass, and you wave goodbye like old friends.')}},
+    {ic:'🎾',l:'Throw a stick a few times',s:'10 min. Stress −3, energy −1.',fn:()=>{pass(10);adj('stress',-3);adj('energy',-1);say('🐶 Six throws, six triumphant returns, one deeply proud dog. The owner thanks you and steers him back to the trail.')}},
+    {ic:'🙋',l:'Give a pat and move on',s:'Nothing changes.',fn:()=>{say('🐶 One good ear scratch and the dog accepts your apology.')}}],dflt:2});
 defEvent({id:'ruston_concert',hook:'arrive',tile:['🎶','Concert in the park','good'],chance:0.4,max:1,cond:c=>ruHere(c)&&c.at!=='ru_zoo'&&tod()>=1020&&tod()<1230,
-  run:()=>{adj('stress',-8);adj('community',2);say('🎶 From a clearing in the trees comes music: a summer concert, a brass band on a small stage, families on blankets and kids twirling in the grass. You stand at the edge and tap your foot. Someone slides over and makes room on a blanket.')}});
+  run:()=>{say('🎶 From a clearing in the trees comes music: a summer concert, a brass band on a small stage, families on blankets and kids twirling in the grass.')},
+  choices:()=>[
+    {ic:'🧺',l:'Take the spot on the blanket',s:'1 hour. Energy −2, stress −8, community +2.',fn:()=>{pass(60);adj('energy',-2);adj('stress',-8);adj('community',2);say('🎶 Someone slides over and makes room on a blanket. You learn the second verse by the end, and you sing it.')}},
+    {ic:'👏',l:'Stand at the edge for a song or two',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('🎶 You tap your foot through two songs and clap with everyone at the end.')}},
+    {ic:'🚶',l:'Let it play behind you',s:'Nothing changes.',fn:()=>{say('🎶 The trumpets follow you down the path, fainter at each bend.')}}],dflt:2});
 // ============================================================
 //  TACOMPTON, neighborhood pack: South End & the Lincoln District (KEY southend, prefix so_).
 //  A bus ride south: S 38th St with its immigrant-owned markets, bakeries and phở counters, Lincoln High School and the Bowl,
@@ -3763,15 +3789,29 @@ defHood({
 // ---- events ----
 const soDay=()=>day()%7;
 defEvent({id:'so_bread_6am',hook:'arrive',tile:['🥖','Bread at six','good'],chance:0.45,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_a'&&tod()>=330&&tod()<480,
-  run:()=>{adj('energy',7);adj('stress',-4);const m=stMet('so_sophea');say(`🥖 The whole block smells like a bakery at six in the morning: yeast, butter, toasted coconut. A rack of baguettes is coming out the back door still crackling. ${m?`You meet <b>Sophea</b> as she carries it past. ${stNb('so_sophea').d}`:'Sophea nods and hands you the heel of a loaf.'} Energy +7.`)}});
+  run:()=>{say('🥖 The whole block smells like a bakery at six in the morning: yeast, butter, toasted coconut. A rack of baguettes is coming out the back door still crackling.')},
+  choices:()=>{const p=rp(4);return [
+    {ic:'🥖',l:`Buy a warm loaf and stay — ${$(p)}`,s:'20 min. Energy +7, stress −4, may meet Sophea.',dis:!canAfford(p),fn:()=>{spend(p);pass(20);adj('energy',7);adj('stress',-4);const m=stMet('so_sophea');say(`🥖 You tear the loaf on the curb while the steam rises. ${m?`You meet <b>Sophea</b> as she carries the next rack past. ${stNb('so_sophea').d}`:'Sophea nods and tops it with a smear of butter.'}`)}},
+    {ic:'🤲',l:'Take the heel of a loaf and go',s:'5 min. Energy +3. Sophea hands it over free.',fn:()=>{pass(5);adj('energy',3);say('🥖 Sophea nods and hands you the heel of a loaf. It is gone before the corner.')}},
+    {ic:'🚶',l:'Keep to your morning',s:'Nothing changes.',fn:()=>{say('🥖 The smell follows you for two blocks.')}}]},dflt:2});
 defEvent({id:'so_night_market',hook:'arrive',tile:['🏮','Summer night market','good'],chance:0.5,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_a'&&[4,5].includes(soDay())&&tod()>=1080&&tod()<1320,
-  run:()=>{const c=rp(8),ok=canAfford(c);if(ok)spend(c);adj('stress',-9);adj('community',3);adj('energy',ok?6:0);say(`🏮 It is the summer night market: string lights over S 38th, grills on every curb, a lion-drum thump somewhere out of sight. Skewers, sticky rice, mango and a line for fried bananas that wraps the block. ${ok?`You spend ${$(c)} and leave with a paper bag and a satisfied heart.`:'You are out of cash, and a vendor hands you a free sample anyway.'}`)}});
+  run:()=>{say('🏮 It is the summer night market: string lights over S 38th, grills on every curb, a lion-drum thump somewhere out of sight.')},
+  choices:()=>{const c=rp(8);return [
+    {ic:'🍢',l:`Eat your way down the block — ${$(c)}`,s:'1 hour. Energy +6, stress −9, community +3.',dis:!canAfford(c),fn:()=>{spend(c);pass(60);adj('energy',6);adj('stress',-9);adj('community',3);say('🏮 Skewers, sticky rice, mango and a line for fried bananas that wraps the block. You leave with a paper bag and a satisfied heart.')}},
+    {ic:'🚶',l:'Stroll the stalls and sample',s:'20 min. Free. Stress −4, community +1.',fn:()=>{pass(20);adj('stress',-4);adj('community',1);say('🏮 A vendor hands you a free sample, then another. You thank everyone and buy nothing, and nobody minds.')}},
+    {ic:'🌙',l:'Head home early',s:'Nothing changes.',fn:()=>{say('🏮 The drum follows you down the block.')}}]},dflt:2});
 defEvent({id:'so_lion_dance',hook:'arrive',tile:['🦁','Lion-dance practice','good'],chance:0.35,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&['so_a','so_b'].includes(c.at)&&tod()>=1020&&tod()<1200,
-  run:()=>{adj('stress',-5);adj('community',2);say('🦁 A drum, a gong and a pair of cymbals go off behind the market and a dozen teenagers in sneakers rehearse their lion-dance routine on the sidewalk. The lion’s head is red and gold and two feet wide, and the kid inside it flirts with a lamppost. You clap when they land the jump.')}});
+  run:()=>{say('🦁 A drum, a gong and a pair of cymbals go off behind the market: a dozen teenagers in sneakers are rehearsing their lion-dance routine on the sidewalk.')},
+  choices:()=>stopWatch({mins:15,calm:5,community:2,text:'🦁 The lion’s head is red and gold and two feet wide, and the kid inside it flirts with a lamppost. You clap when they land the jump.'}),dflt:1});
 defEvent({id:'so_pickup_kids',hook:'arrive',tile:['⚽','Kids need a ringer','good'],chance:0.4,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_c'&&soDay()>=5&&tod()>=540&&tod()<1140,
-  run:()=>{adj('community',2);adj('stress',-4);const m=stMet('so_coach');say(`⚽ A gang of eight-year-olds in oversized jerseys spots you and decides you are goalie. ${m?`<b>Coach Danilo</b> laughs from the sideline. ${stNb('so_coach').d}`:'Coach Danilo laughs from the sideline.'} You let in six goals and save one, and the one is a national holiday.`)}});
+  run:()=>{say('⚽ A gang of eight-year-olds in oversized jerseys spots you and decides you are goalie.')},
+  choices:()=>[
+    {ic:'🧤',l:'Play goalie for the game',s:'45 min. Energy −8, stress −6, community +3.',fn:()=>{pass(45);adj('energy',-8);adj('stress',-6);adj('community',3);const m=stMet('so_coach');say(`⚽ ${m?`<b>Coach Danilo</b> laughs from the sideline. ${stNb('so_coach').d} `:'Coach Danilo laughs from the sideline. '}You let in six goals and save one, and the one is a national holiday.`)}},
+    {ic:'📣',l:'Cheer from the sideline',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('⚽ You are appointed Official Cheerer. You are very good at it.')}},
+    {ic:'🚶',l:'Wave and keep going',s:'Nothing changes.',fn:()=>{say('⚽ “Next time!” eight voices shout at once.')}}],dflt:2});
 defEvent({id:'so_friday_lights',hook:'arrive',tile:['💡','The Bowl lights up','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='southend'&&c.at==='so_b'&&tod()>=1140&&tod()<1320,
-  run:()=>{adj('stress',-6);adj('community',1);say('💡 The big light towers at Lincoln Bowl flicker on for a summer scrimmage. A drumline tests one cadence, then another. The sky goes violet over the bleachers and the whole neighborhood seems to lean in.')}});
+  run:()=>{say('💡 The big light towers at Lincoln Bowl flicker on for a summer scrimmage. A drumline tests one cadence, then another.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'💡 The sky goes violet over the bleachers and the whole neighborhood seems to lean in. You stay for a full cadence and feel it in your chest.'}),dflt:1});
 // ============================================================
 //  TACOMPTON, neighborhood pack: Stadium District (north of Hilltop, a 14-minute walk).
 //  Wright Park and the Seymour Conservatory, the Tacoma Ave storefronts (invented) and the view of Stadium High School's
@@ -3882,14 +3922,31 @@ defHood({
 });
 
 defEvent({id:'stadium_picnic',hook:'arrive',tile:['🧺','A picnic in Wright Park','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_park'&&daytime(),
-  run:()=>{pass(20);adj('stress',-6);adj('community',2);say('🧺 A birthday picnic under the big beech tree waves you over: a card table of potluck, a bubble machine, a cake shaped like a frog. “We have way too much food,” says the host. “Please.” You have a deviled egg and a paper cup of lemonade, and sing along to the second verse.')}});
+  run:()=>{say('🧺 A birthday picnic under the big beech tree waves you over: a card table of potluck, a bubble machine, a cake shaped like a frog. “We have way too much food,” says the host. “Please.”')},
+  choices:()=>[
+    {ic:'🎂',l:'Join the party',s:'40 min. Energy +3, stress −6, community +2.',fn:()=>{pass(40);adj('energy',3);adj('stress',-6);adj('community',2);say('🧺 A deviled egg, a paper cup of lemonade and a slice of frog. You sing along to the second verse.')}},
+    {ic:'🫧',l:'Stop by for a minute',s:'10 min. Stress −2, community +1.',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('🧺 You wish the birthday kid well, pop a bubble and take a deviled egg for the road.')}},
+    {ic:'🚶',l:'Wave and walk on',s:'Nothing changes.',fn:()=>{say('🧺 “Next year!” calls the host.')}}],dflt:2});
 defEvent({id:'stadium_plantsale',hook:'arrive',tile:['🪴','Conservatory plant sale','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_park'&&tod()>=600&&tod()<960,
-  run:()=>{const c=rp(6);if(canAfford(c)){spend(c);adj('stress',-5);adj('community',2);say(`🪴 Folding tables outside the conservatory: succulents, ferns, tomato starts, a wobbly tower of pothos cuttings. The volunteers’ sign says “Every plant here wants to go home with someone.” You pick a small jade plant for ${$(c)}. Your windowsill is going to look so smart.`)}
-    else{adj('stress',-2);say('🪴 A plant sale outside the conservatory: ferns, succulents, tomato starts. You can’t spare a dollar this week, but a volunteer slips a pothos cutting into your hand anyway. “Stick it in water,” she says. “It’s tough. Like you.”')}}});
+  run:()=>{say('🪴 Folding tables outside the conservatory: succulents, ferns, tomato starts, a wobbly tower of pothos cuttings. The volunteers’ sign says “Every plant here wants to go home with someone.”')},
+  choices:()=>{const c=rp(6);return [
+    {ic:'🌱',l:`Take the small jade plant home — ${$(c)}`,s:'15 min. Stress −5, community +1. It might bloom later.',dis:!canAfford(c),fn:()=>{spend(c);pass(15);adj('stress',-5);adj('community',1);setEventFlag('stadium_jade',day()+1);say('🪴 You pick a small jade plant. Your windowsill is going to look so smart.')}},
+    {ic:'🗣️',l:'Browse and take a free cutting',s:'15 min. Stress −2, community +1. Free.',fn:()=>{pass(15);adj('stress',-2);adj('community',1);say('🪴 A volunteer slips a pothos cutting into your hand. “Stick it in water. It’s tough. Like you.”')}},
+    {ic:'🚶',l:'Admire from the path',s:'Nothing changes.',fn:()=>{say('🪴 You admire the ferns from a distance and keep your money.')}}]},dflt:2});
+defEvent({id:'stadium_jade_grows',hook:'wake',tile:['🪴','A new leaf','good'],chance:0.6,max:1,cond:()=>{const f=eventFlag('stadium_jade');return !isGrow()&&!!f&&day()>=f},
+  run:()=>{say('🪴 Your little jade plant from the Wright Park sale has pushed out a bright new leaf on the sill.')},
+  choices:()=>[
+    {ic:'☀️',l:'Move it into the good light',s:'5 min. Stress −5, energy +3.',fn:()=>{pass(5);adj('stress',-5);adj('energy',3);say('🪴 You turn the pot toward the window and make a point of noticing it every morning.')}},
+    {ic:'🎁',l:'Pot a cutting for a neighbor',s:'20 min. Energy −2, community +3.',fn:()=>{pass(20);adj('energy',-2);adj('community',3);say('🪴 A cutting in a jam jar, a note, and a neighbor’s surprised smile at the door.')}}],dflt:0});
 defEvent({id:'stadium_band',hook:'arrive',tile:['🎺','The band practices','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_castle'&&tod()>=900&&tod()<1200,
-  run:()=>{adj('stress',-5);adj('community',1);say('🎺 The school marching band is practicing on the field below the castle: forty teenagers, one long wobbly tuba note, a drum major shouting “again from bar twelve!” By the fifth try it clicks and the whole bluff seems to straighten up. A couple walking dogs applauds. The band bows, then groans, then starts bar twelve again.')}});
+  run:()=>{say('🎺 The school marching band is practicing on the field below the castle: forty teenagers, one long wobbly tuba note, a drum major shouting “again from bar twelve!”')},
+  choices:()=>stopWatch({mins:15,calm:5,community:1,text:'🎺 By the fifth try it clicks and the whole bluff seems to straighten up. A couple walking dogs applauds. The band bows, then groans, then starts bar twelve again.'}),dflt:1});
 defEvent({id:'stadium_wedding',hook:'arrive',tile:['📸','A wedding photo shoot','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_castle'&&tod()>=600&&tod()<1080,
-  run:()=>{pass(15);adj('stress',-5);adj('community',2);say('📸 A bride in a cloud of ivory tulle and a groom in a very warm suit are posing in front of the turrets while a photographer climbs a bench for a better angle. “Could you hold this?” she asks, and hands you a veil corner so the wind won’t take it. Click. They thank you, and you know you’re in the background of somebody’s album forever.')}});
+  run:()=>{say('📸 A bride in a cloud of ivory tulle and a groom in a very warm suit are posing in front of the turrets while a photographer climbs a bench for a better angle.')},
+  choices:()=>[
+    {ic:'🤲',l:'Hold the veil corner',s:'15 min. Energy −1, stress −3, community +2.',fn:()=>{pass(15);adj('energy',-1);adj('stress',-3);adj('community',2);say('📸 “Could you hold this?” she asks, and hands you a veil corner so the wind won’t take it. Click. You are in the background of somebody’s album forever.')}},
+    {ic:'👏',l:'Clap from the lawn',s:'8 min. Stress −3.',fn:()=>{pass(8);adj('stress',-3);say('📸 You clap when the photographer calls “one more!” They wave. Everyone laughs.')}},
+    {ic:'🚶',l:'Give them room',s:'Nothing changes.',fn:()=>{say('📸 You circle wide around the tulle and the tripod.')}}],dflt:2});
 })();
 // ============================================================
 //  TACOMPTON, neighborhood pack: The West End (Tacoma's west side by the Narrows).
@@ -3990,13 +4047,31 @@ defHood({
 function weNb(id){return NEIGHBORS.find(x=>x.id===id)}
 
 defEvent({id:'westend_fog',hook:'arrive',tile:['🌫️','Bridge in the fog','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_view'&&tod()<660,
-  run:()=>{pass(10);adj('stress',-6);say('🌫️ Fog swallows the middle of the Narrows. The bridge towers rise out of it like two tall ghosts, the cables disappear, and the only sound is the muffled hum of unseen trucks and a distant foghorn. For ten minutes the whole world is gray and gentle.')}});
+  run:()=>{say('🌫️ Fog swallows the middle of the Narrows. The bridge towers rise out of it like two tall ghosts.')},
+  choices:()=>stopWatch({mins:10,calm:6,text:'🌫️ The cables disappear, and the only sound is the muffled hum of unseen trucks and a distant foghorn. For ten minutes the whole world is gray and gentle.'}),dflt:1});
 defEvent({id:'westend_wind',hook:'arrive',tile:['💨','A windy day on the Narrows','bad'],chance:0.3,max:1,cooldown:3,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_view',
-  run:()=>{adj('energy',-4);adj('stress',2);say('💨 The wind off the water is a living thing today: your hair, your jacket and a stranger’s hat all end up somewhere else. You hold the railing and think of Gertie, then decide the new bridges are much better at this than you are.')}});
+  run:()=>{say('💨 The wind off the water is a living thing today: your hair, your jacket and a stranger’s hat all end up somewhere else.')},
+  choices:()=>{const p=rp(3);return [
+    {ic:'🧱',l:'Hold the railing and ride it out',s:'Energy −4, stress +2. Free.',fn:()=>{adj('energy',-4);adj('stress',2);say('💨 You hold the railing and think of Gertie, then decide the new bridges are much better at this than you are.')}},
+    {ic:'☕',l:`Duck into a shop for something hot — ${$(p)}`,s:'25 min. Energy +2, stress −2.',dis:!canAfford(p),fn:()=>{spend(p);pass(25);adj('energy',2);adj('stress',-2);say('💨 A paper cup, a window seat and the wind rattling the glass like it wants in.')}},
+    {ic:'🏠',l:'Head inland out of the gusts',s:'10 min. Energy −1, stress +1.',fn:()=>{pass(10);adj('energy',-1);adj('stress',1);say('💨 Two blocks inland the air is calm again, as if it were all a rumor.')}}]},dflt:2});
 defEvent({id:'westend_openhouse',hook:'arrive',tile:['🎓','Class signup day','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_tcc'&&tod()>=600&&tod()<1020,
-  run:()=>{pass(20);adj('stress',-4);adj('community',3);say('🎓 Tables line the quad: advisors in bright lanyards, a free-pizza stand, a banner that says “It’s Not Too Late.” A student ambassador hands you a catalog and a tote bag. You flip through it and feel yourself standing straighter.')}});
+  run:()=>{say('🎓 Tables line the quad: advisors in bright lanyards, a free-pizza stand, a banner that says “It’s Not Too Late.”')},
+  choices:()=>[
+    {ic:'📝',l:'Sit down with an advisor',s:'40 min. Energy −3, stress +2, community +3. They will remember you.',fn:()=>{pass(40);adj('energy',-3);adj('stress',2);adj('community',3);setEventFlag('westend_advisor',day()+1);say('🎓 An advisor in a green lanyard asks what you want to learn and writes your name on a card. “I’ll watch for you,” she says.')}},
+    {ic:'🍕',l:'Take a catalog and a slice',s:'15 min. Stress −4, community +1.',fn:()=>{pass(15);adj('stress',-4);adj('community',1);say('🎓 A student ambassador hands you a catalog and a tote bag. You flip through it and feel yourself standing straighter.')}},
+    {ic:'🚶',l:'Walk past the banner',s:'Nothing changes.',fn:()=>{say('🎓 “It’s Not Too Late” follows you down the quad. It is a good banner.')}}],dflt:2});
+defEvent({id:'westend_advisor',hook:'arrive',tile:['🎓','The advisor remembers you','good'],chance:0.5,max:1,cond:c=>{const f=eventFlag('westend_advisor');return !isGrow()&&!!f&&day()>=f&&c.at==='we_tcc'&&tod()>=600&&tod()<1020},
+  run:()=>{say('🎓 The advisor in the green lanyard spots you across the quad. “You came back!” She has your card.')},
+  choices:()=>[
+    {ic:'📚',l:'Book the intro class',s:'30 min. Energy −3, stress +3, community +2.',fn:()=>{pass(30);adj('energy',-3);adj('stress',3);adj('community',2);say('🎓 A seat, a start date and a syllabus you do not hate. You walk out slightly taller.')}},
+    {ic:'✉️',l:'Ask her to email the details',s:'10 min. Stress −2, community +1.',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('🎓 She writes your address on the card and promises no pressure. You believe her.')}}],dflt:1});
 defEvent({id:'westend_carshow',hook:'arrive',tile:['🚗','A car show in the lot','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_shops'&&tod()>=600&&tod()<1080,
-  run:()=>{pass(25);adj('stress',-5);adj('community',2);say('🚗 The parking lot behind the shops is full of chrome: a cherry-red convertible, a lowrider with a mural on the hood and a station wagon older than anyone’s parents. Owners wipe fenders with soft cloths and love every question. A kid is allowed to honk one horn. He picks the loudest.')}});
+  run:()=>{say('🚗 The parking lot behind the shops is full of chrome: a cherry-red convertible, a lowrider with a mural on the hood and a station wagon older than anyone’s parents.')},
+  choices:()=>[
+    {ic:'🔧',l:'Ask the owners about their cars',s:'40 min. Energy −2, stress −6, community +2.',fn:()=>{pass(40);adj('energy',-2);adj('stress',-6);adj('community',2);say('🚗 Owners wipe fenders with soft cloths and love every question. A kid is allowed to honk one horn. He picks the loudest.')}},
+    {ic:'👀',l:'Walk one lap',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('🚗 One slow lap, one wave at the mural lowrider, no questions asked.')}},
+    {ic:'🚶',l:'Skip it',s:'Nothing changes.',fn:()=>{say('🚗 Chrome flashes at you from behind the shops as you leave.')}}],dflt:2});
 })();
 // ============================================================
 //  TACOMPTON: the player's guide. "❓ Help" on the title screen and ⚙️ Settings → Help call helpModal(), which opens the

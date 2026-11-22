@@ -97,11 +97,29 @@ defHood({
 function weNb(id){return NEIGHBORS.find(x=>x.id===id)}
 
 defEvent({id:'westend_fog',hook:'arrive',tile:['🌫️','Bridge in the fog','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_view'&&tod()<660,
-  run:()=>{pass(10);adj('stress',-6);say('🌫️ Fog swallows the middle of the Narrows. The bridge towers rise out of it like two tall ghosts, the cables disappear, and the only sound is the muffled hum of unseen trucks and a distant foghorn. For ten minutes the whole world is gray and gentle.')}});
+  run:()=>{say('🌫️ Fog swallows the middle of the Narrows. The bridge towers rise out of it like two tall ghosts.')},
+  choices:()=>stopWatch({mins:10,calm:6,text:'🌫️ The cables disappear, and the only sound is the muffled hum of unseen trucks and a distant foghorn. For ten minutes the whole world is gray and gentle.'}),dflt:1});
 defEvent({id:'westend_wind',hook:'arrive',tile:['💨','A windy day on the Narrows','bad'],chance:0.3,max:1,cooldown:3,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_view',
-  run:()=>{adj('energy',-4);adj('stress',2);say('💨 The wind off the water is a living thing today: your hair, your jacket and a stranger’s hat all end up somewhere else. You hold the railing and think of Gertie, then decide the new bridges are much better at this than you are.')}});
+  run:()=>{say('💨 The wind off the water is a living thing today: your hair, your jacket and a stranger’s hat all end up somewhere else.')},
+  choices:()=>{const p=rp(3);return [
+    {ic:'🧱',l:'Hold the railing and ride it out',s:'Energy −4, stress +2. Free.',fn:()=>{adj('energy',-4);adj('stress',2);say('💨 You hold the railing and think of Gertie, then decide the new bridges are much better at this than you are.')}},
+    {ic:'☕',l:`Duck into a shop for something hot — ${$(p)}`,s:'25 min. Energy +2, stress −2.',dis:!canAfford(p),fn:()=>{spend(p);pass(25);adj('energy',2);adj('stress',-2);say('💨 A paper cup, a window seat and the wind rattling the glass like it wants in.')}},
+    {ic:'🏠',l:'Head inland out of the gusts',s:'10 min. Energy −1, stress +1.',fn:()=>{pass(10);adj('energy',-1);adj('stress',1);say('💨 Two blocks inland the air is calm again, as if it were all a rumor.')}}]},dflt:2});
 defEvent({id:'westend_openhouse',hook:'arrive',tile:['🎓','Class signup day','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_tcc'&&tod()>=600&&tod()<1020,
-  run:()=>{pass(20);adj('stress',-4);adj('community',3);say('🎓 Tables line the quad: advisors in bright lanyards, a free-pizza stand, a banner that says “It’s Not Too Late.” A student ambassador hands you a catalog and a tote bag. You flip through it and feel yourself standing straighter.')}});
+  run:()=>{say('🎓 Tables line the quad: advisors in bright lanyards, a free-pizza stand, a banner that says “It’s Not Too Late.”')},
+  choices:()=>[
+    {ic:'📝',l:'Sit down with an advisor',s:'40 min. Energy −3, stress +2, community +3. They will remember you.',fn:()=>{pass(40);adj('energy',-3);adj('stress',2);adj('community',3);setEventFlag('westend_advisor',day()+1);say('🎓 An advisor in a green lanyard asks what you want to learn and writes your name on a card. “I’ll watch for you,” she says.')}},
+    {ic:'🍕',l:'Take a catalog and a slice',s:'15 min. Stress −4, community +1.',fn:()=>{pass(15);adj('stress',-4);adj('community',1);say('🎓 A student ambassador hands you a catalog and a tote bag. You flip through it and feel yourself standing straighter.')}},
+    {ic:'🚶',l:'Walk past the banner',s:'Nothing changes.',fn:()=>{say('🎓 “It’s Not Too Late” follows you down the quad. It is a good banner.')}}],dflt:2});
+defEvent({id:'westend_advisor',hook:'arrive',tile:['🎓','The advisor remembers you','good'],chance:0.5,max:1,cond:c=>{const f=eventFlag('westend_advisor');return !isGrow()&&!!f&&day()>=f&&c.at==='we_tcc'&&tod()>=600&&tod()<1020},
+  run:()=>{say('🎓 The advisor in the green lanyard spots you across the quad. “You came back!” She has your card.')},
+  choices:()=>[
+    {ic:'📚',l:'Book the intro class',s:'30 min. Energy −3, stress +3, community +2.',fn:()=>{pass(30);adj('energy',-3);adj('stress',3);adj('community',2);say('🎓 A seat, a start date and a syllabus you do not hate. You walk out slightly taller.')}},
+    {ic:'✉️',l:'Ask her to email the details',s:'10 min. Stress −2, community +1.',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('🎓 She writes your address on the card and promises no pressure. You believe her.')}}],dflt:1});
 defEvent({id:'westend_carshow',hook:'arrive',tile:['🚗','A car show in the lot','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='westend'&&c.at==='we_shops'&&tod()>=600&&tod()<1080,
-  run:()=>{pass(25);adj('stress',-5);adj('community',2);say('🚗 The parking lot behind the shops is full of chrome: a cherry-red convertible, a lowrider with a mural on the hood and a station wagon older than anyone’s parents. Owners wipe fenders with soft cloths and love every question. A kid is allowed to honk one horn. He picks the loudest.')}});
+  run:()=>{say('🚗 The parking lot behind the shops is full of chrome: a cherry-red convertible, a lowrider with a mural on the hood and a station wagon older than anyone’s parents.')},
+  choices:()=>[
+    {ic:'🔧',l:'Ask the owners about their cars',s:'40 min. Energy −2, stress −6, community +2.',fn:()=>{pass(40);adj('energy',-2);adj('stress',-6);adj('community',2);say('🚗 Owners wipe fenders with soft cloths and love every question. A kid is allowed to honk one horn. He picks the loudest.')}},
+    {ic:'👀',l:'Walk one lap',s:'15 min. Stress −3, community +1.',fn:()=>{pass(15);adj('stress',-3);adj('community',1);say('🚗 One slow lap, one wave at the mural lowrider, no questions asked.')}},
+    {ic:'🚶',l:'Skip it',s:'Nothing changes.',fn:()=>{say('🚗 Chrome flashes at you from behind the shops as you leave.')}}],dflt:2});
 })();
