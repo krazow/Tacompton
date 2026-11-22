@@ -5,13 +5,14 @@
 const app=document.getElementById('app');
 function meter(v,good){v=clamp(Math.round(v),0,100);const c=good?(v>60?'#8fd19e':v>30?'#f4d27a':'#ff8a70'):(v<40?'#8fd19e':v<70?'#f4d27a':'#ff8a70');return `<div class="meter"><i style="width:${v}%;background:${c}"></i></div>`}
 
-// ---- scene: sky by time of day + the place's own art (L[loc].art) ----
+// ---- scene: sky by time of day + the place's own art (L[loc].art) + overlays (SCENE_FX: ({night,dusk,m})=>svg, e.g. the weather) ----
+const SCENE_FX=[];
 function sceneSVG(){
   const m=tod(),[rise,set]=SCENE.sun,night=m<rise||m>set,dusk=(m>=set-90&&m<=set+30)||(m>=rise-30&&m<=rise+60);
   const sky=night?SCENE.skyNight:dusk?SCENE.skyDusk:SCENE.skyDay;
   const f=clamp((m-rise)/(set-rise),0,1);
   const sun=night?`<circle cx="400" cy="34" r="12" fill="#f3efe0"/>`:`<circle cx="${80+f*320}" cy="${50-Math.sin(f*Math.PI)*25}" r="16" fill="#fbeaa8" opacity=".9"/>`;
-  const art=L[S.loc].art?L[S.loc].art({night,dusk,m}):'';
+  const art=(L[S.loc].art?L[S.loc].art({night,dusk,m}):'')+SCENE_FX.map(f=>{try{return f({night,dusk,m})||''}catch(e){return ''}}).join('');
   return `<svg viewBox="0 0 480 170" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
   <rect width="480" height="170" fill="url(#sk)"/>${sun}<rect y="140" width="480" height="30" fill="${night?SCENE.groundNight:SCENE.ground}"/>${art}</svg>`;
 }
