@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🎭 Choices in Downtown, the Eastside, Fern Hill, Northeast Tacoma and Old Town: all 22 events there now let you decide. Join in, stop by briefly or keep going; calm moments offer a one-tap "Stop and watch". Saying yes to Camila's quinceañera invitation changes what happens at the Family Hall garden, and working the Fern Hill cleanup changes the ice-cream social.
 - 🤔 Your call: events can now ask what you do. A decision shows as a tile you can tap ("Tap to decide"), in a Decide card at the top of the Here tab and in the morning report. Pick an option, or choose Not now: anything left undecided goes the cautious way at bedtime, and the Log says so. Setbacks that can't wait ask right away. At most two decisions wait at once, and saves keep them.
 - 🗺️ The rest of Tacoma: six new neighborhoods beyond Hilltop, each with its own places, drawings by day and night, neighbors, things to do and events. Stadium District, Downtown & the Dome District, Proctor & the North End, the Eastside & the Port, the South End & the Lincoln District, and Ruston & Point Defiance.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.

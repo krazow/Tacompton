@@ -2793,19 +2793,38 @@ defHood({
 const dtHere=c=>!isGrow()&&hoodOf(c.at)==='downtown';
 defEvent({id:'downtown_concert_crowd',hook:'arrive',tile:['🚋','A Link full of concert fans','good'],chance:0.4,max:2,cooldown:2,
   cond:c=>dtHere(c)&&hoodOf(c.from)!=='downtown'&&dtShowNight(day())&&tod()>=1020&&tod()<1260,
-  run:()=>{adj('stress',-3);adj('community',1);say('🚋 The Link car is packed with people in band shirts and sparkly jackets, all headed to the Dome. A grandmother in a vintage tour tee explains the whole discography to a stranger who is taking notes. By the last stop you know three songs you didn’t know this morning.')}});
+  run:()=>{say('🚋 The Link car is packed with people in band shirts and sparkly jackets, all headed to the Dome. A grandmother in a vintage tour tee is explaining the whole discography to a stranger who is taking notes.')},
+  choices:()=>[
+    {ic:'🎶',l:'Join the singalong',s:'15 min. Energy −4, stress −6, community +3',fn:()=>{pass(15);adj('energy',-4);adj('stress',-6);adj('community',3);say('🎶 By the last stop the whole car knows the chorus and a man in a sparkly jacket is conducting. You know three songs you didn’t know this morning.')}},
+    {ic:'🗣️',l:'Chat with the grandmother',s:'5 min. Stress −3, community +1',fn:()=>{pass(5);adj('stress',-3);adj('community',1);say('🗣️ She has seen forty-one shows at the Dome and ranks them for you in order. You nod like a student.')}},
+    {ic:'🎧',l:'Keep to yourself',s:'No time. Stress −1',fn:()=>{adj('stress',-1);say('🎧 You watch the glow sticks swing past the window and let the crowd carry on without you.')}}],
+  dflt:2});
 defEvent({id:'downtown_free_museum',hook:'arrive',tile:['🎟️','Free day at the Museum of Glass','good'],chance:0.35,max:1,
   cond:c=>!isGrow()&&c.at==='dt_glass'&&dtMuseumOpen(day())&&isOpen('dt_glass'),
-  run:()=>{dtSet('free',day());adj('stress',-2);say('🎟️ A sign at the door: “Free community day. Thanks, Tacoma.” The line is school groups, grandmas, and a guy in a Dome hockey jersey who has apparently never seen glass do that. Admission is on the house today.')}});
+  run:()=>{dtSet('free',day());say('🎟️ A sign at the door: “Free community day. Thanks, Tacoma.” The line is school groups, grandmas, and a guy in a Dome hockey jersey who has apparently never seen glass do that. Admission is on the house today.')},
+  choices:()=>[
+    {ic:'🔥',l:'Catch the Hot Shop right now',s:'45 min. Energy −3, stress −8, community +1. You might meet Calla',fn:()=>{pass(45);adj('energy',-3);adj('stress',-8);adj('community',1);const x=dtMeet('dt_calla',day());say(x?`🔥 The furnace glows under the cone and a woman with a headset narrates every step: <b>Calla</b>. ${dtNb('dt_calla').d}`:'🔥 Calla talks the crowd through a gather of glowing glass, rolled and turned until it is a bowl. Free, today, thanks to Tacoma.')}},
+    {ic:'🖼️',l:'Peek at the galleries',s:'15 min. Stress −4',fn:()=>{pass(15);adj('stress',-4);say('🖼️ A quick loop through the galleries, bright glass on dark walls. You leave a little lighter than you came.')}},
+    {ic:'📌',l:'Save it for later',s:'No time. Free admission stays on for the Hot Shop today',fn:()=>{adj('stress',-1);say('📌 You tell yourself you will come back before the day is out. The free Hot Shop will still be there.')}}],
+  dflt:2});
 defEvent({id:'downtown_busker',hook:'arrive',tile:['🎷','A busker on Pacific','good'],chance:0.35,max:2,cooldown:2,
   cond:c=>dtHere(c)&&c.at==='dt_pacific'&&tod()>=600&&tod()<1230,
-  run:()=>{adj('stress',-4);say(pick(['🎷 Somebody is playing a violin by the old brick wall, a fiddle tune that makes a pigeon walk faster. A man in a suit stops, loosens his tie and taps his foot. You do too.','🎷 A saxophone and a drum bucket, two teenagers, one song they have clearly rehearsed for hours. They are very good. They know it. They bow like it’s Carnegie Hall.']))}});
+  run:()=>{say('🎷 Somewhere down the block a violin starts up, a fiddle tune that makes a pigeon walk faster.')},
+  choices:()=>stopWatch({mins:15,calm:6,community:1,text:'🎷 You stop by the old brick wall. A man in a suit loosens his tie and taps his foot, and you do too. Two teenagers with a saxophone take a bow like it’s Carnegie Hall.'}),
+  dflt:1});
 defEvent({id:'downtown_market',hook:'arrive',tile:['🍑','The farmers’ market','good'],chance:0.5,max:2,
   cond:c=>dtHere(c)&&c.at==='dt_pacific'&&((day()%7)===3)&&tod()>=600&&tod()<1080,
-  run:()=>{const c=rp(8);if(canAfford(c)){spend(c);S.food++;adj('stress',-3);say(`🍑 Thursday: a row of white tents down the avenue, stone fruit stacked in pyramids, and a woman handing out samples of peach on a toothpick. You buy a basket for ${$(c)} and tuck it into your bag. Food +1.`)}else{adj('stress',-2);say('🍑 Thursday: a row of white tents down the avenue and a peach sample on a toothpick. You are broke, but the sample is free. It’s the best thing you’ve eaten all week.')}}});
+  run:()=>{say('🍑 Thursday: a row of white tents down the avenue, stone fruit stacked in pyramids, and a woman handing out peach samples on a toothpick.')},
+  choices:()=>{const c=rp(8);return[
+    {ic:'🍑',l:`Buy a basket for ${$(c)}`,s:'10 min. Food +1, stress −3',dis:!canAfford(c),fn:()=>{spend(c);pass(10);S.food++;adj('stress',-3);say(`🍑 You buy a basket for ${$(c)} and tuck it into your bag. Food +1.`)}},
+    {ic:'🗣️',l:'Taste the samples and talk to the growers',s:'10 min. Free. Community +2, stress −2',fn:()=>{pass(10);adj('community',2);adj('stress',-2);say('🗣️ A grower tells you which peach is for eating now and which is for next Tuesday. You leave with the knowledge and a sticky chin.')}},
+    {ic:'🚶',l:'Keep going',s:'No time or money',fn:()=>{say('🚶 You nod to the peach lady and keep walking.')}}]},
+  dflt:2});
 defEvent({id:'downtown_soundcheck',hook:'arrive',tile:['🔊','Sound check at the Dome','info'],chance:0.4,max:2,cooldown:2,
   cond:c=>dtHere(c)&&c.at==='dt_dome'&&tod()>=840&&tod()<1140,
-  run:()=>{adj('stress',-3);say('🔊 The doors are propped open and a drummer is testing every drum, one at a time, down the line. Thump. Thump. A roadie waves you in for ten seconds to “feel the room.” It feels like standing inside a heartbeat.')}});
+  run:()=>{say('🔊 The doors are propped open and a drummer is testing every drum, one at a time, down the line. Thump. Thump.')},
+  choices:()=>stopWatch({mins:10,calm:6,text:'🔊 A roadie waves you in for ten seconds to “feel the room.” It feels like standing inside a heartbeat.'}),
+  dflt:1});
 // ============================================================
 //  TACOMPTON neighborhood pack: Eastside & the Port.
 //  Portland Avenue's family homes and a community hall (invented), the Port of Tacoma tideflats with the big cranes and the
@@ -2915,15 +2934,34 @@ defHood({
 // ---- events (Eastside only) ----
 const eaAt=(c,...k)=>!isGrow()&&hoodOf(c.at)==='eastside'&&(!k.length||k.includes(c.at));
 defEvent({id:'ea_ship_arrives',hook:'arrive',tile:['🚢','A giant ship comes in','good'],chance:0.4,max:2,cooldown:2,cond:c=>eaAt(c,'ea_port'),
-  run:()=>{pass(15);adj('stress',-7);say('🚢 You pull in just as a container ship the size of a city block rounds the point. The cranes stop. The tugs whistle. A crane operator forty feet up the leg waves at nobody in particular, and you wave back at him anyway.')}});
+  run:()=>{say('🚢 You pull in just as a container ship the size of a city block rounds the point. The cranes stop. The tugs whistle.')},
+  choices:()=>stopWatch({mins:15,calm:7,text:'🚢 A crane operator forty feet up the leg waves at nobody in particular, and you wave back at him anyway. The ship slides to the wharf as if it weighed nothing.'}),
+  dflt:1});
 defEvent({id:'ea_shift_change',hook:'arrive',tile:['⚓','Shift change at the port','good'],chance:0.45,max:1,cond:c=>eaAt(c,'ea_port')&&((tod()>=870&&tod()<960)||(tod()>=1110&&tod()<1200)),
-  run:()=>{const x=stMet('ea_roz');adj('stress',-3);adj('community',1);say(`⚓ Trucks and hard hats pour out of the gate while a fresh crew walks in, high-fives all the way down the line. ${x?'A woman at the viewpoint fence points out which crane is hers: <b>Roz</b>. ':'Roz waves from the gate. '}“Four hours on, you won’t sit down. Eight hours later you won’t want to.” She grins. “I love it.”`)}});
+  run:()=>{say('⚓ Trucks and hard hats pour out of the gate while a fresh crew walks in, high-fives all the way down the line.')},
+  choices:()=>[
+    {ic:'🗣️',l:'Stay and talk with the crews',s:'20 min. Community +3, stress −3. You might meet Roz',fn:()=>{pass(20);const x=stMet('ea_roz');adj('stress',-3);adj('community',3);say(`⚓ ${x?'A woman at the viewpoint fence points out which crane is hers: <b>Roz</b>. ':'Roz waves from the gate. '}“Four hours on, you won’t sit down. Eight hours later you won’t want to.” She grins. “I love it.”`)}},
+    {ic:'👋',l:'Wave from the fence',s:'5 min. Community +1, stress −3',fn:()=>{pass(5);adj('stress',-3);adj('community',1);say('👋 A few hard hats wave back. Somebody whistles two notes of a song you almost know.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You let the shift change flow past you.')}}],
+  dflt:2});
 defEvent({id:'ea_quince',hook:'arrive',tile:['🎂','A quinceañera invitation','good'],chance:0.4,max:1,cond:c=>eaAt(c,'ea_portland','ea_taco')&&day()>=2,
-  run:()=>{const x=stMet('ea_reyes');adj('community',4);adj('stress',-5);S.food++;say(`🎂 ${x?'A girl in a paint-splattered T-shirt stops you on the sidewalk: <b>Camila Reyes</b>, who turns fifteen next weekend. ':'Camila Reyes stops you on the sidewalk. '}She hands you a hand-painted invitation to her quinceañera at the Family Hall. “Come. Eat. You do not have to dance. Abuela Lupe will make you anyway.” Her mother presses a foil-wrapped tamal into your hand for the road. Food +1.`)}});
+  run:()=>{say('🎂 A girl in a paint-splattered T-shirt stops you on the sidewalk: Camila Reyes, who turns fifteen next weekend. She holds out a hand-painted invitation to her quinceañera at the Family Hall.')},
+  choices:()=>[
+    {ic:'🎂',l:'Say you will come',s:'10 min. Community +4, stress −3, food +1. Plan to stay and dance a little',fn:()=>{setEventFlag('ea_quince','going');pass(10);const x=stMet('ea_reyes');adj('community',4);adj('stress',-3);S.food++;say(`🎂 “Come. Eat. You do not have to dance. Abuela Lupe will make you anyway.” Her mother presses a foil-wrapped tamal into your hand for the road. Food +1.${x?' '+NEIGHBORS.find(n=>n.id==='ea_reyes').d:''}`)}},
+    {ic:'🫔',l:'Take the tamal, thank them, and go',s:'3 min. Community +1, food +1',fn:()=>{setEventFlag('ea_quince','thanks');pass(3);adj('community',1);S.food++;say('🫔 You can’t promise the weekend, but you can promise to eat the tamal. Camila approves. Food +1.')}},
+    {ic:'🙏',l:'Decline kindly',s:'No time. Nothing changes',fn:()=>{setEventFlag('ea_quince','no');say('🙏 “Another year,” you say. Camila shrugs, grins and says Abuela will keep your seat anyway.')}}],
+  dflt:1});
 defEvent({id:'ea_garden_harvest',hook:'arrive',tile:['🍅','The garden is coming in','good'],chance:0.4,max:1,cond:c=>eaAt(c,'ea_portland')&&daytime(),
-  run:()=>{S.food+=2;adj('community',3);adj('stress',-4);say('🍅 The Family Hall garden is exploding: tomatoes, tomatillos, squash, a row of chiles in every color. A crew of kids and aunties is filling boxes for the whole avenue. Somebody puts one in your arms. Food +2.')}});
+  run:()=>{say(`🍅 The Family Hall garden is exploding: tomatoes, tomatillos, squash, a row of chiles in every color. A crew of kids and aunties is filling boxes for the whole avenue.${eventFlag('ea_quince')==='going'?' Camila waves a trowel at you: “Abuela says you still owe her a dance.”':''}`)},
+  choices:()=>{const going=eventFlag('ea_quince')==='going';return[
+    {ic:'🧺',l:'Help fill the boxes',s:'30 min. Energy −6, food +2, community +'+(going?5:4)+', stress −4',fn:()=>{pass(30);adj('energy',-6);S.food+=2;adj('community',going?5:4);adj('stress',-4);say('🧺 You lift, sort and carry until your back remembers every squash. Somebody puts a full box in your arms. Food +2.')}},
+    {ic:'🍅',l:'Take a box and say thanks',s:'5 min. Food +1, community +1, stress −3',fn:()=>{pass(5);S.food++;adj('community',1);adj('stress',-3);say('🍅 A grandmother hands you a box with both hands. “For your table.” Food +1.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wave at the crew and keep going.')}}]},
+  dflt:2});
 defEvent({id:'ea_river_heron',hook:'arrive',tile:['🪶','A heron at the river mouth','good'],chance:0.25,max:1,cond:c=>eaAt(c,'ea_port')&&daytime(),
-  run:()=>{adj('stress',-5);say('🪶 A great blue heron lands on a piling right in front of a hundred-ton crane, folds itself up like an umbrella and looks at you with total disapproval. The Puyallup River slides by below, the way it has since long before any of this was built.')}});
+  run:()=>{say('🪶 A great blue heron lands on a piling right in front of a hundred-ton crane and folds itself up like an umbrella.')},
+  choices:()=>stopWatch({mins:10,calm:7,text:'🪶 It looks at you with total disapproval. The Puyallup River slides by below, the way it has since long before any of this was built.'}),
+  dflt:1});
 // ============================================================
 //  TACOMPTON, neighborhood pack: Fern Hill (South Tacoma, around S 84th St and Park Ave; a 22-minute bus ride).
 //  The Park Ave business district (invented shops), the Fern Hill library branch (Tacoma Public Library) and a neighborhood
@@ -3013,13 +3051,33 @@ defHood({
 });
 
 defEvent({id:'fernhill_reading',hook:'arrive',tile:['🏆','Summer reading prizes','good'],chance:0.4,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_library'&&tod()>=600&&tod()<1020,
-  run:()=>{adj('stress',-4);adj('community',2);say('🏆 The library is handing out summer reading prizes: paper medals, a coupon for a free scoop, a poster of a very tired owl. A kid proudly counts her books out loud (forty-one). The librarian hands you a bookmark “for moral support.”')}});
+  run:()=>{say('🏆 The library is handing out summer reading prizes: paper medals, a coupon for a free scoop, a poster of a very tired owl.')},
+  choices:()=>[
+    {ic:'📚',l:'Join the reading circle',s:'25 min. Energy −3, stress −4, community +3',fn:()=>{pass(25);adj('energy',-3);adj('stress',-4);adj('community',3);say('📚 A kid proudly counts her books out loud (forty-one). You sit on the carpet with a circle of readers and trade favorites.')}},
+    {ic:'🏆',l:'Cheer for the winners',s:'5 min. Stress −2, community +1',fn:()=>{pass(5);adj('stress',-2);adj('community',1);say('🏆 The librarian hands you a bookmark “for moral support.”')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You let the applause fade behind you.')}}],
+  dflt:2});
 defEvent({id:'fernhill_thrift',hook:'arrive',tile:['🎁','A thrift-shop treasure','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_main'&&tod()>=420&&tod()<1080,
-  run:()=>{adj('stress',-4);adj('community',1);say('🎁 A volunteer waves you over to the ‘just in’ cart: a hand-knit blanket, still smelling faintly of cedar. “Free to anyone who looks like they could use a nap,” she says. You look like you could use a nap.')}});
+  run:()=>{say('🎁 A volunteer waves you over to the “just in” cart: a hand-knit blanket, still smelling faintly of cedar. “Free to anyone who looks like they could use a nap,” she says.')},
+  choices:()=>{const g=rp(3);return[
+    {ic:'😴',l:'Take the blanket and rest a while',s:'25 min. Energy +10, stress −5',fn:()=>{pass(25);adj('energy',10);adj('stress',-5);say('😴 You look like you could use a nap. You take one, on a bench, under cedar-smelling wool.')}},
+    {ic:'🛍️',l:`Browse and leave a ${$(g)} donation`,s:'15 min. Community +3, stress −3',dis:!canAfford(g),fn:()=>{spend(g);pass(15);adj('community',3);adj('stress',-3);say('🛍️ The volunteers show you the best shelf and the worst lamp. The donation jar gets heavier by a little.')}},
+    {ic:'🚶',l:'Pass, someone else needs it',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You point the blanket toward a man carrying too many bags. He takes it gratefully.')}}]},
+  dflt:2});
 defEvent({id:'fernhill_cleanup',hook:'arrive',tile:['🧹','Neighborhood cleanup','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_garden'&&daytime(),
-  run:()=>{pass(30);adj('energy',-4);adj('stress',-5);adj('community',3);say('🧹 A neighborhood cleanup crew hands you a bag and a pair of gloves. Thirty minutes of litter, one lost shoe and a surprising amount of bottle caps later, the corner looks great. Someone high-fives you with a trash grabber.')}});
+  run:()=>{say('🧹 A neighborhood cleanup crew hands out bags and gloves at the garden corner.')},
+  choices:()=>[
+    {ic:'🧹',l:'Work the whole shift',s:'30 min. Energy −8, stress −5, community +4',fn:()=>{setEventFlag('fh_cleanup','worked');pass(30);adj('energy',-8);adj('stress',-5);adj('community',4);say('🧹 One lost shoe and a surprising amount of bottle caps later, the corner looks great. Someone high-fives you with a trash grabber.')}},
+    {ic:'🧤',l:'Bag a few and go',s:'10 min. Energy −2, stress −2, community +1',fn:()=>{setEventFlag('fh_cleanup','bit');pass(10);adj('energy',-2);adj('stress',-2);adj('community',1);say('🧤 You fill one bag, hand the gloves back and promise to bring a friend next time.')}},
+    {ic:'🚶',l:'Wave and keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wish them luck and go on your way.')}}],
+  dflt:2});
 defEvent({id:'fernhill_icecream',hook:'arrive',tile:['🍦','Ice-cream social','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_garden'&&tod()>=900&&tod()<1200,
-  run:()=>{pass(25);adj('stress',-6);adj('community',3);say('🍦 The block club is hosting an ice-cream social under the maple: three flavors, a mountain of sprinkles, a folding table with a hand-lettered “Donations welcome, seconds encouraged.” You have seconds.')}});
+  run:()=>{say(`🍦 The block club is hosting an ice-cream social under the maple: three flavors, a mountain of sprinkles, a folding table with a hand-lettered “Donations welcome, seconds encouraged.”${eventFlag('fh_cleanup')==='worked'?' A volunteer recognizes you from the cleanup and shouts, “Cleanup crew eats first!”':''}`)},
+  choices:()=>{const w=eventFlag('fh_cleanup')==='worked';return[
+    {ic:'🍦',l:'Stay for seconds and talk',s:'25 min. Stress −6, community +'+(w?4:3),fn:()=>{pass(25);adj('stress',-6);adj('community',w?4:3);say('🍦 You have seconds. Then, with encouragement, thirds.')}},
+    {ic:'🥄',l:'One quick scoop to go',s:'8 min. Stress −3, community +1',fn:()=>{pass(8);adj('stress',-3);adj('community',1);say('🥄 One scoop, one napkin, one thank-you.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wave at the maple and keep going.')}}]},
+  dflt:2});
 })();
 // ============================================================
 //  TACOMPTON, neighborhood pack: Northeast Tacoma (across the tideflats and up the hill, a 32-minute bus ride).
@@ -3121,13 +3179,27 @@ defHood({
 
 const neAt=(c,k)=>!isGrow()&&hoodOf(c.at)==='netacoma'&&(!k||c.at===k);
 defEvent({id:'netacoma_openhouse',hook:'arrive',tile:['🏮','Lighthouse open house','good'],chance:0.35,max:1,cond:c=>neAt(c,'ne_point')&&tod()>=600&&tod()<960,
-  run:()=>{pass(25);adj('stress',-6);adj('community',3);say('🏮 The little lighthouse has its door propped open and a hand-lettered sign: “Open House, climb on up!” A volunteer hands you a paper cup of lemonade, a kid shows you the lantern room “for the third time,” and the view from up there makes the whole bay look like a model of itself. You sign the guest book and draw a very small lighthouse next to your name.')}});
+  run:()=>{say('🏮 The little lighthouse has its door propped open and a hand-lettered sign: “Open House, climb on up!”')},
+  choices:()=>[
+    {ic:'🪜',l:'Climb to the lantern room',s:'25 min. Energy −4, stress −7, community +2',fn:()=>{pass(25);adj('energy',-4);adj('stress',-7);adj('community',2);say('🪜 A kid shows you the lantern room “for the third time,” and the view makes the whole bay look like a model of itself. You draw a very small lighthouse in the guest book.')}},
+    {ic:'🍋',l:'Lemonade and the guest book',s:'10 min. Stress −3, community +2',fn:()=>{pass(10);adj('stress',-3);adj('community',2);say('🍋 A volunteer hands you a paper cup of lemonade. You sign the guest book and read the last forty names.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You promise yourself you will climb it another day.')}}],
+  dflt:2});
 defEvent({id:'netacoma_tidepools',hook:'arrive',tile:['🌊','Low tide','good'],chance:0.4,max:2,cooldown:2,cond:c=>neAt(c,'ne_point')&&daytime(),
-  run:()=>{pass(20);adj('stress',-6);adj('community',1);say('🌊 The tide is way out and the whole beach has turned into a puzzle of little pools. A naturalist with a bucket lens is crouched over one, calling every kid over: “Okay, who wants to see a hermit crab change houses?” Fifteen minutes later you are crouched next to her, completely invested in a crab.')}});
+  run:()=>{say('🌊 The tide is way out and the whole beach has turned into a puzzle of little pools.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'🌊 A naturalist with a bucket lens calls everyone over: “Okay, who wants to see a hermit crab change houses?” Fifteen minutes later you are crouched next to her, completely invested in a crab.'}),
+  dflt:1});
 defEvent({id:'netacoma_barbecue',hook:'arrive',tile:['🍔','Barbecue over the bay','good'],chance:0.35,max:1,cond:c=>neAt(c)&&tod()>=1020&&tod()<1230&&c.at!=='ne_trail',
-  run:()=>{pass(40);adj('energy',8);adj('stress',-7);adj('community',3);S.stats.meals++;say('🍔 A neighbor’s deck on the bluff is smoky and cheerful: burgers, corn on the cob, a speaker playing old soul records. “We always make too much,” says the host, handing you a plate with no further questions. Below the deck the bay turns copper and the port cranes light up one by one. You stay for dessert, which is a peach cobbler of unknown origin and exceptional quality.')}});
+  run:()=>{say('🍔 A neighbor’s deck on the bluff is smoky and cheerful: burgers, corn on the cob, a speaker playing old soul records.')},
+  choices:()=>[
+    {ic:'🍔',l:'Stay for a plate and dessert',s:'40 min. Energy +8, stress −7, community +3',fn:()=>{pass(40);adj('energy',8);adj('stress',-7);adj('community',3);S.stats.meals++;say('🍔 “We always make too much,” says the host. Below the deck the bay turns copper and the port cranes light up one by one. The peach cobbler is of unknown origin and exceptional quality.')}},
+    {ic:'🥡',l:'Take a plate to go',s:'10 min. Energy +5, stress −2, community +1',fn:()=>{pass(10);adj('energy',5);adj('stress',-2);adj('community',1);S.stats.meals++;say('🥡 The host wraps it in foil. “For later.” You do not argue.')}},
+    {ic:'🚶',l:'Thank them and keep going',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You wave from the street and breathe in the smoke as you pass.')}}],
+  dflt:2});
 defEvent({id:'netacoma_doe',hook:'arrive',tile:['🦌','A doe and her fawn','good'],chance:0.4,max:1,cond:c=>neAt(c,'ne_trail')&&(tod()<570||tod()>=1020),
-  run:()=>{pass(15);adj('stress',-8);adj('community',1);say('🦌 You round a bend and stop: a doe, big-eared and unbothered, is standing in the ferns and a spotted fawn is tucked against her side. They look at you. You look at them. Nobody moves for a full minute, then the doe flicks an ear and they melt back between the trunks without a sound. You walk the rest of the trail very slowly.')}});
+  run:()=>{say('🦌 You round a bend and stop: a doe, big-eared and unbothered, standing in the ferns with a spotted fawn tucked against her side.')},
+  choices:()=>stopWatch({mins:15,calm:8,community:1,text:'🦌 Nobody moves for a full minute, then the doe flicks an ear and they melt back between the trunks without a sound. You walk the rest of the trail very slowly.'}),
+  dflt:1});
 })();
 // ============================================================
 //  TACOMPTON, neighborhood pack: Old Town (Tacoma's oldest neighborhood, on the slope above Commencement Bay).
@@ -3229,13 +3301,27 @@ defHood({
 });
 
 defEvent({id:'oldtown_tour',hook:'arrive',tile:['📜','A historical walking tour','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_corner'&&tod()>=600&&tod()<1020,
-  run:()=>{pass(20);adj('stress',-5);adj('community',2);say('📜 A volunteer guide in a sun hat is leading a small group down the block, and waves you in. You learn which storefront was the first store, where the old streetcar turned around, and that the hill is steeper than it was in 1880. Probably.')}});
+  run:()=>{say('📜 A volunteer guide in a sun hat is leading a small group down the block, and waves you in.')},
+  choices:()=>[
+    {ic:'📜',l:'Join the whole tour',s:'40 min. Energy −4, stress −5, community +3',fn:()=>{pass(40);adj('energy',-4);adj('stress',-5);adj('community',3);say('📜 You learn which storefront was the first store, where the old streetcar turned around, and that the hill is steeper than it was in 1880. Probably.')}},
+    {ic:'👂',l:'Listen for a block or two',s:'10 min. Stress −2, community +1',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('👂 You learn about the streetcar and slip away with one good fact.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 The group moves on without you, still being told about 1880.')}}],
+  dflt:2});
 defEvent({id:'oldtown_dockevening',hook:'arrive',tile:['🌆','A summer evening on the dock','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_dock'&&tod()>=1020&&tod()<1260,
-  run:()=>{adj('stress',-6);adj('community',1);say('🌆 The whole dock is out tonight: couples on benches, kids racing along the planks, a guitarist playing quietly near the rail. The light is soft and gold. Somebody passes around a bag of popcorn, and the bag reaches you.')}});
+  run:()=>{say('🌆 The whole dock is out tonight: families on benches, kids racing along the planks, a guitarist playing quietly near the rail.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'🌆 The light is soft and gold. Somebody passes around a bag of popcorn, and the bag reaches you.'}),
+  dflt:1});
 defEvent({id:'oldtown_tomatoes',hook:'arrive',tile:['🍅','A neighbor’s garden tomatoes','good'],chance:0.35,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_hill'&&tod()>=540&&tod()<1140,
-  run:()=>{adj('stress',-4);adj('community',2);S.stats.meals=(S.stats.meals||0)+1;say('🍅 A hand-lettered sign leans on a fence: “Free tomatoes. Take two. Take three. They’re multiplying.” You take three. A curtain twitches in an upstairs window and then a thumbs-up appears. Dinner is going to be good.')}});
+  run:()=>{say('🍅 A hand-lettered sign leans on a fence: “Free tomatoes. Take two. Take three. They’re multiplying.”')},
+  choices:()=>[
+    {ic:'🍅',l:'Take three and go',s:'3 min. Food: one meal, stress −4, community +1',fn:()=>{pass(3);S.stats.meals=(S.stats.meals||0)+1;adj('stress',-4);adj('community',1);say('🍅 A curtain twitches in an upstairs window and then a thumbs-up appears. Dinner is going to be good.')}},
+    {ic:'🚪',l:'Knock and say thank you',s:'15 min. Food: one meal, stress −2, community +3',fn:()=>{pass(15);S.stats.meals=(S.stats.meals||0)+1;adj('stress',-2);adj('community',3);say('🚪 The gardener insists you take a cucumber too, and tells you which porch has the best view of the bay.')}},
+    {ic:'🚶',l:'Leave them for someone else',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You admire the tomatoes and leave them for the next walker.')}}],
+  dflt:2});
 defEvent({id:'oldtown_kayaks',hook:'arrive',tile:['🛶','Kayakers at sunset','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_dock'&&tod()>=sunsetOn(day())-60&&tod()<sunsetOn(day())+30,
-  run:()=>{pass(10);adj('stress',-6);adj('community',1);say('🛶 A line of kayaks glides home across the pink water, paddles dripping and flashing. One paddler lifts a hand to you as if you had been waiting for them. You wave back like you were.')}});
+  run:()=>{say('🛶 A line of kayaks glides home across the pink water, paddles dripping and flashing.')},
+  choices:()=>stopWatch({mins:10,calm:6,community:1,text:'🛶 One paddler lifts a hand to you as if you had been waiting for them. You wave back like you were.'}),
+  dflt:1});
 })();
 // ============================================================
 //  TACOMPTON, neighborhood pack: Proctor & the North End (a short bus ride across town).
