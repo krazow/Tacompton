@@ -45,12 +45,12 @@ window.setTab=k=>{tab=k;render();window.scrollTo(0,0)};
 let ACTS=[];
 function actView(){
   ACTS=[];
-  let h=tipView();
+  const btn=a=>{const i=ACTS.push(a.fn)-1;return `<button class="act ${a.cls||''}" ${a.dis?'disabled':''} onclick="ACT(${i})"${a.aria?` aria-label="${esc(a.aria)}"`:''}><span class="ic">${a.ic}</span><span class="tx"><b>${a.l}</b>${a.s?'<span>'+a.s+'</span>':''}</span></button>`};
+  let h=choiceCard(btn)+tipView();   // decisions waiting (03-events.js) come first
   if(uiNarr.length) h+=`<div class="narr">${uiNarr.slice(-4).map(s=>'<p>'+s+'</p>').join('')}</div>`;
   const tags=typeof statusTags==='function'?statusTags():[];
   if(tags.length) h+=`<div class="status">${tags.join('')}</div>`;
   const acts=actionsHere().filter(Boolean);
-  const btn=a=>{const i=ACTS.push(a.fn)-1;return `<button class="act ${a.cls||''}" ${a.dis?'disabled':''} onclick="ACT(${i})"><span class="ic">${a.ic}</span><span class="tx"><b>${a.l}</b>${a.s?'<span>'+a.s+'</span>':''}</span></button>`};
   if(acts.length>4){ // group into sections; the section holding a primary action goes first
     const groups={};acts.forEach(a=>{const c=ACT_CATS[a.cat]?a.cat:'here';(groups[c]=groups[c]||[]).push(a)});
     Object.keys(ACT_CATS).filter(c=>groups[c]).sort((x,y)=>(groups[y].some(a=>a.cls==='primary')?1:0)-(groups[x].some(a=>a.cls==='primary')?1:0))

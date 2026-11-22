@@ -12,7 +12,7 @@ function simGame({ policy, job, diff, seed }) {
   Math.random = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const R = Math.random, ssNow = () => typeof sunsetNow === 'function' ? sunsetNow() : SUNSET;
   let peak = 0, sum = 0, n = 0;
-  const flush = () => { if (S && !S.over) { peak = Math.max(peak, S.stress); sum += S.stress; n++; } let k = 0; while (document.getElementById('mbg') && k++ < 30) MBTN(0); const c = document.querySelector('.cross'); if (c) c.click(); clearTiles(); };
+  const flush = () => { if (S && !S.over) { peak = Math.max(peak, S.stress); sum += S.stress; n++; } let k = 0; while (document.getElementById('mbg') && k++ < 30) MBTN(choiceBtn() >= 0 ? choiceBtn() : 0); const c = document.querySelector('.cross'); if (c) c.click(); clearTiles(); };
   const alive = () => S && !S.over;
   const act = re => { if (!alive()) return false; const x = actionsHere().find(y => re.test(y.l) && !y.dis); if (!x) return false; uiNarr = []; x.fn(); afterAction(); flush(); return true; };
   const goTo = k => { if (!alive() || S.loc === k) return; go(k); flush(); };
