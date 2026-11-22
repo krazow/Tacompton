@@ -189,6 +189,23 @@ module.exports = [
     assert.match(r.text, /Senior sunset at the overlook/); assert.ok(r.flag); assert.match(r.mom, /Graduation week at Hilltop High/);
     noErrors(errors);
   } },
+  { name: 'with the kid neighborhoods: Go to school from downtown, and a downtown job means no second summer job', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await setup(page);
+    const r = await page.evaluate(() => {
+      T.start('2y', 15); while (dateOf(lifeKw().start).label !== 'Mon Oct 12') { closeModals(); lifeFF(1); }
+      closeModals(); const dt = Object.keys(L).find(k => L[k].hood === 'downtown'); S.loc = dt; S.t = day() * 1440 + 450;
+      const go = T.act(/^Go to school$/), o = { dt: !!dt, go: !!go, mins: travelMins(dt, 'school') };
+      go.fn(); o.t = fmt(S.t); o.loc = S.loc;
+      S.gh = S.gh || { hoods: {}, told: {}, done: {}, worked: {}, miss: 0, shifts: 0, paid: 0, orca: 0, rs: false }; S.gh.job = { id: 'cafe', since: 1e9, hired: 0 };   // hired, shifts not started (no missed shifts)
+      while (dateOf(lifeKw().start).label !== 'Mon Jun 21') { closeModals(); lifeFF(1); }
+      o.job = S.sch.job[2027]; o.done = !!S.sch.done['job:2026'];
+      return o;
+    });
+    assert.ok(r.dt && r.go); assert.deepStrictEqual([r.t, r.loc], ['2:45 PM', 'school']);
+    assert.strictEqual(r.job, undefined); assert.ok(r.done);
+    noErrors(errors);
+  } },
   { name: 'Quick play and the adult game have no school calendar', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await setup(page);
