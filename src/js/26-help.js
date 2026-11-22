@@ -90,7 +90,7 @@ function helpChapters(){
       ['💼 Job','70','0 to 100: how work feels about you. Red under 25. At <b>0</b> you’re let go.']])}
     <p>Two more numbers live off the bar: <b>Community</b> (0–100, starts at 5) on the 🤝 Neighbors tab, and the <b>day</b>, shown as “Mon Aug 3 · Day 1 of ${GAME.days}”.</p>`],
   ['places','Places on Hilltop',`
-    <p>Six places, all a short walk apart. Open <b>Go somewhere</b> on the Here tab to move. Walking takes the minutes shown.</p>
+    <p>Six places on Hilltop, all a short walk apart, plus the rest of Tacoma (below). Open <b>Go somewhere</b> on the Here tab to move. Walking takes the minutes shown.</p>
     ${hFig(HSVG_MAP(),'Walking minutes between the places (the full table is below).')}
     ${places.map(k=>{const p=L[k],nm=k==='work'?'Work':p.name;const H={
       home:'Bed, rest, cook, call home, unpack, set your alarm and pay rent.',
@@ -100,6 +100,10 @@ function helpChapters(){
       peoples:'Open 6 AM–9 PM. The pool (6 AM–8 PM), community programs (9 AM–6 PM), the evening pickup game (about 5–8:30 PM) and the park.',
       view:`A bench with Commencement Bay and Mount Rainier. Come for the sunset, around ${sun}.`}[k];
       return `<p class="tut-place"><b>${p.ic} ${nm}.</b> ${H}</p>`}).join('')}
+    ${typeof HOODS!=='undefined'&&Object.keys(HOODS).length?`<h3>Around Tacoma</h3>
+    <p>Hilltop is home, but the rest of Tacoma is a walk, a free Link ride or a bus ride away. Each neighborhood has its own places, people and things to do. Trips across town take longer and the bus costs a fare, so plan them around your shifts.</p>
+    ${hTable(['Neighborhood','Getting there','From home','Fare'],Object.values(HOODS).map(h=>[`${h.ic} ${h.name}`,h.ride.via,travelMins('home',h.hub)+' min',h.ride.fare?$(rp(h.ride.fare)):'Free']))}
+    ${Object.values(HOODS).map(h=>`<p class="tut-place"><b>${h.ic} ${h.name}.</b> ${h.blurb} Places: ${Object.values(h.places).map(p=>p.name).join(', ')}.</p>`).join('')}`:''}
     <h3>Walking times (minutes)</h3>
     ${hTable(['From \\ to',...places.map(k=>L[k].ic)],places.map(a=>[`${L[a].ic} ${a==='work'?'Work':L[a].name}`,...places.map(b=>a===b?'·':travelMins(a,b))]))}
     <h3>What you can do where</h3>

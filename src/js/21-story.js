@@ -87,7 +87,10 @@ function onNight(where,notes,d){
   if(S.stress>=80) notes.push('😣 Your stress is near the edge. Tomorrow, take something for yourself: a swim, the overlook, a call home.');
 }
 function onTime(min){if(isGrow())return GROW.onTime(min);if(min>0)adj('energy',-min/50)}        // being awake is tiring
-function onArrive(dest,from){if(isGrow())return GROW.onArrive(dest,from);S.visited[dest]=true}
+function onArrive(dest,from){if(isGrow())return GROW.onArrive(dest,from);S.visited[dest]=true;S.hoodFlags=S.hoodFlags||{};
+  const f=typeof hoodFare==='function'?hoodFare(from,dest):0;
+  if(f){spend(f);S.stats.fares=(S.stats.fares||0)+f;say(`🚌 Bus fare: ${$(f)}.`)}
+  const h=typeof hoodOf==='function'?hoodOf(dest):null;if(h&&typeof hoodOf==='function'&&hoodOf(from)!==h){S.hoods=S.hoods||{};if(!S.hoods[h]){S.hoods[h]=day()+1;say(`${HOODS[h].ic} <b>${HOODS[h].name}</b>. ${HOODS[h].blurb}`)}}}
 function daySummary(d){if(isGrow())return GROW.daySummary(d);const sd=isShiftDay(d);return [`⚡ ${S.energy}`,`😣 ${S.stress}`,`🤝 ${S.community}`,sd?(d in S.worked?(S.worked[d]?`💼 ${S.worked[d]} min late`:'💼 on time'):'💼 missed'):'']}
 function hudDay(d){if(isGrow())return GROW.hudDay(d);return `${augDate(d)} · Day ${d+1} of ${GAME.days}`}
 
@@ -232,7 +235,8 @@ const ACH=[
   {id:'sunsets',ic:'🌅',n:'Best Seat in Tacoma',d:'Watch 3 sunsets from the overlook.',test:()=>S.stats.sunsets>=3},
   {id:'mountain',ic:'🏔️',n:'The Mountain Is Out',d:'Wake up to Rainier in full view.',test:()=>ST_SEEN('mountain_out')},
   {id:'biscuit',ic:'🐕',n:'Biscuit Is Home',d:'Help find a lost dog.',test:()=>ST_SEEN('dog_found')},
-  {id:'explorer',ic:'🧭',n:'All Over the Hill',d:'Visit every place.',test:()=>Object.keys(L).every(k=>S.visited[k])},
+  {id:'explorer',ic:'🧭',n:'All Over the Hill',d:'Visit every place on Hilltop.',test:()=>Object.keys(L).filter(k=>!L[k].hood).every(k=>S.visited[k])},
+  {id:'tacoma',ic:'🗺️',n:'All Over Tacoma',d:'Visit every neighborhood.',test:()=>typeof HOODS!=='undefined'&&Object.keys(HOODS).length>0&&Object.keys(HOODS).every(h=>(S.hoods||{})[h])},
   {id:'zen',ic:'🧘',n:'Easy Does It',d:'Finish with stress at 20 or below.',test:c=>c.end&&!c.lost&&S.stress<=20},
   {id:'grade_a',ic:'🏆',n:'Hilltop Local',d:'Finish the two weeks with an A.',test:c=>c.end&&!c.lost&&scoreOf()>=GRADE_CUTS[0]},
 ];

@@ -11,10 +11,10 @@ module.exports = [
     assert.strictEqual(r.shifts, 0);
     noErrors(errors);
   } },
-  { name: 'the Hilltop places exist, and nothing else', fn: async ctx => {
+  { name: 'the Hilltop places exist (other neighborhoods are tagged with .hood)', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);
-    const keys = await page.evaluate(() => Object.keys(L).sort());
+    const keys = await page.evaluate(() => Object.keys(L).filter(k => !L[k].hood).sort());
     assert.deepStrictEqual(keys, ['home', 'link', 'mlk', 'peoples', 'view', 'work']);
     noErrors(errors);
   } },

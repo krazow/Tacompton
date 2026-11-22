@@ -166,6 +166,7 @@ body:has(> #mbg) #tiles .tile,body:has(> .cross) #tiles .tile{pointer-events:non
 .nm-in:focus{outline:2px solid var(--accent);border-color:var(--accent)}
 /* grouped actions, collapsible destinations, tips */
 details.go{margin-top:14px}
+.gohood{font-size:12px;font-weight:700;color:var(--ink,#1d3346);margin:12px 2px 6px;display:flex;justify-content:space-between;align-items:baseline}.gohood span{font-weight:500;font-size:11px;color:var(--mute)}
 details.go>summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mute);font-weight:700;padding:8px 2px;display:flex;justify-content:space-between}
 details.go>summary::-webkit-details-marker{display:none}
 details.go>summary::after{content:'▸ show';letter-spacing:.3px;text-transform:none}

@@ -88,7 +88,7 @@ function go(dest){
   if(!L[dest]||dest===S.loc) return;
   const from=S.loc,m=travelMins(from,dest);
   const arrive=()=>{
-    pass(m);S.loc=dest;uiNarr=[];
+    pass(m);S.loc=dest;uiNarr=[];S.hoodFlags=S.hoodFlags||{};
     say(`${L[dest].ic} You get to ${L[dest].name}${m?` (${m} min)`:''}.`);
     fireHook('travel',{from,to:dest,sub:`On the way to ${L[dest].name}`});
     fireHook('arrive',{at:dest,from,sub:`At ${L[dest].name}`});
