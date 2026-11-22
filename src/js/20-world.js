@@ -19,6 +19,7 @@ const isGrow=()=>MODE==='grow';
 function newState(){
   if(isGrow()) return GROW.newState();
   return {
+    hoodFlags:{}, hoods:{},   // other Tacoma neighborhoods: once-a-day flags, and the day each was first visited
     money:900,               // replaced by DF().money at new game
     energy:85,stress:25,
     food:3,                  // meals in the fridge (you eat one every night)
@@ -253,7 +254,33 @@ const TRAVEL={'home|mlk':6,'home|work':12,'home|link':8,'home|peoples':10,'home|
   'mlk|work':8,'mlk|link':4,'mlk|peoples':5,'mlk|view':10,
   'work|link':4,'work|peoples':10,'work|view':14,
   'link|peoples':6,'link|view':12,'peoples|view':12};
-function travelMins(a,b){if(isGrow())return GROW.travelMins(a,b);return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??10}
+function travelMins(a,b){if(isGrow())return GROW.travelMins(a,b);
+  const ha=(L[a]||{}).hood,hb=(L[b]||{}).hood;
+  if(ha===hb) return TRAVEL[a+'|'+b]??TRAVEL[b+'|'+a]??10;
+  // across neighborhoods: walk to your stop, ride, walk from the other stop. Hilltop's stop is the Link station.
+  const leg=(k,h)=>{const hub=h?HOODS[h].hub:'link';return k===hub?0:(TRAVEL[k+'|'+hub]??TRAVEL[hub+'|'+k]??8)};
+  const ride=h=>h?HOODS[h].ride.mins:0;
+  return leg(a,ha)+leg(b,hb)+(ha&&hb?Math.max(ride(ha),ride(hb))+6:ride(ha)+ride(hb));
+}
+
+// ---- Tacoma beyond Hilltop: each src/js/22-hood-*.js file registers one neighborhood with defHood() ----
+// defHood({key, name, ic, blurb, hub:'<place key where the ride arrives>', ride:{via:'🚈 Link'|'🚌 Bus'|'🚶 Walk', mins, fare},
+//          places:{key:{name, ic, desc, art, hours?}}, travel:{'a|b':mins}, neighbors:[{id,n,ic,at:[place keys],d}],
+//          actions:(loc,d,m)=>[...actions like actionsHere's], tips?:[...]})
+// Places get .hood=key; the adult game only (Growing Up keeps to Hilltop for now).
+const HOODS={};
+function defHood(h){
+  HOODS[h.key]=h;
+  for(const [k,p] of Object.entries(h.places)){ if(L[k]) throw new Error('defHood: place key taken: '+k); L[k]=Object.assign({hood:h.key},p) }
+  Object.assign(TRAVEL,h.travel||{});
+  (h.neighbors||[]).forEach(x=>NEIGHBORS.push(x));
+}
+const hoodOf=k=>(L[k]||{}).hood||null;
+const hoodName=h=>h?HOODS[h].name:'Hilltop';
+// fare for a trip between neighborhoods (the rider pays the bus; the Link is free)
+function hoodFare(a,b){const ha=hoodOf(a),hb=hoodOf(b);if(ha===hb)return 0;const f=h=>h?(HOODS[h].ride.fare||0):0;return rp(Math.max(f(ha),f(hb)))}
+// the neighborhood's own actions, merged into actionsHere()
+function hoodActions(){S.hoodFlags=S.hoodFlags||{};S.hoods=S.hoods||{};const h=hoodOf(S.loc);if(!h||!HOODS[h].actions)return [];try{return HOODS[h].actions(S.loc,day(),tod())||[]}catch(e){console.error(e);return []}}
 
 // ---- actions ----
 // Each: {ic, l, s, fn, cat (an ACT_CATS key), cls:'primary'|'danger', dis:true}. fn changes S, calls pass(min) and say('…').
@@ -330,6 +357,7 @@ function actionsHere(){
     a.push({ic:'🚶',l:'Walk the edge of the hill',s:`45 min. ${cap(calmTxt(8))}, energy −4.`,cat:'here',fn:()=>{pass(45);S.stats.walks++;calm(8);adj('energy',-4);say(pick(['🚶 Old houses with deep porches and new ones with big windows, side by side, everybody’s tomatoes coming in at once.','🚶 Stairs down, stairs back up. Hilltop is a hill. Your legs have noticed.','🚶 A yard sign says “Hilltop is home.” A kid’s chalk on the sidewalk says the same thing with more hearts.']))}});
   }
   if(!(S.loc==='home'&&m>=1290)) a.push({ic:'⏳',l:'Wait a while…',s:'Skip ahead 30, 60 or 120 minutes.',cat:'rest',fn:()=>worldWait()});
+  a.push(...hoodActions());
   return a;
 }
 const WORK_TALK={

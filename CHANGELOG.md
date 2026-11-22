@@ -3,6 +3,14 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+### Added
+- 🗺️ The rest of Tacoma: six new neighborhoods beyond Hilltop, each with its own places, drawings by day and night, neighbors, things to do and events. Stadium District, Downtown & the Dome District, Proctor & the North End, the Eastside & the Port, the South End & the Lincoln District, and Ruston & Point Defiance.
+- Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
+- "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.
+- 🗺️ A new achievement, All Over Tacoma: visit every neighborhood.
+
 ## 0.2.0 (2026-11-19)
 
 ### Added

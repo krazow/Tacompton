@@ -35,7 +35,7 @@ module.exports = [
     assert.match(await page.textContent('#growBtn'), /Growing Up \(new\)/);
     assert.match(await page.textContent('.title button.big'), /Move in on Monday/);
     await startGrow(page);
-    const r = await page.evaluate(() => ({ mode: MODE, smode: S.mode, days: GAME.days, cur: S.cur, loc: S.loc, t: S.t, keys: Object.keys(L).sort(), stats: STATS.map(s => s.l),
+    const r = await page.evaluate(() => ({ mode: MODE, smode: S.mode, days: GAME.days, cur: S.cur, loc: S.loc, t: S.t, keys: Object.keys(L).filter(k => !L[k].hood).sort(), stats: STATS.map(s => s.l),
       money: S.money, day: dayName(0), hud: document.querySelector('.hud').textContent, modal: document.getElementById('mbg') && document.getElementById('mbg').textContent }));
     assert.strictEqual(r.mode, 'grow'); assert.strictEqual(r.smode, 'grow'); assert.strictEqual(r.days, 8);
     assert.strictEqual(r.cur, 0); assert.strictEqual(r.loc, 'home'); assert.strictEqual(r.day, 'Monday'); assert.strictEqual(r.t, 480);
@@ -127,7 +127,7 @@ module.exports = [
     await page.evaluate(() => MBTN(1));
     const m = await page.textContent('#mbg');
     assert.match(m, /Your new job/);
-    const r = await page.evaluate(() => ({ mode: MODE, smode: S.mode, days: GAME.days, keys: Object.keys(L).sort(), stats: STATS.map(s => s.l), rent: S.rent.amt, diff: DF().n }));
+    const r = await page.evaluate(() => ({ mode: MODE, smode: S.mode, days: GAME.days, keys: Object.keys(L).filter(k => !L[k].hood).sort(), stats: STATS.map(s => s.l), rent: S.rent.amt, diff: DF().n }));
     assert.deepStrictEqual(r, { mode: 'adult', smode: undefined, days: 14, keys: ['home', 'link', 'mlk', 'peoples', 'view', 'work'], stats: ['Cash', 'Energy', 'Stress', 'Food', 'Job'], rent: 1150, diff: 'Hilltop' });
     await page.evaluate(() => { closeModals(); S.job = 'cafe';
       for (let d = 0; d < GAME.days && S && !S.over; d++) { S.loc = 'home'; S.money = Math.max(S.money, 3000); S.standing = 80; S.stress = 20; S.energy = 80; S.food = 3; S.rent.paid = true; endDay('home'); closeModals(); } });
@@ -150,7 +150,7 @@ module.exports = [
     assert.match(label, /^Continue as T/);
     await page.click('text=Continue as T');
     await page.waitForSelector('.hud');
-    const r = await page.evaluate(() => ({ mode: MODE, job: S.job, money: S.money, standing: S.standing, days: GAME.days, keys: Object.keys(L).sort(), hud: document.querySelector('.hud').textContent }));
+    const r = await page.evaluate(() => ({ mode: MODE, job: S.job, money: S.money, standing: S.standing, days: GAME.days, keys: Object.keys(L).filter(k => !L[k].hood).sort(), hud: document.querySelector('.hud').textContent }));
     assert.strictEqual(r.mode, 'adult'); assert.strictEqual(r.job, 'kitchen'); assert.strictEqual(r.money, 1234); assert.strictEqual(r.standing, 66); assert.strictEqual(r.days, 14);
     assert.deepStrictEqual(r.keys, ['home', 'link', 'mlk', 'peoples', 'view', 'work']);
     assert.match(r.hud, /Cash/); assert.doesNotMatch(r.hud, /Friends/);
