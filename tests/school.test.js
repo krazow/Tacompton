@@ -9,7 +9,8 @@ const BAD_FISH = /\b(fish\w*|salmon|marina|charters?|chinook|coho|herring)\b/i;
 async function setup(page) {
   await page.evaluate(() => {
     window.T = {
-      start(len, age) { SCH_SNOW = 0; closeModals(); setMode(age < 18 ? 'grow' : 'adult'); LIFE_PICK = { length: len, startAge: age, birthday: { m: 3, d: 14, label: 'March 14' } }; newGame('normal'); render(); closeModals(); },
+      // no random weather here: the school calendar is what's tested (33-seasons.js, if loaded, snows only on S.wxSet days)
+      start(len, age) { SCH_SNOW = 0; if (typeof wxOf === 'function' && !T.wx0) { T.wx0 = wxOf; wxOf = d => (S.wxSet && S.wxSet[d]) || 'gray'; } closeModals(); setMode(age < 18 ? 'grow' : 'adult'); LIFE_PICK = { length: len, startAge: age, birthday: { m: 3, d: 14, label: 'March 14' } }; newGame('normal'); render(); closeModals(); },
       M() { const m = document.getElementById('mbg'); return m ? m.innerText : ''; },
       // end days (answering nothing) until the day with this label; T.text collects every pop-up on the way
       text: '',
@@ -156,21 +157,28 @@ module.exports = [
     for (const t of ['Orientation at Hilltop High', 'Prom with Ana, Marcus and Linh', 'First summer job']) assert.ok(r.mom.includes(t), t + ' in ' + r.mom);
     noErrors(errors);
   } },
-  { name: 'a snow day closes school: sledding at Wright Park, cocoa with Nia, and no skip', fn: async ctx => {
+  { name: 'a snow day closes school: no Go to school, no skip, cocoa with Nia, and the concert moves to another night', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await setup(page);
     const r = await page.evaluate(() => {
-      T.start('6m', 12); SCH_SNOW = 1;
+      // snow on a day: 33-seasons.js's weather when it's loaded, else this file's own winter roll
+      const snow = d => { if (typeof wxOf === 'function') { S.wxSet = S.wxSet || {}; S.wxSet[d] = 'snow'; } else SCH_SNOW = 1; };
+      T.start('6m', 12);
       while (dateOf(lifeKw().start).label !== 'Mon Jan 11') { closeModals(); lifeFF(1); }
-      closeModals(); const d = day(), o = { snow: !!S.sch.snow[d], narr: uiNarr.join(' ') };
-      S.t = d * 1440 + 600; o.go = !!T.act(/^Go to school$/); o.sled = !!T.act(/Sled the hill at Wright Park/); o.cocoa = !!T.act(/Hot cocoa/);
+      closeModals(); snow(day() + 1); endDay('home'); closeModals(); SCH_SNOW = 0;
+      const d = day(), o = { date: dateOf(d).label, school: isSchoolDay(d) && !schSnow(d) };
+      S.t = d * 1440 + 600; S.loc = 'home'; o.go = !!T.act(/^Go to school$/); o.cocoa = !!T.act(/Hot cocoa/);
       o.todo = todoItems()[0].l;
       const g = S.grades; endDay('home'); o.rep = T.M(); closeModals(); o.dg = S.grades - g;
-      o.snow2 = !!S.sch.snow[day()];   // one snow day a key week at most
+      // the fall concert, snowed out on its Thursday, moves to Friday
+      T.start('1y', 12); lifeFF(2); closeModals();
+      const thu = dayIndexOf(2026, 11, 19); S.sch.snow[thu] = true; o.concert = schWeekList().map(x => x.t.id + '@' + dateOf(x.d).label);
       return o;
     });
-    assert.ok(r.snow); assert.match(r.narr, /Snow day/); assert.ok(!r.go); assert.ok(r.sled && r.cocoa); assert.match(r.todo, /Snow day/);
-    assert.doesNotMatch(r.rep, /skipped school/); assert.ok(!r.snow2);
+    assert.strictEqual(r.date, 'Tue Jan 12'); assert.ok(!r.school, 'school is closed');
+    assert.ok(!r.go); assert.ok(r.cocoa); assert.match(r.todo, /Snow day/);
+    assert.doesNotMatch(r.rep, /skipped school/);
+    assert.deepStrictEqual(r.concert, ['concert@Fri Nov 20']);
     noErrors(errors);
   } },
   { name: 'graduation week (Lifetime from 15) has its own choice, then the engine’s graduation', fn: async ctx => {

@@ -4812,6 +4812,9 @@ G_CATS.term='🏫 School';
 const schBlank=()=>({done:{},plan:{},went:{},skip:{},snow:{},ens:null,practice:{},job:{},fam:{},cocoa:{},sled:{},orient:false,skips:0,days:0,firstJob:false,gradWeek:false});
 {const ns=GROW.newState;GROW.newState=()=>Object.assign(ns(),{sch:schBlank()})}
 const SC=()=>S.sch||(S.sch=schBlank());
+// snow days: 33-seasons.js's weather (wxOf) closes school by itself when it's loaded; otherwise a random winter morning here does
+const schWx=()=>typeof wxOf==='function';
+const schSnow=d=>!!SC().snow[d]||(schWx()&&d>gSchoolDay()&&schoolOn(dateOf(d))&&wxOf(d)==='snow');
 
 // ---- the school calendar: school year Y starts in late summer of Y (day indices for a run starting on sd) ----
 const SCH_CAL={};
@@ -4848,8 +4851,8 @@ const schKey=(t,c)=>t.id+':'+c.Y;
 const schOn=()=>typeof S!=='undefined'&&!!S&&isGrow()&&lifeLong()&&(S.age||12)<18;
 function schOk(t){if(!schOn())return false;if(t.st&&t.st!==stage())return false;if(t.age&&S.age<t.age)return false;if(t.once&&SC()[t.id])return false;return true}
 function schCan(t,x,p){
-  if(t.type!=='school')return true;
-  if(isSchoolDay(x)&&x>gSchoolDay()&&!SC().snow[x])return true;
+  if(t.type!=='school')return !(t.id==='concert'&&schSnow(x));   // a snow day puts the concert off to another night
+  if(isSchoolDay(x)&&x>gSchoolDay()&&!schSnow(x))return true;
   return t.id==='orient'&&x===p&&!isSchoolDay(x)&&x!==gSchoolDay();   // orientation: the Thursday before school starts
 }
 // the day this key week a term happens on: its own day if you play it, else the next played day in its window (or the last one before)
@@ -4901,7 +4904,7 @@ LIFE_HOOKS.schoolDay=d=>{
   const s=SC(),o=dateOf(d),kw=lifeKw(),r=kw?lifeRange(kw):{from:d,to:d};
   if(S.age>=18)return;
   const snowWk=Object.keys(s.snow).some(x=>+x>=r.from&&+x<=r.to);
-  if((o.m===12||o.m<=2)&&!snowWk&&Math.random()<SCH_SNOW){
+  if(!schWx()&&(o.m===12||o.m<=2)&&!snowWk&&Math.random()<SCH_SNOW){
     s.snow[d]=true;
     say(`❄️ <b>Snow day!</b> Two inches on the hill overnight, and ${gSchoolShort()} is closed. ${pick(['The whole street is quiet and blue. Nia is already at the window in her coat.','The Link is crawling up MLK, and every kid on the block is outside before 9.','Dad reads the closure off his phone twice, like it might change. It doesn’t.'])}`);
     if(!s.snowYet){s.snowYet=true;lifeMoment('❄️','The first snow day on Hilltop: school closed, the whole hill white.')}
@@ -4909,7 +4912,7 @@ LIFE_HOOKS.schoolDay=d=>{
   }
   say(`🏫 School today at ${gSchoolShort()}: first bell ${fmt(G_BELL)}, out at ${fmt(SCH_OUT)}. It’s ${travelMins('home','school')} minutes up the hill. Homework after.`);
 };
-const schPending=(d=day())=>schOn()&&d>gSchoolDay()&&isSchoolDay(d)&&!SC().snow[d]&&!SC().went[d];
+const schPending=(d=day())=>schOn()&&d>gSchoolDay()&&isSchoolDay(d)&&!schSnow(d)&&!SC().went[d];
 const SCH_DAY={
   middle:['Science lab: you and your partner get the baking-soda volcano to erupt on the second try.','PE was the mile. You walked part of it. So did the teacher.','Social studies: a map of Puget Sound and a whole period on why it’s called a sound.','Band, sixth period. The tubas win, as always.','Lunch in the cafeteria, at a table that is yours now.','A fire drill in the drizzle. Everybody pretends to hate it.','A substitute in math who turns out to be a retired engineer with great stories.'],
   high:['Chemistry: a flame test that turns the whole lab green.','English: a poem you read twice, and the second time it lands.','Algebra II: a quiz you were ready for, mostly.','Lunch in the commons, loud as a train station.','A pep assembly in the gym. The drumline shakes the bleachers.','History: a debate that runs long and nobody minds.','Art: the teacher hangs your sketch of MLK on the wall by the door.'],
@@ -5069,7 +5072,7 @@ LIFE_HOOKS.weekStart.push(kw=>{
 {const on=GROW.onNight;GROW.onNight=(where,notes,d)=>{on(where,notes,d);if(schOn())try{schNight(notes,d)}catch(e){console.error(e)}}}
 function schNight(notes,d){
   const s=SC();
-  if(d>gSchoolDay()&&isSchoolDay(d)&&!s.snow[d]&&!s.went[d]&&S.age<18){
+  if(d>gSchoolDay()&&isSchoolDay(d)&&!schSnow(d)&&!s.went[d]&&S.age<18){
     s.skip[d]=true;s.skips++;S.grades=clamp(gGrades()-3,0,100);adj('family',-5);adj('mood',-1);
     notes.push(`📵 You skipped school today. ${gSchoolShort()}’s attendance line called home at 3, and Mom heard the message on her break. ${s.skips>2?'“Again?” is all she says at dinner, which is worse than yelling.':'A long talk at the kitchen table.'} Grades −3, Family −5.`);
   }
@@ -5100,8 +5103,8 @@ function schNight(notes,d){
     const wb=schIn('winter',d);
     if(wb&&!s.fam[d]&&gAt(600,1290))mine.push({ic:'🎲',l:'Family game night',s:'45 min. Winter break: everybody home. Family +5, mood +3. Once a day.',cat:'family',fn:()=>{pass(45);s.fam[d]=true;adj('family',5);adj('mood',3);
       say(pick(['🎲 Dominoes at the kitchen table. Dad slams every tile. Nia wins, somehow, every time.','🎲 A puzzle of Mount Rainier, a thousand pieces, half of them sky. You get the summit.','🎲 Charades. Mom acts out the Link for two full minutes. Everybody gets it immediately and lets her keep going.']))}});
-    if(s.snow[d]){
-      if(!s.sled[d]&&gAt(540,1020))mine.push({ic:'🛷',l:'Sled the hill at Wright Park',s:`2 hours with ${schCrew()}. Friends +4, mood +8, energy −10.`,cat:'fun',cls:'primary',fn:()=>{pass(120);s.sled[d]=true;schFx({friends:4,mood:8,energy:-10});
+    if(schSnow(d)){
+      if(!schWx()&&!s.sled[d]&&gAt(540,1020))mine.push({ic:'🛷',l:'Sled the hill at Wright Park',s:`2 hours with ${schCrew()}. Friends +4, mood +8, energy −10.`,cat:'fun',cls:'primary',fn:()=>{pass(120);s.sled[d]=true;schFx({friends:4,mood:8,energy:-10});
         say(`🛷 Cardboard, a laundry basket and one real sled between ${schCrew()} and you. Wright Park’s big hill is packed with half of Tacoma. You go down backward twice, once on purpose.`)}});
       if(!s.cocoa[d]&&gAt(600,1260))mine.push({ic:'☕',l:'Hot cocoa and a movie with Nia',s:'An hour on the couch. Family +6, mood +4, energy +4.',cat:'family',fn:()=>{pass(60);s.cocoa[d]=true;schFx({family:6,mood:4,energy:4});
         say('☕ Mom makes cocoa the real way, in a pot. Nia picks the movie, falls asleep halfway, and you finish it anyway.')}});
@@ -5142,8 +5145,8 @@ defLifeEvent({id:'sch_grad_week',hook:'wake',kinds:['graduation'],mode:'grow',ti
   const e=schToday(d,'evening')[0];if(e&&m<e.t.at[1])return {t:e.t.id==='concert'?'🎵 The fall concert is tonight at 7. Go from home from 5:30 PM.':`🪩 Prom tonight with ${schCrew()}. Head out from home from ${fmt(e.t.at[0])}.`,kind:'info'};
   return null}}
 {const ti=GROW.todoItems;GROW.todoItems=()=>{const it=ti();if(!schOn())return it;const d=day(),s=SC();
-  if(d>gSchoolDay()&&isSchoolDay(d)){if(s.snow[d])it.unshift({l:'❄️ Snow day',s:`${gSchoolShort()} is closed today.`,ok:true});
-    else it.unshift({l:'🏫 Go to school',s:s.went[d]?(s.went[d]==='late'?'Went, a little late.':'Went, on time.'):`${gSchool()}, ${fmt(G_BELL)} to ${fmt(SCH_OUT)}.`,ok:!!s.went[d],fail:!s.went[d]&&tod()>=SCH_LATE,urgent:schPending(d)&&tod()>=G_BELL-30})}
+  if(schSnow(d))it.unshift({l:'❄️ Snow day',s:`${gSchoolShort()} is closed today.`,ok:true});
+  else if(d>gSchoolDay()&&isSchoolDay(d)){it.unshift({l:'🏫 Go to school',s:s.went[d]?(s.went[d]==='late'?'Went, a little late.':'Went, on time.'):`${gSchool()}, ${fmt(G_BELL)} to ${fmt(SCH_OUT)}.`,ok:!!s.went[d],fail:!s.went[d]&&tod()>=SCH_LATE,urgent:schPending(d)&&tod()>=G_BELL-30})}
   for(const x of schToday(d,'evening'))it.unshift({l:`${x.t.ic} ${x.t.n}`,s:`Tonight, from home after ${fmt(x.t.at[0])}.`,ok:false,urgent:tod()>=x.t.at[0]});
   return it}}
 
