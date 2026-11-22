@@ -27,7 +27,7 @@ async function bot(page, { steps = 9000, weeks = Infinity } = {}) {
         if (!S || S.over) { const b = document.querySelector('.life-sum .big'); if (b) { b.click(); continue } st.done = true; break; }
         if (S.kwi >= weeks) { st.done = true; break; }
         st.weeks = S.kwi;
-        if (isGrow()) { S.family = Math.max(S.family, 35); } else { S.standing = Math.max(S.standing, 35); S.stress = Math.min(S.stress, 80); if (S.money < 1400) S.money = 1400; }
+        if (isGrow()) { S.family = Math.max(S.family, 35); } else { S.standing = Math.max(S.standing, 35); S.stress = Math.min(S.stress, 60); if (S.money < 1400) S.money = 1400; }
         const cross = document.querySelector('.cross'); if (cross) { cross.click(); continue; }
         const m = document.getElementById('mbg');
         if (m) { const bs = [...m.querySelectorAll('.modal > button.act')], any = bs.map((b, k) => k).filter(k => ok(bs[k]));

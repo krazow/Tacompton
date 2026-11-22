@@ -10,6 +10,7 @@ are taken from it.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
 - "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.
 - 🗺️ A new achievement, All Over Tacoma: visit every neighborhood.
+- Four more neighborhoods: Old Town, Fern Hill, Northeast Tacoma and the West End, for ten beyond Hilltop.
 - 🌱 New life: pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age (12, 15 or 18) from the title screen. Your birthday is picked at random and shown before you start.
 - Key weeks: the longer games play the important weeks (one a month, about every six weeks plus your birthday, one a season plus birthdays, or one or two a year at the milestones) and show a summary between them: money, stats, age, school or work, friends and family, after one choice about how to spend the time (extra shifts, saving, friends; or studying, helping at home, friends, and shifts at 16).
 - A real calendar: every day has a date, rent is monthly (due on the 1st, or at the end of a key week that crosses it), the Hilltop Street Fair comes back on the second Saturday of every August, and the sunset follows the seasons.
