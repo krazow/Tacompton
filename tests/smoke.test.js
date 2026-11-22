@@ -22,7 +22,8 @@ module.exports = SEEDS.map(seed => ({ name: `bot plays 14 days (seed ${seed})`, 
         if (m) {
           const bs = [...m.querySelectorAll('.modal > button.act')];
           const any = bs.map((b, k) => k).filter(k => ok(bs[k]));
-          if (any.length) MBTN(rnd() < 0.7 ? any[0] : pick(any)); else m.remove();
+          const cb = choiceBtn();   // a choice sheet: half the time the default, otherwise any option
+          if (cb >= 0 && rnd() < 0.5) MBTN(cb); else if (any.length) MBTN(rnd() < 0.7 ? any[0] : pick(any)); else m.remove();
           continue;
         }
         if (rnd() < 0.05) { setTab(pick(allTabs().map(t => t[0]))); continue; }

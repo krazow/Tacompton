@@ -31,6 +31,7 @@ function fireHook(hook,ctx={}){
     if(!open&&!forced) continue;
     if(!forced){
       if((S.ev.count[e.id]||0)>=e.max) continue;
+      if(e.choices&&(isPending(e.id)||pendingList().length>=CHOICE_MAX)) continue;   // decisions waiting: no more choice events for now
       if(S.ev.last[e.id]!=null&&day()-S.ev.last[e.id]<e.cooldown) continue;
       const p=(typeof e.chance==='function'?e.chance(ctx):e.chance)*(e.bad?DF().bad:1);
       if(!(Math.random()<p)) continue;
@@ -38,9 +39,15 @@ function fireHook(hook,ctx={}){
     S.ev.last[e.id]=day();S.ev.count[e.id]=(S.ev.count[e.id]||0)+1;S.ev.history.push({id:e.id,t:S.t});
     const nBefore=uiNarr.length,mBefore=MQ.length+(document.getElementById('mbg')?1:0);
     if(Array.isArray(ctx.fired))ctx.fired.push(e.id);   // the caller can ask which events ran (endDay: the morning report's picture)
-    EV_RUNNING=e.id;let r;try{r=e.run(ctx)||{}}finally{EV_RUNNING=null}
+    EV_RUNNING=e.id;let r;try{r=(e.run?e.run(ctx):null)||{}}finally{EV_RUNNING=null}
     // events that didn't open their own modal get collected into one OK pop-up per hook call
     const ownModal=MQ.length+(document.getElementById('mbg')?1:0)!==mBefore;
+    if(e.choices){   // a decision: its own tile or sheet (choiceFired), not the OK pop-up
+      choiceFired(e,ctx,uiNarr.slice(nBefore),forced);
+      if(S.ev.cause)delete S.ev.cause[e.id];
+      if(ctx.notes) ctx.notes.push(...uiNarr.slice(nBefore));
+      if(r.stop){res=r;break}
+      res=res||r;continue}
     if(!ownModal) popItems.push({e,lines:uiNarr.slice(nBefore)});
     const [ic,title,kind]=e.tile||['📍',e.id.replace(/_/g,' '),'info'];
     const dup=ownModal||hook==='night'||!!DIGEST||(popupsOn()&&!capped);   // the event's own modal, the night summary or the OK pop-up already tells the player
@@ -73,4 +80,105 @@ function eventPopup(hook,items,capped){
   const one=items.length===1?meta(items[0].e):null;
   const art=artOn()?artFirst(items.map(it=>()=>artSlot('event',()=>artEventCtx(it.e.id,'game'),{deco:true}))):'';   // 40-art.js: the first event with an illustration
   modal(one?`${one[0]} ${one[1]}`:'📍 Meanwhile…',art+(body||'<p></p>'),[{l:'OK',fn:()=>{}}]);
+}
+
+// ---------------- choices: events that ask you to decide ----------------
+// An event may add, besides run:
+//   choices:()=>[{ic:'🚌',l:'Sit up front',s:'Lose less if something happens',fn:()=>{…},dis:false}, …]   2–3 options, built when it fires
+//   dflt:1          the option applied if you never decide by the end of the day (the cautious or "pass" one)
+//   urgent:true     opens the choice sheet at once, even with pop-ups off (setbacks that can't wait)
+// When it fires: run() runs, a pending decision goes in S.ev.pending ({id,day,title,ic,lines,hook,urgent}), and its tile says
+// "Tap to decide". The sheet opens from the tile, the Decide card on the Here tab, or the morning report. At night, anything still
+// pending gets its dflt option ("You let it go: …"). At most CHOICE_MAX pending: further choice events don't fire (a forced one takes
+// its default at once). Saves keep S.ev.pending; the options are rebuilt from the event after a reload.
+const CHOICE_MAX=2;
+const untag=h=>String(h||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+const CHOICE_CACHE={};   // id → {ctx, opts}: the options as built when the event fired (not saved; rebuilt after a reload)
+function eventFlag(id){return S&&S.ev&&S.ev.flags?S.ev.flags[id]:undefined}
+function setEventFlag(id,v){S.ev.flags=S.ev.flags||{};S.ev.flags[id]=v===undefined?true:v}
+// The standard two options for an ambient moment: "👀 Stop and watch" (time → calm, maybe energy/community) or "Keep going" (nothing).
+// Use with dflt:1.
+function stopWatch(o={}){
+  const mins=o.mins??15,cv=o.calm??6,en=o.energy||0,co=o.community||0,grow=typeof isGrow==='function'&&isGrow();
+  const bits=[`${mins} min`];
+  if(cv)bits.push(grow?`mood +${cv}`:(typeof calmTxt==='function'?calmTxt(cv):`stress −${cv}`));
+  if(en)bits.push(`energy ${en>0?'+':'−'}${Math.abs(en)}`);
+  if(co&&!grow)bits.push(`community +${co}`);
+  return [
+    {ic:'👀',l:'Stop and watch',s:bits.join(', ').replace(/^./,c=>c.toUpperCase())+'.',fn:()=>{
+      pass(mins);
+      if(cv){if(grow)adj('mood',cv);else if(typeof calm==='function')calm(cv);else adj('stress',-cv)}
+      if(en&&'energy' in S)adj('energy',en);
+      if(co&&!grow&&'community' in S)adj('community',co);
+      if(o.text)say(o.text)}},
+    {ic:'🚶',l:'Keep going',s:o.pass||'No time spent. The moment goes on without you.',fn:()=>{}}];
+}
+function pendingList(){if(!S.ev.pending)S.ev.pending=[];return S.ev.pending}
+const isPending=id=>pendingList().some(p=>p.id===id);
+// The options for a pending decision (from the cache, or rebuilt from the event)
+function choiceOpts(id){
+  const e=EV.find(x=>x.id===id);if(!e||!e.choices)return null;
+  let c=CHOICE_CACHE[id];
+  if(!c){let opts=[];try{opts=e.choices({hook:(pendingList().find(p=>p.id===id)||{}).hook,reload:true})||[]}catch(err){opts=[]}c=CHOICE_CACHE[id]={opts}}
+  return c.opts;
+}
+function choiceDflt(id){const e=EV.find(x=>x.id===id),o=choiceOpts(id)||[];
+  let d=e&&typeof e.dflt==='function'?e.dflt():e&&e.dflt;d=Number.isInteger(d)&&o[d]?d:o.length-1;
+  if(o[d]&&o[d].dis){const k=o.findIndex(x=>!x.dis);if(k>=0)d=k}
+  return d}
+// Called by fireHook for an event with choices, after its run()
+function choiceFired(e,ctx,lines,forced){
+  let opts=[];EV_RUNNING=e.id;try{opts=e.choices(ctx)||[]}catch(err){opts=[]}finally{EV_RUNNING=null}
+  if(!opts.length)return;
+  const [ic,title]=e.tile||['📍',e.id.replace(/_/g,' ')];
+  CHOICE_CACHE[e.id]={ctx,opts};
+  const P=pendingList();
+  if(isPending(e.id)||P.length>=CHOICE_MAX){   // forced past the limit: it takes its default now
+    if(!isPending(e.id)){P.push({id:e.id,day:day(),title,ic,lines,hook:ctx.hook});choiceApply(e.id,choiceDflt(e.id),'full')}
+    return}
+  P.push({id:e.id,day:day(),title,ic,lines:lines.slice(0,4),hook:ctx.hook,urgent:!!e.urgent});
+  const now=ctx.hook!=='night'&&(e.urgent||popupsOn());
+  if(DIGEST){DIGEST.items.push({ic,title,lines:lines.concat([e.urgent?'You need to decide this one now.':'Decide below, or it waits until tonight.'])});if(now)openChoice(e.id);return}
+  if(now)openChoice(e.id);
+  else if(ctx.hook!=='night')showTile(ic,title,'Tap to decide',e.tile?e.tile[2]:'info',null,{decide:e.id});
+}
+// Apply option i of a pending decision. how: 'pick' (you chose), 'night' (defaulted), 'full' (too many pending)
+function choiceApply(id,i,how){
+  const P=pendingList(),k=P.findIndex(p=>p.id===id);if(k<0)return false;
+  const opts=choiceOpts(id)||[],o=opts[i];
+  P.splice(k,1);delete CHOICE_CACHE[id];
+  if(!o)return false;
+  const p0=S.ev.choiceLog||(S.ev.choiceLog={});p0[id]=i;   // the last option taken for each event (follow-ups can read it)
+  EV_RUNNING=id;try{o.fn&&o.fn()}catch(err){console.error(err)}finally{EV_RUNNING=null}
+  return true;
+}
+// Open the choice sheet for a pending decision (one sheet at a time: it queues behind any open pop-up)
+function openChoice(id){
+  const p=pendingList().find(x=>x.id===id);if(!p)return;
+  const opts=choiceOpts(id);if(!opts||!opts.length){pendingList().splice(pendingList().indexOf(p),1);return}
+  const d=choiceDflt(id),e=EV.find(x=>x.id===id),urgent=!!(e&&e.urgent);
+  const body=`<div class="choice-sheet" data-ev="${esc(id)}" data-dflt="${d}" hidden></div>`+(p.lines||[]).map(l=>`<p>${l}</p>`).join('')+
+    `<p class="ch-q">What do you do?</p>`+(urgent?'':`<p class="ch-note">If you don’t decide by tonight: ${esc(untag(opts[d].l))}.</p>`);
+  const btns=opts.map((o,i)=>({l:`${o.ic?o.ic+' ':''}${o.l}`,s:o.s||'',dis:!!o.dis,np:true,fn:()=>{if(!isPending(id))return;uiNarr=[];choiceApply(id,i,'pick');afterAction()}}));
+  if(!urgent)btns.push({l:'Not now',s:'It waits on the Here tab until tonight.',fn:()=>{}});
+  modalSwap(`${p.ic} ${p.title}`,body,btns,urgent);
+}
+window.openChoice=openChoice;
+// The default option of the open choice sheet (for bots and tests), or −1 when no choice sheet is open
+window.choiceBtn=()=>{const m=document.getElementById('mbg'),c=m&&m.querySelector('.choice-sheet');return c?+c.dataset.dflt:-1};
+// Night: every decision still pending takes its default. Lines go to notes (the morning report) and the log.
+function choiceNight(notes){
+  const P=pendingList().slice();
+  for(const p of P){const opts=choiceOpts(p.id)||[],d=choiceDflt(p.id),o=opts[d];
+    const n0=uiNarr.length,l0=S.log.length;
+    S.log.push({t:S.t,s:`⏳ You let it go: ${p.ic} ${p.title}${o?` (${o.ic?o.ic+' ':''}${untag(o.l)})`:''}.`});
+    choiceApply(p.id,d,'night');
+    if(notes){notes.push(`⏳ You let it go: <b>${p.title}</b>${o?`. ${o.ic?o.ic+' ':''}${o.l}`:''}.`);notes.push(...uiNarr.slice(n0))}
+    void l0}
+}
+// The Decide card at the top of the Here tab (05-ui.js) and the morning report's list
+function choiceCard(btn){
+  const P=pendingList();if(!P.length)return '';
+  return `<div class="decide" role="region" aria-label="Decisions waiting"><div class="sect">🤔 Decide · ${P.length} waiting</div>`+
+    P.map(p=>btn({ic:p.ic,l:p.title,s:p.urgent?'Decide now.':'Tap to decide. If you don’t, the cautious choice is made tonight.',cls:'decide-btn',fn:()=>openChoice(p.id)})).join('')+'</div>';
 }

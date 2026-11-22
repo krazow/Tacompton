@@ -31,7 +31,8 @@ async function bot(page, { steps = 9000, weeks = Infinity } = {}) {
         const cross = document.querySelector('.cross'); if (cross) { cross.click(); continue; }
         const m = document.getElementById('mbg');
         if (m) { const bs = [...m.querySelectorAll('.modal > button.act')], any = bs.map((b, k) => k).filter(k => ok(bs[k]));
-          if (any.length) MBTN(rnd() < 0.7 ? any[0] : pick(any)); else m.remove(); continue; }
+          const cb = choiceBtn();   // a choice sheet: half the time the default, otherwise any option
+          if (cb >= 0 && rnd() < 0.5) MBTN(cb); else if (any.length) MBTN(rnd() < 0.7 ? any[0] : pick(any)); else m.remove(); continue; }
         if (rnd() < 0.04) { setTab(pick(allTabs().map(t => t[0]))); continue; }
         if (tab !== 'act') setTab('act');
         if (rnd() < 0.04) { endDay('home'); continue; }
