@@ -43,7 +43,7 @@ module.exports = [
     for (const s of ['Middle school', '12–13', 'High school', '14–17', '18 and up', '8:15 AM', '2:45 PM', 'Grades +3', 'Grades −3, Family −5',
       'The fall concert', 'Winter break', 'Spring testing week', 'The last day of school', 'Orientation at Hilltop High', 'Finals week', 'Prom night with your friends',
       'A summer job', 'Senior week', 'Birthdays', 'Family −12', 'Youth ORCA', 'Stadium District', 'Northeast Tacoma', 'Copper Kettle', 'Museum of Glass',
-      'UW Tacoma', 'trade program', 'snow day', 'first sunny day of spring', 'Sunrise and sunset', 'T Line', 'tenant protections']) assert.ok(t.includes(s), 'mentions ' + s);
+      'UW Tacoma', 'trade program', 'snow day', 'first sunny day of spring', 'Sunrise and sunset', 'T Line', 'Raises and promotions', 'Senior CNA', 'Journey-level electrician', 'cost-of-living raise', 'no cap']) assert.ok(t.includes(s), 'mentions ' + s);
     // neighborhoods open by age, from the code
     const opens = await page.evaluate(() => GROW.hoods.OPEN);
     for (const a of new Set(Object.values(opens))) assert.match(t, new RegExp('\\n' + a + '\\t'), 'a row for age ' + a);

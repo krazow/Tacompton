@@ -1518,7 +1518,7 @@ function lifeSimulate(from,to,ch){
       if(!S.life.retired){
         if(J.days.includes(wd)){money(J.pay*pf+(J.tips?(J.tips[0]+J.tips[1])/2:0));S.life.tot.shifts=(S.life.tot.shifts||0)+1}
         if(ch==='extra'&&wd===(J.days[0]===0?5:0))money(J.pay*pf*0.9);
-      }else money(500/7);
+      }else money(typeof careerPension==='function'?careerPension():500/7);   // 35-careers.js: a pension that follows your last pay
       money(-((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0)));
       if(o.d===1){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));rentN++;rentAmt+=S.rent.amt;helpAmt+=help;if(help)S.life.rentHelpLeft--;
         if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-(S.life.path==='college'?380:120))}
@@ -1528,7 +1528,8 @@ function lifeSimulate(from,to,ch){
       f.community=num('community')+0.07+(ch==='friends'?0.2:ch==='extra'&&S.life.retired?0.15:0)-(ch==='extra'&&!S.life.retired?0.05:0);
       S.life.family=clamp(S.life.family+(60-S.life.family)*0.003+(ch==='save'?0.07:ch==='extra'?-0.03:0),0,100);
       if(S.life.path&&S.life.path!=='job'&&!S.life.done){S.life.prog=Math.min(100,S.life.prog+100/(S.life.path==='college'?4*365:365));
-        if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the trade program and test out as a journey-level electrician’s helper. Better pay from here on.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+        if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the electrical pre-apprenticeship at the top of your class.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+      if(typeof careerDay==='function')careerDay(d,notes);   // 35-careers.js: raises, reviews, school, promotions
     }
     if(S.age>=18&&grow)break;   // graduation comes next
   }
@@ -1546,7 +1547,7 @@ function lifeRound(){
   for(const k of ['money','energy','mood','family','grades','stress','standing','community','food'])if(typeof S[k]==='number')S[k]=Math.round(S[k]);
   if(S.kids)for(const id in S.kids){const s=S.kids[id];if(s&&typeof s.f==='number')s.f=clamp(Math.round(s.f),0,20)}
 }
-const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(S.life.done&&S.life.path!=='job'?1.25:1):1);
+const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(typeof careerPayF==='function'?careerPayF():1):1);   // careerPayF: raises and promotions (35-careers.js)
 // the first morning of key week i
 function lifeEnter(i){
   if(isGrow()&&S.age>=18&&!S.life.graduated) return lifeGraduation(()=>lifeEnter(i));
@@ -1633,7 +1634,7 @@ function lifeSummaryHTML(){
   const L1=S.life,sect=(h,b)=>b?`<div class="sect" style="margin-top:14px">${h}</div>${b}`:'',kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
   const stg={middle:'🏫 Middle school',high:'🎓 High school',adult:'🏠 Adult'};
   const stages=L1.stages.map((x,j)=>kv(stg[x.stage]||x.stage,`from age ${x.age} (${fullDate(x.d).slice(4)})`)).join('');
-  const jobs=L1.jobs.map(j=>kv(`${JOBS[j.job].ic} ${cap(JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
+  const jobs=L1.jobs.map(j=>kv(`${j.ic||JOBS[j.job].ic} ${cap(j.t||JOBS[j.job].role0||JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
   const kids=L1.grow?L1.grow.kids:(typeof KIDS!=='undefined'&&S.kids?KIDS.filter(k=>S.kids[k.id]&&S.kids[k.id].met).map(k=>({n:k.n,f:Math.round(S.kids[k.id].f)})):[]);
   const nb=typeof NEIGHBORS!=='undefined'&&S.met?NEIGHBORS.filter(x=>S.met[x.id]).map(x=>x.n):[];
   const people=(kids.length?kv('🤝 Friends from growing up',kids.map(k=>k.n).join(', ')):'')+(L1.grow&&L1.grow.best?kv('⭐ Best friend',L1.grow.best):'')+(nb.length?kv('🏘️ Neighbors',nb.slice(0,8).join(', ')+(nb.length>8?` and ${nb.length-8} more`:'')):'')+kv('🏠 Family',isGrow()?S.family:Math.round(L1.family));
@@ -1781,7 +1782,7 @@ window.lifeFF=(n=1e9,safe=true)=>{
     if(k>=n&&!document.getElementById('mbg'))break;
     const m=document.getElementById('mbg');
     if(m){const bs=[...m.querySelectorAll('.modal > button.act')],i=bs.findIndex(b=>!b.disabled);if(i>=0)MBTN(i);else m.remove();continue}
-    if(safe){if(isGrow()){S.family=Math.max(S.family,50);S.mood=Math.max(S.mood,50)}else{S.money=Math.max(S.money,2500);S.standing=Math.max(S.standing,60);S.stress=Math.min(S.stress,40);S.food=Math.max(S.food,2);if(!S.rent.paid&&S.money>=S.rent.amt){money(-S.rent.amt);S.rent.paid=true;S.rent.paidDay=day()}}}
+    if(safe){if(isGrow()){S.family=Math.max(S.family,50);S.mood=Math.max(S.mood,50)}else{S.money=Math.max(S.money,2500,S.rent.amt+500);S.standing=Math.max(S.standing,60);S.stress=Math.min(S.stress,40);S.food=Math.max(S.food,2);if(!S.rent.paid&&S.money>=S.rent.amt){money(-S.rent.amt);S.rent.paid=true;S.rent.paidDay=day()}}}
     S.loc='home';endDay('home');
   }
   return {kwi:S&&S.kwi,over:!S||S.over,cur:S&&S.cur};
@@ -3735,7 +3736,7 @@ function helpLengths(){
     <ul><li><b>Quick play</b> is the classic game: every day of the two weeks at 18, or Growing Up’s first week at 12.</li>
     <li>The longer games play <b>key weeks</b> day by day: your first week, one a month or a season, every birthday, and in a Lifetime the milestones (half a year after each birthday until 22, then every five years), graduation and moving day at 18, retirement at 67 and the last week.</li>
     <li>Growing Up’s month and season weeks move onto the school calendar when one is close: the fall concert, winter break, testing week, finals, prom and the last day of school.</li>
-    <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
+    <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends, plus 🎓 a nursing program once it’s offered (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
     <li><b>📋 While you were away</b> shows each stat before and after, your school or work, your closest friends, and what happened along the way: birthdays, rent, school days, the weather, city news and the street fair.</li>
     <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The Hilltop Street Fair comes back on the second Saturday of every August.</li></ul>
     <h3>Changing the length later</h3>
@@ -3773,7 +3774,7 @@ function helpGrowing(){
   let wage=17.13;try{if(H&&typeof S!=='undefined'&&S)wage=H.wage()}catch(e){}
   const GJ=H?Object.values(H.JOBS):[],SJ=typeof SCH_JOBS!=='undefined'?SCH_JOBS:{};
   const dec=dayIndexOf(2026,12,21),jun=dayIndexOf(2027,6,21),sr=d=>typeof sunriseOn==='function'?fmt(sunriseOn(d)):'',ss=d=>typeof sunsetCal==='function'?fmt(sunsetCal(d)):'';
-  const rentCap=typeof CITY_RENT_CAP!=='undefined'?Math.round((CITY_RENT_CAP-1)*100):20,nCity=typeof CITY!=='undefined'?CITY.length:0;
+  const nCity=typeof CITY!=='undefined'?CITY.length:0;
   const snow=typeof WX_MONTH!=='undefined'?hRange([1,2,12].map(m=>WX_MONTH[m].snow||0)):'2–3';
   const help=f=>Math.round(f*3/10)*10;
   return `
@@ -3809,8 +3810,9 @@ function helpGrowing(){
     <h3>Graduation and the choice at 18</h3>
     <p>The key week you turn 18 is graduation week. After the ceremony you choose what comes next and move into your own apartment on Hilltop; the same save carries on as the adult game.</p>
     <ul><li><b>💼 Go to work:</b> one of the three jobs, full-time.</li>
-    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café.</li>
-    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK.</li></ul>
+    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café. Then a job as an IT support tech downtown.</li>
+    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK. Then an electrician apprenticeship, and journey-level after four years.</li></ul>
+    ${helpCareers()}
     ${hTable(['You bring','It becomes'],[['🏠 Family',`Rent help for a year (Family 60 is ${$(help(60))} a month), and ${$(4)} of graduation money per point`],['🤝 Friends','Community: 5 plus half your Friends'],['📚 Grades','Job standing: 50 plus 30% of your Grades']])}
     <h3>Seasons and weather</h3>
     <ul><li>The weather is rolled once a day from the month: Tacoma rain and drizzle from October through spring, June gloom, dry summers with the odd wildfire-smoke day, windstorms, sun breaks, and once a year the first sunny day of spring, when the whole block comes outside.</li>
@@ -3818,7 +3820,25 @@ function helpGrowing(){
     <li>Rain, wind and smoke put some outdoor plans off; sun gives them a small lift. Each morning the weather nudges your stats a little.</li>
     <li>Sunrise and sunset follow the year: about ${sr(dec)} and ${ss(dec)} in late December, ${sr(jun)} and ${ss(jun)} in late June.</li></ul>
     <h3>The changing city</h3>
-    <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up a few percent every August, about ${rentCap}% in all, until the city’s tenant protections hold them. Each birthday notes how much the block has changed.</p>`;
+    <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up 3–5% every August, with no cap, so your raises have to keep up (see <b>Raises and promotions</b>). Each birthday notes how much the block has changed.</p>`;
+}
+
+// raises and promotions in the longer adult games (35-careers.js)
+function helpCareers(){
+  if(typeof CAREER_LADDERS==='undefined')return '';
+  const C=CAREER,rows=[];
+  for(const k in CAREER_LADDERS){const J=JOBS[k],L0=CAREER_LADDERS[k];
+    L0.r.forEach((r,i)=>rows.push([`${i?'':J.ic+' '}${r.t}`,$(Math.round(J.pay*r.f)),i?`${r.yrs} year${r.yrs===1?'':'s'} as ${L0.r[i-1].t}, Job ${r.st}+, on time${r.prog?`, then ${r.prog.t} (${r.prog.mo} months, ${$(r.prog.fee)} a month)`:''}`:k==='elec'?'After the trade program':k==='tech'?'After college':'Day one']))}
+  return `<h3>Raises and promotions</h3>
+    <p>In the longer adult games your pay grows with you, and it has to: rents rise 3–5% every August. Quick play has none of this.</p>
+    <ul><li><b>📈 Every year</b> on your job anniversary: a cost-of-living raise (${C.cola[0]}–${C.cola[1]}%).</li>
+    <li><b>📋 Every six months</b>, a review: a merit raise (${C.merit[0]}–${C.merit[1]}%) with Job ${C.reviewSt} or more and at most one late or missed shift (or 15% of them). Below ${C.warnSt}, no raise and a written warning. Merit raises stop ${Math.round((C.meritMax-1)*100)}% over a title’s pay: a promotion is the way up.</li>
+    <li><b>Your habits count:</b> a review in a time skip judges you by the key weeks you played, the latest most.</li>
+    <li><b>🎉 Promotions</b> take time in your title, Job standing and the same good attendance. A promotion is always at least a ${Math.round((C.promoMin-1)*100)}% raise, and it shows on the 📅 Week tab, the Job stat and your life summary.</li>
+    <li><b>🎓 Nursing</b> takes school: when your manager offers it, choose the program in a time skip. You pay monthly and work ${Math.round(.75*100)}% of your shifts until you finish.</li>
+    <li><b>🎉 At 67</b> you retire with a pension of ${Math.round(C.pension*100)}% of your last pay, raised with the cost of living.</li></ul>
+    ${hTable(['Title','Pay a shift, to start','What it takes'],rows)}
+    <p class="tut-small">Pay before raises. Washington-plausible: an RN makes about twice a hospital CNA, an LPN about half again, a journey-level electrician about 1.7 times an apprentice.</p>`;
 }
 
 // ---- the chapters: [key, title, html] (numbered in this order) ----
@@ -3886,7 +3906,7 @@ function helpChapters(){
       ['🌄 The overlook',[['Sit on the bench†','free, 30 min','Stress −8'],['Watch the sunset*','free, 45 min','Stress −18'],['Walk the edge of the hill†','free, 45 min','Stress −8, energy −4']]]].map(([pl,rs])=>`<tbody><tr class="tut-grp"><th colspan="3" scope="colgroup">${pl}</th></tr>${rs.map(r=>`<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`).join('')}</table></div>
     <p class="tut-small">* Once a day. † Full effect twice a day, then about a third. Prices are for the ${D.normal.n} difficulty. ${D.easy.n} is ${Math.round((1-D.easy.cost)*100)}% cheaper and ${D.hard.n} is ${Math.round((D.hard.cost-1)*100)}% pricier. Everywhere, <b>Wait a while</b> skips ahead 30, 60 or 120 minutes.</p>`],
   ['job','Your job and shifts',`
-    <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks.</p>
+    <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks. (In the longer games the job grows with you: raises and promotions, in <b>Growing up</b>.)</p>
     ${hFig(HSVG_SHIFTS(),'When each shift runs, 5 AM to midnight.')}
     ${hTable(['Job','Shift','Pay','Each shift costs'],Object.values(J).map(j=>[`${j.ic} ${j.role==='certified nursing assistant'?'CNA':j.role[0].toUpperCase()+j.role.slice(1)}`,`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} (${hShifts(j)} shifts)`,`${$(j.pay)}${j.tips?` + ${$(j.tips[0])}–${$(j.tips[1])} tips`:''}`,`Energy −${j.energy}, stress +${j.stress}${DIFFS.hard.strain&&DIFFS.hard.strain!==1?` (+${Math.round(j.stress*DIFFS.hard.strain)} on ${DIFFS.hard.n})`:''}`]))}
     <ul><li><b>🏥 CNA:</b> the best pay and the hardest days. Your alarm is set to ${fmt(J.hospital.alarm)}.</li>
@@ -4184,7 +4204,7 @@ const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
   '0.3.0':['🗺️ New: <b>the rest of Tacoma</b>. Ten neighborhoods beyond Hilltop: Stadium, Downtown & the Dome, Proctor, the Eastside & the Port, the South End & Lincoln, Ruston & Point Defiance, Old Town, Fern Hill, Northeast Tacoma and the West End.','🚌 Walk, ride the free Link or take the bus across town. <b>Go somewhere</b> now groups places by neighborhood.'],
-  '0.4.0':['🌱 New: <b>New life</b> on the title screen. Pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age: 12, 15 or 18.','⭐ The longer games play the key weeks, with a summary of what changed between them, and one choice about how you spend the time.','🎂 A birthday every year. High school at 14, a part-time job at 16, and at 18 graduation, then work, college or a trade program, and your own apartment, all in the same save.','🎮 ⚙️ Settings → Game options: game length, difficulty, highlights, pop-ups, tips and your name.','🏅 Scores per month played, a best score for each length, and Quick play is the game you know, with your saves.','🗺️ Growing Up: Tacoma opens up as you grow. A Youth ORCA card at 14 (free rides under 18) for the Stadium District and Downtown, more neighborhoods every year after, and a first job downtown at 16.','🌦️ Seasons in the longer games: Tacoma rain, sun breaks, windstorms, a rare snow day that closes school, the first sunny day of spring and summer smoke days, with sunrise and sunset that follow the year.','🏘️ Hilltop changes over the years: new buildings, a shop that closes and a new one that opens, rents that rise, a growing street fair, and the planned T Line extension to TCC.','🏫 School years: Go to school on school days (8:15 AM to 2:45 PM), homework after, and the key weeks land on the school calendar: the fall concert, winter break and testing week at Summit View; orientation, finals, prom with your friends and a summer job at Hilltop High.','📖 Two new chapters in ❓ Help: <b>Game lengths and ages</b> and <b>Growing up</b>.'],
+  '0.4.0':['🌱 New: <b>New life</b> on the title screen. Pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age: 12, 15 or 18.','⭐ The longer games play the key weeks, with a summary of what changed between them, and one choice about how you spend the time.','🎂 A birthday every year. High school at 14, a part-time job at 16, and at 18 graduation, then work, college or a trade program, and your own apartment, all in the same save.','🎮 ⚙️ Settings → Game options: game length, difficulty, highlights, pop-ups, tips and your name.','🏅 Scores per month played, a best score for each length, and Quick play is the game you know, with your saves.','🗺️ Growing Up: Tacoma opens up as you grow. A Youth ORCA card at 14 (free rides under 18) for the Stadium District and Downtown, more neighborhoods every year after, and a first job downtown at 16.','🌦️ Seasons in the longer games: Tacoma rain, sun breaks, windstorms, a rare snow day that closes school, the first sunny day of spring and summer smoke days, with sunrise and sunset that follow the year.','🏘️ Hilltop changes over the years: new buildings, a shop that closes and a new one that opens, rents that rise, a growing street fair, and the planned T Line extension to TCC.','🏫 School years: Go to school on school days (8:15 AM to 2:45 PM), homework after, and the key weeks land on the school calendar: the fall concert, winter break and testing week at Summit View; orientation, finals, prom with your friends and a summer job at Hilltop High.','📖 Two new chapters in ❓ Help: <b>Game lengths and ages</b> and <b>Growing up</b>.','📈 Raises and promotions in the longer games: yearly cost-of-living raises, merit raises at six-month reviews, and real titles (Senior CNA, LPN, RN; shift lead, café manager; sous chef, kitchen manager). College leads to IT support downtown and the trade program to an electrician apprenticeship. Rents rise every year now, so keep up.'],
   '0.2.0':['💬 <b>Send feedback</b> sits right under Help on the start page.','🎒 New: <b>Growing Up</b>, a second way to play from the start page. You’re 12, your family just moved to Hilltop, and you have one week (Aug 24–30, 2026) before the first day of middle school.','🤝 Chapter 1: meet five kids who could become your best friend, help out at home, get ready for school (supplies, the route, a haircut, the forms, an outfit) and be home by 8:30 PM.','🏫 New places for Growing Up: your family’s apartment, the Reading Room and Summit View Middle School. The first day of school is the finale.','🏘️ The two-week adult game is unchanged, and your saved games keep working.','⚖️ A real challenge now: shifts are more stressful and sleep helps less, so swims, sunsets, calls home and Link rides matter. New grade cutoffs: a steady player gets a B, an A takes care and showing up for the neighborhood.','🏔️ Rainier redrawn as the big glaciated mountain Tacoma actually sees, with the port cranes on the bay.','🤝 New neighbors: a bookstore owner, a phở shop, the Santos family, a transit organizer, a college student, a newcomer from Seattle, and more to the ones you knew.','🔔 Event tiles wait while a pop-up is open, and stay below the top bar.','🧭 Day one: a Go to work button at home, and the sunset time on the overlook.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
@@ -5480,7 +5500,6 @@ const CITY=[
 const cityOn=f=>!!(typeof S!=='undefined'&&S&&S.city&&S.city.f&&S.city.f[f]);
 window.cityOn=cityOn;
 const cityState=()=>S.city||(S.city={done:{},f:{},rentF:1,rentAp:null,news:0,pend:[]});
-const CITY_RENT_CAP=1.2;   // rents climb about 20% in all, then the city's tenant protections hold them (wages in the game don't grow)
 const cityRentPct=y=>3+Math.floor(wxHash('rent'+y)*3);   // 3, 4 or 5 percent each August
 const cityR5=v=>Math.round(v/5)*5;
 // the city between the last catch-up and day `to`: news lines (pushed to out, or said), rent each August
@@ -5490,10 +5509,9 @@ function cityCatchUp(to,out){
   const y0=dateOf(0).y,y1=dateOf(to).y;
   if(!isGrow()&&C.rentAp==null)C.rentAp=C.rentF;   // the first adult lease is what it is (at 18, or after graduation): raises count from there
   for(let y=Math.max(2027,y0);y<=y1;y++){const id='rent'+y;if(C.done[id]||dayIndexOf(y,8,1)>to||dayIndexOf(y,8,1)<=0)continue;
-    C.done[id]=true;if(C.rentF>=CITY_RENT_CAP)continue;
-    const p=cityRentPct(y);C.rentF=Math.min(CITY_RENT_CAP,C.rentF*(1+p/100));
-    lines.push(isGrow()?`🏠 Your parents’ lease renews with rent up ${p}%. Dad does the math at the kitchen table twice. Rents are climbing all over Hilltop.`:`__rent${p}`);
-    if(C.rentF>=CITY_RENT_CAP)lines.push('🏛️ After a winter of packed council meetings (the block club rented a bus), the city passes new tenant protections: yearly rent increases are capped from here on, with more notice and relocation help.')}
+    C.done[id]=true;
+    const p=cityRentPct(y);C.rentF*=1+p/100;   // no cap: wages rise too now (raises and promotions, 35-careers.js)
+    lines.push(isGrow()?`🏠 Your parents’ lease renews with rent up ${p}%. Dad does the math at the kitchen table twice. Rents are climbing all over Hilltop.`:`__rent${p}`);}
   for(const c of CITY){if(C.done[c.id])continue;const di=dayIndexOf(...c.at);if(di>to)continue;C.done[c.id]=true;if(c.f)C.f[c.f]=true;C.news++;C.talk=c.talk;if(di>=0)lines.push(c.t)}
   // adult rent follows the yearly raises (also after Growing Up's move-in, which starts a new lease)
   if(!isGrow()&&S.rent){
@@ -5847,6 +5865,219 @@ ACH.push(...[
 
 GROW.hoods={open:ghOpen,OPEN:GH_OPEN,JOBS:GH_JOBS,wage:ghWage,shift:ghShift,state:()=>ghS(),FARE:GH_FARE};
 })();
+// ============================================================
+//  TACOMPTON · CAREERS: raises and promotions in the longer adult games (6 months, 1 year, 2 years, Lifetime).
+//  Quick play is unchanged: careerPayF() is 1 there, the job titles are the three classic ones and nothing here runs.
+//
+//  Every job anniversary: a cost-of-living raise (2 or 3%). Every six-month review: a merit raise (3–5%) when Job is 60
+//  or more and you've been on time (at most one late or missed shift, or 15% of them); nothing, and a written warning,
+//  below 40. Merit raises stop at the top of a title's pay band (+20%): a promotion is the way up from there (you keep half your merit).
+//  Promotions (CAREER_LADDERS) take time in the title, Job standing and the same good attendance; nursing takes a
+//  program too (LPN, then an optional RN bridge), chosen in a time skip, paid for monthly, with fewer shifts while you study.
+//  The college and trade paths from 18 now lead to real jobs when they're done: IT support downtown, or an electrician
+//  apprenticeship that becomes journey-level after four years.
+//  The key weeks you play set your habits: a review that falls in a time skip judges you by the last key week you played.
+//  At 67 the job ends with a pension (Social Security and savings) of 70% of your last pay, raised with the cost of living.
+//    careerPayF()     → the pay multiplier for the current job (lifePayF in 10-life.js multiplies it in)
+//    careerDay(d,out) → raises, reviews, school and promotions up to day d (lifeSimulate calls it every skipped day)
+//    careerPension()  → the retirement income per day (lifeSimulate)
+//    careerTitle()    → 'Senior CNA at Tacoma General' (or the base job's name)
+//  Pay (a shift's take-home, scaled from the base jobs in 20-world.js). Tacoma wages checked Nov 2026 (Payscale, Tacoma, WA):
+//    CNA about $18.34/hr on average (Mar 2024 profiles; a hospital CNA is the top of that range, the game's $172 a shift),
+//    LPN about $30.57/hr (2026), RN about $41.68/hr, typical $34–58 (Oct 2025): so LPN ≈ ×1.45 and RN ≈ ×2 a hospital CNA.
+//    Apprentice electrician about $16.96/hr and commercial journeyman about $29.06/hr (range $26–41; small, older samples):
+//    journey-level ≈ ×1.7 an apprentice. Union scale in Pierce County is higher; the game stays near the middle.
+// ============================================================
+
+// ---- two jobs you can only reach through the college and trade paths (not in the day-one pickers: non-enumerable) ----
+const CAREER_JOBS={
+  elec:{n:'Electrician apprentice with a Tacoma contractor',short:'the crew',ic:'🔌',place:'the job site',role:'electrician apprentice',
+    start:420,end:930,pay:150,days:[0,1,2,3,4],stress:16,energy:30,alarm:360,open:()=>[360,1080],
+    blurb:'Seven to 3:30, Monday to Friday, on whatever site the contractor sends you to: conduit, panels, a lot of ladders.'},
+  tech:{n:'IT support tech at an office downtown',short:'the office',ic:'💻',place:'the office downtown',role:'IT support tech',
+    start:480,end:990,pay:165,days:[0,1,2,3,4],stress:14,energy:20,alarm:420,open:()=>[420,1140],
+    blurb:'Eight to 4:30, Monday to Friday, on the twelfth floor downtown: laptops, printers, passwords and patience.'},
+};
+for(const k in CAREER_JOBS)Object.defineProperty(JOBS,k,{value:CAREER_JOBS[k],enumerable:false,configurable:true,writable:true});
+WORK_ART.elec=({night:n})=>`${starsSky(n)}${tree(30,n,16)}<rect x="110" y="40" width="250" height="100" fill="${n?'#3a3530':'#c9b48e'}"/>
+  ${[0,1,2].map(r=>[0,1,2,3,4,5].map(c=>`<rect x="${122+c*38}" y="${50+r*28}" width="24" height="16" fill="${n?'#2b3442':'#8fa3ad'}" stroke="${n?'#555':'#7a6a52'}"/>`).join('')).join('')}
+  <path d="M100 40 V140 M370 40 V140 M100 70 H370 M100 100 H370" stroke="${n?'#6a5a40':'#d9a43a'}" stroke-width="3" fill="none"/>
+  <rect x="380" y="20" width="6" height="120" fill="${n?'#5a4a30':'#e0a020'}"/><rect x="330" y="18" width="110" height="5" fill="${n?'#5a4a30':'#e0a020'}"/><path d="M430 23 V60" stroke="#555"/>
+  <rect x="160" y="118" width="70" height="22" fill="${n?'#444':'#f2f0ea'}"/><text x="195" y="132" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#bbb':'#2a6fa8'}">HARD HATS</text>
+  ${person(260,n,'#e3642e',146)}${person(290,n,'#f2b630',146)}<rect x="252" y="120" width="16" height="4" rx="2" fill="#f2d04a"/>${lamp(450,n)}`;
+WORK_ART.tech=({night:n})=>`${starsSky(n)}<rect x="150" y="6" width="150" height="134" fill="${n?'#2e3744':'#a9bccb'}"/>
+  ${[...Array(8)].map((_,r)=>[0,1,2,3,4].map(c=>`<rect x="${160+c*28}" y="${14+r*15}" width="20" height="10" fill="${win(n,(r*3+c)%4!==2)}"/>`).join('')).join('')}
+  <rect x="60" y="60" width="90" height="80" fill="${n?'#343b44':'#cfd6da'}"/>${[0,1,2].map(r=>[0,1,2].map(c=>`<rect x="${70+c*26}" y="${70+r*20}" width="16" height="12" fill="${win(n,(r+c)%2===0)}"/>`).join('')).join('')}
+  <rect x="300" y="50" width="120" height="90" fill="${n?'#3a3530':'#d8c8a8'}"/><rect x="330" y="112" width="40" height="28" fill="${n?'#1e2a36':'#24507a'}"/>
+  <text x="225" y="138" text-anchor="middle" font-size="7" ${SVGF} fill="${n?'#888':'#24507a'}">PACIFIC AVE</text>${person(250,n,'#24507a',146)}${tree(440,n,16)}${lamp(130,n)}`;
+SHIFT_LINES.elec=['A day of pulling wire through conduit in a new building on Pacific Avenue. Your journeyman checks your bends and says “Again,” then, later, “Good.”','Panel day: labels, torque, a lot of double-checking. Nobody gets hurt, which is the whole point.','Up and down a ladder for eight hours in a school basement. You finish the run and the lights come on. That never gets old.'];
+SHIFT_LINES.tech=['Forty tickets: passwords, a printer that hates everyone and a vice president who “didn’t touch anything.” All closed.','You image twelve laptops for the new hires and walk a nervous intern through the VPN. She brings you a cookie.','The network goes down at 10:04 and back up at 10:31. For twenty-seven minutes you are the most important person on the floor.'];
+WORK_TALK.elec=['☕ Coffee from a thermos on an overturned bucket. The foreman tells you which inspector likes things neat. All of them.','☕ The other apprentice is studying for the same test. You quiz each other on conductor ampacity until lunch is over.'];
+WORK_TALK.tech=['☕ The break room has a view of the Dome and a coffee machine only you know how to fix. You fix it. Everyone cheers.','☕ Your manager asks what you want to learn next. Nobody has asked you that before.'];
+
+// ---- the ladders: titles, pay (× the job's base), and what each step takes ----
+// yrs: years in the title before; st: Job standing at the review; prog: a program you choose in a time skip first.
+const CAREER_LADDERS={
+  hospital:{at:'Tacoma General',r:[
+    {role:'certified nursing assistant',t:'CNA',f:1},
+    {role:'senior CNA',t:'Senior CNA',f:1.12,yrs:2,st:65},
+    {role:'licensed practical nurse',t:'LPN',f:1.45,yrs:1,st:65,prog:{id:'lpn',t:'the LPN program',n:'An evening practical nursing program at a technical college in town',mo:12,fee:300,pt:0.75,end:'You finish the practical nursing program and pass your boards'}},
+    {role:'registered nurse',t:'RN',f:2.0,yrs:1,st:65,prog:{id:'rn',t:'the RN bridge program',n:'A two-year LPN-to-RN bridge program at a community college',mo:24,fee:350,pt:0.75,end:'You finish the RN bridge program and pass the NCLEX'}}]},
+  cafe:{at:'a Hilltop café',r:[
+    {role:'barista',t:'Barista',f:1},
+    {role:'shift lead',t:'Shift lead',f:1.18,yrs:1,st:65},
+    {role:'café manager',t:'Café manager',f:1.5,yrs:3,st:70}]},
+  kitchen:{at:'Odessa’s Table',r:[
+    {role:'line cook',t:'Line cook',f:1},
+    {role:'sous chef',t:'Sous chef',f:1.25,yrs:2,st:65},
+    {role:'kitchen manager',t:'Kitchen manager',f:1.5,yrs:4,st:70}]},
+  elec:{at:'a Tacoma electrical contractor',r:[
+    {role:'electrician apprentice',t:'Electrician apprentice',f:1},
+    {role:'journey-level electrician',t:'Journey-level electrician',f:1.7,yrs:4,st:50}]},
+  tech:{at:'an office downtown',r:[
+    {role:'IT support tech',t:'IT support tech',f:1},
+    {role:'systems administrator',t:'Systems administrator',f:1.4,yrs:3,st:65},
+    {role:'IT manager',t:'IT manager',f:1.8,yrs:5,st:70}]},
+};
+const CAREER={meritMax:1.2,merit:[3,5],cola:[2,3],reviewSt:60,warnSt:40,pension:0.7,promoMin:1.06};
+const careerColaPct=y=>CAREER.cola[0]+Math.floor(wxHash('cola'+y)*(CAREER.cola[1]-CAREER.cola[0]+1));
+const careerMeritPct=d=>CAREER.merit[0]+Math.floor(wxHash('merit'+d+':'+wxSalt())*(CAREER.merit[1]-CAREER.merit[0]+1));
+let CAREER_RAW=false;   // the Help guide's tables show the day-one jobs
+
+// ---- state: S.career, one per job (a new job starts a new one) ----
+const careerOn=()=>typeof S!=='undefined'&&!!S&&lifeLong()&&!isGrow()&&!!S.jobPicked&&!!CAREER_LADDERS[S.job];
+function careerS(){
+  let C=S.career;
+  if(!C||C.k!==S.job){const d=Math.max(0,day());C=S.career={k:S.job,r:0,hire:d,since:d,n:0,cola:1,merit:1,att:{s:0,l:0,m:0},habit:null,offer:null,prog:null,done:{},warn:0,pension:null,pcola:1,start:null}}
+  if(C.start==null)C.start=careerShift();   // the first shift's pay, for "+x% since you started"
+  return C;
+}
+const careerRung=(C=S.career)=>CAREER_LADDERS[C.k].r[C.r];
+const careerPayF=()=>{if(CAREER_RAW||!careerOn()||!S.career||S.career.k!==S.job)return 1;const C=S.career;return careerRung(C).f*C.cola*C.merit*(C.prog?C.prog.pt:1)};
+// a shift's take-home right now (part-time college or trade, programs and raises included), and with average tips
+const careerShift=()=>Math.round(job().pay*lifePayF());
+const careerShiftAll=()=>{const J=job();return careerShift()+(J.tips?Math.round((J.tips[0]+J.tips[1])/2):0)};
+const careerMonth=()=>Math.round(careerShiftAll()*job().days.length*52/12);
+function careerTitle(k=S&&S.job){const J=JOBS[k];if(!J)return '';const L0=CAREER_LADDERS[k];
+  if(CAREER_RAW||!careerOn()||!S.career||S.career.k!==k||!S.career.r)return J.n0||J.n;return `${careerRung().t} at ${L0.at}`}
+window.careerPayF=careerPayF;window.careerTitle=careerTitle;
+
+// the job's name and role follow the title; the café's tips follow the cost of living
+for(const k in CAREER_LADDERS){const J=JOBS[k];if(!J)continue;const n0=J.n,r0=J.role,t0=J.tips;
+  Object.defineProperty(J,'n0',{value:n0,enumerable:false});Object.defineProperty(J,'role0',{value:r0,enumerable:false});
+  Object.defineProperty(J,'n',{configurable:true,enumerable:true,get(){return careerTitle(k)||n0}});
+  Object.defineProperty(J,'role',{configurable:true,enumerable:true,get(){return !CAREER_RAW&&careerOn()&&S.career&&S.career.k===k?careerRung().role:r0}});
+  if(t0)Object.defineProperty(J,'tips',{configurable:true,enumerable:true,get(){const c=!CAREER_RAW&&careerOn()&&S.career&&S.career.k===k?S.career.cola:1;return c===1?t0:t0.map(x=>Math.round(x*c))}});
+}
+
+// ---- reviews: every six months from the day you started (every second one is the anniversary) ----
+const careerRevDay=(C,n)=>C.hire+Math.round(n*182.5);
+// how you've been doing: the key weeks played since the last review, or else the last key week you played
+// (habit: the key weeks you've played, the latest counting most, so one good week doesn't undo a pattern)
+function careerJudge(C){
+  const fresh=C.att.s||C.att.m,a=fresh?C.att:(C.habit||{s:0,l:0,m:0,st:S.standing}),bad=a.l+a.m;
+  const st=fresh||!C.habit?S.standing:Math.min(S.standing,Math.round(C.habit.st)+10);
+  const h=C.habit,ok=bad<=Math.max(1,Math.floor(a.s*0.15))&&(!fresh||!h||h.l+h.m<=Math.max(1.5,h.s*0.2));
+  return {st,ok,late:a.l,missed:a.m};
+}
+function careerReview(C,d,ann,out){
+  const J=job(),L0=CAREER_LADDERS[C.k],was=careerShift(),bits=[];
+  if(ann){const p=careerColaPct(dateOf(d).y);C.cola*=1+p/100;if(S.life.retired){return}bits.push(`a ${p}% cost-of-living raise`)}
+  if(S.life.retired)return;
+  const j=careerJudge(C),yrs=Math.round((d-C.hire)/365.25*2)/2;
+  let warn=null;
+  if(j.st<CAREER.warnSt){C.warn++;warn=`⚠️ Your review at ${J.place} is a hard one: no merit raise, and a written warning${j.missed?' about missed shifts':j.late?' about being late':''}. Get your Job standing back over ${CAREER.reviewSt} and show up on time.`}
+  else if(j.st>=CAREER.reviewSt&&j.ok){
+    if(C.merit<CAREER.meritMax-1e-6){const p=careerMeritPct(d);C.merit=Math.min(CAREER.meritMax,C.merit*(1+p/100));bits.push(`a ${p}% merit raise`)}
+    else bits.push('top marks (you’re at the top of the pay band for your title: a promotion is the way up)')}
+  else bits.push(j.ok?`no merit raise (that takes Job ${CAREER.reviewSt} or more)`:'no merit raise: too many late or missed shifts');
+  C.att={s:0,l:0,m:0};
+  const now=careerShift(),pay=now!==was?` Pay goes from ${$(was)} to ${$(now)} a shift.`:'';
+  const head=ann?`📈 ${yrs===1?'One year':`${yrs} years`} at ${J.place}`:`📋 Your six-month review at ${J.place}`;
+  if(warn){if(ann)out.push(`${head}: ${bits[0]}.${pay}`);out.push(warn);return}
+  out.push(`${head}: ${bits.join(', and ')}.${pay}`);
+  careerPromoCheck(C,d,j,out);
+}
+// the next title: time in this one, standing and attendance; a program first, for nursing
+function careerPromoCheck(C,d,j,out){
+  const R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||S.life.parttime||C.prog)return;
+  if((d-C.since)/365.25<R.yrs-0.01||j.st<R.st||!j.ok)return;
+  if(R.prog&&!C.done[R.prog.id]){if(C.offer!==R.prog.id){C.offer=R.prog.id;out.push(`🎓 Your manager pulls you aside: you’d make a good ${R.t}. ${R.prog.n} is open to you (${R.prog.mo} months, ${$(R.prog.fee)} a month, and fewer shifts while you study). Choose it in a time skip.`)}return}
+  careerPromote(C,d,out);
+}
+function careerPromote(C,d,out,lead){
+  const J=job(),was=careerShift(),oldF=careerRung(C).f*C.merit;
+  C.r++;C.since=d;C.offer=null;const R=careerRung(C);
+  C.merit=Math.max(1+(C.merit-1)/2,Math.min(CAREER.meritMax,oldF*CAREER.promoMin/R.f));   // you keep half your merit steps, and it's at least a 6% raise
+  const t=careerTitle(),now=careerShift();
+  out.push(`🎉 ${lead?lead+'. ':''}Promoted: <b>${t}</b>. Pay goes from ${$(was)} to ${$(now)} a shift.`);
+  lifeMoment(J.ic,`${lead?lead+', and promoted':'Promoted'} to ${R.t} at ${CAREER_LADDERS[C.k].at}.`);
+  S.life.jobs.push({job:C.k,age:S.age,t:R.t,ic:J.ic});
+}
+function careerEnroll(id,d){
+  const C=careerS(),R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||!R.prog||R.prog.id!==id||C.prog)return null;
+  const o=dateOf(d);C.prog={id,pt:R.prog.pt,fee:R.prog.fee,end:d+Math.round(R.prog.mo*30.44),mk:o.y*12+o.m};C.offer=null;
+  lifeMoment('🎓',`Started ${R.prog.t}.`);
+  return `🎓 You start ${R.prog.t}: ${R.prog.n.toLowerCase().replace(/^an? /,'')}. Evenings in class, fewer shifts, ${$(R.prog.fee)} a month. It ends ${fullDate(C.prog.end)}.`;
+}
+
+// ---- after college or a trade program: the new job ----
+function careerGraduate(d,out){
+  const L1=S.life;if(L1.careerGrad||!L1.done||!L1.path||L1.path==='job')return;
+  L1.careerGrad=true;const k=L1.path==='trade'?'elec':'tech',J=JOBS[k];
+  S.job=k;S.alarm=J.alarm;S.career=null;S.life.parttime=false;const C=careerS();C.hire=C.since=d;C.start=careerShift();
+  S.standing=Math.max(S.standing,60);
+  L1.jobs.push({job:k,age:S.age,path:L1.path,t:J.role,ic:J.ic});
+  const l=k==='elec'?`🔌 A contractor in town signs you on as an <b>electrician apprentice</b>: four years of on-the-job hours and night classes toward your journey-level card, at ${$(careerShift())} a shift to start.`
+    :`💻 Your degree lands you a job: <b>IT support tech</b> at an office downtown, ${$(careerShift())} a shift, eight to 4:30 and a view of the Dome.`;
+  out.push(l);lifeMoment(J.ic,`First job after ${L1.path==='trade'?'the trade program':'college'}: ${J.role}.`);
+}
+
+// ---- every day of a longer adult game: school fees, the end of a program, reviews ----
+function careerDay(d,out){
+  if(typeof S==='undefined'||!S||!S.life||!lifeLong()||isGrow())return;
+  if(S.jobPicked)careerGraduate(d,out);
+  if(!careerOn())return;
+  const C=careerS();
+  if(S.life.retired&&C.pension==null){C.prog=null;C.pension=Math.max(500/7,CAREER.pension*careerShiftAll()*job().days.length/7);C.pcola=C.cola}
+  if(C.prog){const o=dateOf(d),mk=o.y*12+o.m;
+    while(C.prog.mk<mk){C.prog.mk++;spendFee(C.prog.fee)}
+    if(d>=C.prog.end){const id=C.prog.id,R=CAREER_LADDERS[C.k].r[C.r+1];C.done[id]=true;C.prog=null;if(R&&R.prog&&R.prog.id===id)careerPromote(C,d,out,R.prog.end)}}
+  while(d>=careerRevDay(C,C.n+1)){C.n++;careerReview(C,careerRevDay(C,C.n),C.n%2===0,out)}
+}
+function spendFee(f){if(typeof spend==='function')spend(f);else money(-f)}
+const careerPension=()=>{const C=S.career;if(!C||C.pension==null)return 500/7;return C.pension*C.cola/C.pcola};
+window.careerDay=careerDay;window.careerPension=careerPension;
+
+// played days: each morning catches up, and says what happened
+{const om=onMorning;onMorning=function(d){om(d);try{if(!lifeLong()||isGrow())return;const out=[];careerDay(d,out);out.filter(Boolean).forEach(l=>{say(l);digestLine(l)})}catch(e){console.error(e)}}}
+// the end of a key week: how you did (it carries into the reviews that fall in the time skip)
+LIFE_HOOKS.weekEnd.push(()=>{if(!careerOn()||S.life.retired)return;const C=careerS(),s=S.stats;
+  C.att.s+=s.shifts||0;C.att.l+=s.late||0;C.att.m+=s.missed||0;const h=C.habit,w={s:s.shifts||0,l:s.late||0,m:s.missed||0,st:S.standing};
+  C.habit=h?{s:h.s/2+w.s,l:h.l/2+w.l,m:h.m/2+w.m,st:(h.st+w.st*2)/3}:w});
+// the time skip: a program you've been offered is one of the choices
+{const lc=lifeChoices;lifeChoices=function(){const a=lc();try{
+  if(!careerOn()||S.life.retired)return a;const C=careerS();if(!C.offer||C.prog)return a;
+  const R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||!R.prog||R.prog.id!==C.offer)return a;
+  const pay=Math.round(job().pay*lifePayF()/careerPayF()*R.f*C.cola);
+  a.push({k:'prog:'+R.prog.id,l:`🎓 Start ${R.prog.t}`,s:`${R.prog.n}: ${R.prog.mo} months, ${$(R.prog.fee)} a month, and ${Math.round(R.prog.pt*100)}% of your shifts while you study. Then ${R.t} pay: about ${$(pay)} a shift.`})}catch(e){console.error(e)}return a}}
+{const ls=lifeSimulate;lifeSimulate=function(from,to,ch){
+  if(typeof ch==='string'&&ch.startsWith('prog:')){const l=careerEnroll(ch.slice(5),from);const n=ls(from,to,'save');if(l)n.unshift(l);return n}
+  return ls(from,to,ch)}}
+
+// ---- where you see it: the Week tab, the Job stat on the top bar ----
+{const wv=weekView;weekView=function(){let h=wv();try{if(!careerOn())return h;const C=careerS(),J=job(),kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
+  const R=CAREER_LADDERS[C.k].r[C.r+1],up=C.start?Math.round((careerShift()/C.start-1)*100):0;
+  let next='';if(S.life.retired)next='';else if(C.prog)next=kv('🎓 In school',`${CAREER_LADDERS[C.k].r[C.r+1].prog.t}, until ${fullDate(C.prog.end)}`);
+  else if(R)next=kv('⬆️ Next step',`${R.t}: ${R.yrs} year${R.yrs===1?'':'s'} as ${careerRung(C).t}, Job ${R.st}+, on time${R.prog&&!C.done[R.prog.id]?`, then ${R.prog.t}`:''}${C.offer?' (offered: choose it in a time skip)':''}`);
+  else next=kv('⬆️ Next step','the top of this ladder: raises from here');
+  h+=`<div class="sect">💼 Your career</div>${kv('Title',S.life.retired?'retired':careerTitle())}${S.life.retired?kv('Pension',`${$(Math.round(careerPension()*30.44))} a month`):kv('Pay',`${$(careerShift())} a shift${J.tips?' plus tips':''}${up?` (${up>0?'+':''}${up}% since you started)`:''}`)}
+    ${S.life.retired?'':kv('📋 Next review',fullDate(careerRevDay(C,C.n+1)))}${next}
+    <div class="rules">Every six months: a merit raise (${CAREER.merit[0]}–${CAREER.merit[1]}%) with Job ${CAREER.reviewSt}+ and few late or missed shifts. Every year: a cost-of-living raise (${CAREER.cola[0]}–${CAREER.cola[1]}%). Rents rise too.</div>`}catch(e){console.error(e)}return h}}
+{const st=(MODE_DATA.adult.STATS||[]).find(s=>s.l==='Job');if(st)Object.defineProperty(st,'title',{configurable:true,get(){const J=job();
+  return careerOn()?`${careerTitle()}: ${$(careerShift())} a shift. How ${J.short} feels about you. At 0 you’re let go.`:`How ${J.short} feels about you. At 0 you’re let go.`}})}
+// the Help guide's job tables show the three day-one jobs as they start
+{const hc=helpChapters;helpChapters=function(...a){CAREER_RAW=true;try{return hc(...a)}finally{CAREER_RAW=false}}}
 // ---------------- "📲 Install app" on the title screen, and the install bar above it ----------------
 // 08-settings.js puts installButton() right under ❓ Help on the title screen, and installBar() at the very top: a slim
 // "📲 Play offline: install the app [Install] [✕]" line for phones and tablets in a browser (and any browser that has offered an
