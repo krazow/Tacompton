@@ -31,7 +31,7 @@ function fireHook(hook,ctx={}){
     if(!open&&!forced) continue;
     if(!forced){
       if((S.ev.count[e.id]||0)>=e.max) continue;
-      if(e.choices&&(isPending(e.id)||pendingList().length>=CHOICE_MAX)) continue;   // decisions waiting: no more choice events for now
+      if(e.choices&&(isPending(e.id)||AMB[e.id]||(!e.urgent&&!evAmbient(e,ctx)&&pendingList().length>=CHOICE_MAX))) continue;   // decisions waiting: no more choice events for now (urgent ones ask at once, and moments don't count)
       if(S.ev.last[e.id]!=null&&day()-S.ev.last[e.id]<e.cooldown) continue;
       const p=(typeof e.chance==='function'?e.chance(ctx):e.chance)*(e.bad?DF().bad:1);
       if(!(Math.random()<p)) continue;
@@ -89,9 +89,19 @@ function eventPopup(hook,items,capped){
 //   urgent:true     opens the choice sheet at once, even with pop-ups off (setbacks that can't wait)
 // When it fires: run() runs, a pending decision goes in S.ev.pending ({id,day,title,ic,lines,hook,urgent}), and its tile says
 // "Tap to decide". The sheet opens from the tile, the Decide card on the Here tab, or the morning report. At night, anything still
-// pending gets its dflt option ("You let it go: …"). At most CHOICE_MAX pending: further choice events don't fire (a forced one takes
+// pending gets its dflt option ("You let it go: …"). At most CHOICE_MAX pending (urgent ones aside: they ask at once): further choice events don't fire (a forced one takes
 // its default at once). Saves keep S.ev.pending; the options are rebuilt from the event after a reload.
-const CHOICE_MAX=2;
+// An urgent event on the night hook goes at the top of the morning report and its sheet opens right after the report closes.
+// Ambient moments (choices from stopWatch, whose array carries .ambient) never take a pending slot: they live in AMB (not saved)
+// while their tile shows. The tile is tappable for its lifetime; once it goes (or at night) "Keep going" is applied silently.
+const CHOICE_MAX=3;
+const AMB={};   // id → {id,title,ic,lines,hook}: ambient moments you can still stop for
+function evAmbient(e,ctx){   // does this event's choices() come from stopWatch? (probed once, then cached on the event)
+  if(e._amb!==undefined)return e._amb;
+  try{const o=e.choices(Object.assign({},ctx,{probe:true}));e._amb=!!(o&&o.ambient)}catch(err){return false}
+  return e._amb}
+const choiceWaiting=id=>isPending(id)||!!AMB[id];
+window.choicesWaiting=()=>pendingList().map(p=>p.id).concat(Object.keys(AMB));
 const untag=h=>String(h||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
 const CHOICE_CACHE={};   // id → {ctx, opts}: the options as built when the event fired (not saved; rebuilt after a reload)
 function eventFlag(id){return S&&S.ev&&S.ev.flags?S.ev.flags[id]:undefined}
@@ -104,7 +114,7 @@ function stopWatch(o={}){
   if(cv)bits.push(grow?`mood +${cv}`:(typeof calmTxt==='function'?calmTxt(cv):`stress −${cv}`));
   if(en)bits.push(`energy ${en>0?'+':'−'}${Math.abs(en)}`);
   if(co&&!grow)bits.push(`community +${co}`);
-  return [
+  const r=[
     {ic:'👀',l:'Stop and watch',s:bits.join(', ').replace(/^./,c=>c.toUpperCase())+'.',fn:()=>{
       pass(mins);
       if(cv){if(grow)adj('mood',cv);else if(typeof calm==='function')calm(cv);else adj('stress',-cv)}
@@ -112,6 +122,7 @@ function stopWatch(o={}){
       if(co&&!grow&&'community' in S)adj('community',co);
       if(o.text)say(o.text)}},
     {ic:'🚶',l:'Keep going',s:o.pass||'No time spent. The moment goes on without you.',fn:()=>{}}];
+  r.ambient=true;return r;
 }
 function pendingList(){if(!S.ev.pending)S.ev.pending=[];return S.ev.pending}
 const isPending=id=>pendingList().some(p=>p.id===id);
@@ -133,7 +144,14 @@ function choiceFired(e,ctx,lines,forced){
   const [ic,title]=e.tile||['📍',e.id.replace(/_/g,' ')];
   CHOICE_CACHE[e.id]={ctx,opts};
   const P=pendingList();
-  if(isPending(e.id)||P.length>=CHOICE_MAX){   // forced past the limit: it takes its default now
+  if(opts.ambient){e._amb=true;   // a moment: no pending slot
+    if(ctx.hook==='night'){choiceDrop(e.id);return}   // nobody is out to see it
+    AMB[e.id]={id:e.id,title,ic,lines:lines.slice(0,4),hook:ctx.hook,amb:true};
+    if(DIGEST){DIGEST.items.push({ic,title,lines,amb:e.id});return}   // the morning report offers it (morningReport)
+    if(popupsOn())openChoice(e.id);
+    else showTile(ic,title,'Tap to stop and watch',e.tile?e.tile[2]:'good',null,{decide:e.id});
+    return}
+  if(isPending(e.id)||(!e.urgent&&P.length>=CHOICE_MAX)){   // forced past the limit: it takes its default now
     if(!isPending(e.id)){P.push({id:e.id,day:day(),title,ic,lines,hook:ctx.hook});choiceApply(e.id,choiceDflt(e.id),'full')}
     return}
   P.push({id:e.id,day:day(),title,ic,lines:lines.slice(0,4),hook:ctx.hook,urgent:!!e.urgent});
@@ -144,9 +162,9 @@ function choiceFired(e,ctx,lines,forced){
 }
 // Apply option i of a pending decision. how: 'pick' (you chose), 'night' (defaulted), 'full' (too many pending)
 function choiceApply(id,i,how){
-  const P=pendingList(),k=P.findIndex(p=>p.id===id);if(k<0)return false;
+  const P=pendingList(),k=P.findIndex(p=>p.id===id),amb=k<0&&AMB[id];if(k<0&&!amb)return false;
   const opts=choiceOpts(id)||[],o=opts[i];
-  P.splice(k,1);delete CHOICE_CACHE[id];
+  if(amb)delete AMB[id];else P.splice(k,1);delete CHOICE_CACHE[id];
   if(!o)return false;
   const p0=S.ev.choiceLog||(S.ev.choiceLog={});p0[id]=i;   // the last option taken for each event (follow-ups can read it)
   EV_RUNNING=id;try{o.fn&&o.fn()}catch(err){console.error(err)}finally{EV_RUNNING=null}
@@ -154,20 +172,24 @@ function choiceApply(id,i,how){
 }
 // Open the choice sheet for a pending decision (one sheet at a time: it queues behind any open pop-up)
 function openChoice(id){
-  const p=pendingList().find(x=>x.id===id);if(!p)return;
-  const opts=choiceOpts(id);if(!opts||!opts.length){pendingList().splice(pendingList().indexOf(p),1);return}
-  const d=choiceDflt(id),e=EV.find(x=>x.id===id),urgent=!!(e&&e.urgent);
+  const p=pendingList().find(x=>x.id===id)||AMB[id];if(!p)return;
+  const opts=choiceOpts(id);if(!opts||!opts.length){if(p.amb)delete AMB[id];else pendingList().splice(pendingList().indexOf(p),1);return}
+  const d=choiceDflt(id),e=EV.find(x=>x.id===id),urgent=!!(e&&e.urgent&&!p.amb);
   const body=`<div class="choice-sheet" data-ev="${esc(id)}" data-dflt="${d}" hidden></div>`+(p.lines||[]).map(l=>`<p>${l}</p>`).join('')+
-    `<p class="ch-q">What do you do?</p>`+(urgent?'':`<p class="ch-note">If you don’t decide by tonight: ${esc(untag(opts[d].l))}.</p>`);
-  const btns=opts.map((o,i)=>({l:`${o.ic?o.ic+' ':''}${o.l}`,s:o.s||'',dis:!!o.dis,np:true,fn:()=>{if(!isPending(id))return;uiNarr=[];choiceApply(id,i,'pick');afterAction()}}));
-  if(!urgent)btns.push({l:'Not now',s:'It waits on the Here tab until tonight.',fn:()=>{}});
+    (p.amb?'':`<p class="ch-q">What do you do?</p>`+(urgent?'':`<p class="ch-note">If you don’t decide by tonight: ${esc(untag(opts[d].l))}.</p>`));
+  const btns=opts.map((o,i)=>({l:`${o.ic?o.ic+' ':''}${o.l}`,s:o.s||'',dis:!!o.dis,np:true,fn:()=>{if(!choiceWaiting(id))return;uiNarr=[];choiceApply(id,i,'pick');afterAction()}}));
+  if(!urgent&&!p.amb)btns.push({l:'Not now',s:'It waits on the Here tab until tonight.',fn:()=>{}});
   modalSwap(`${p.ic} ${p.title}`,body,btns,urgent);
 }
 window.openChoice=openChoice;
 // The default option of the open choice sheet (for bots and tests), or −1 when no choice sheet is open
 window.choiceBtn=()=>{const m=document.getElementById('mbg'),c=m&&m.querySelector('.choice-sheet');return c?+c.dataset.dflt:-1};
 // Night: every decision still pending takes its default. Lines go to notes (the morning report) and the log.
+// A moment that passed without you: "Keep going", silently
+function choiceDrop(id){if(!AMB[id]){delete CHOICE_CACHE[id];return}choiceApply(id,choiceDflt(id),'gone')}
+window.choiceDrop=choiceDrop;
 function choiceNight(notes){
+  Object.keys(AMB).forEach(choiceDrop);
   const P=pendingList().slice();
   for(const p of P){const opts=choiceOpts(p.id)||[],d=choiceDflt(p.id),o=opts[d];
     const n0=uiNarr.length,l0=S.log.length;

@@ -272,7 +272,7 @@ function lifeSimulate(from,to,ch){
       if(!S.life.retired){
         if(J.days.includes(wd)){money(J.pay*pf+(J.tips?(J.tips[0]+J.tips[1])/2:0));S.life.tot.shifts=(S.life.tot.shifts||0)+1}
         if(ch==='extra'&&wd===(J.days[0]===0?5:0))money(J.pay*pf*0.9);
-      }else money(500/7);
+      }else money(typeof careerPension==='function'?careerPension():500/7);   // 35-careers.js: a pension that follows your last pay
       money(-((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0)));
       if(o.d===1){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));rentN++;rentAmt+=S.rent.amt;helpAmt+=help;if(help)S.life.rentHelpLeft--;
         if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-(S.life.path==='college'?380:120))}
@@ -282,7 +282,8 @@ function lifeSimulate(from,to,ch){
       f.community=num('community')+0.07+(ch==='friends'?0.2:ch==='extra'&&S.life.retired?0.15:0)-(ch==='extra'&&!S.life.retired?0.05:0);
       S.life.family=clamp(S.life.family+(60-S.life.family)*0.003+(ch==='save'?0.07:ch==='extra'?-0.03:0),0,100);
       if(S.life.path&&S.life.path!=='job'&&!S.life.done){S.life.prog=Math.min(100,S.life.prog+100/(S.life.path==='college'?4*365:365));
-        if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the trade program and test out as a journey-level electrician’s helper. Better pay from here on.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+        if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the electrical pre-apprenticeship at the top of your class.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+      if(typeof careerDay==='function')careerDay(d,notes);   // 35-careers.js: raises, reviews, school, promotions
     }
     if(S.age>=18&&grow)break;   // graduation comes next
   }
@@ -300,7 +301,7 @@ function lifeRound(){
   for(const k of ['money','energy','mood','family','grades','stress','standing','community','food'])if(typeof S[k]==='number')S[k]=Math.round(S[k]);
   if(S.kids)for(const id in S.kids){const s=S.kids[id];if(s&&typeof s.f==='number')s.f=clamp(Math.round(s.f),0,20)}
 }
-const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(S.life.done&&S.life.path!=='job'?1.25:1):1);
+const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(typeof careerPayF==='function'?careerPayF():1):1);   // careerPayF: raises and promotions (35-careers.js)
 // the first morning of key week i
 function lifeEnter(i){
   if(isGrow()&&S.age>=18&&!S.life.graduated) return lifeGraduation(()=>lifeEnter(i));
@@ -387,7 +388,7 @@ function lifeSummaryHTML(){
   const L1=S.life,sect=(h,b)=>b?`<div class="sect" style="margin-top:14px">${h}</div>${b}`:'',kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
   const stg={middle:'🏫 Middle school',high:'🎓 High school',adult:'🏠 Adult'};
   const stages=L1.stages.map((x,j)=>kv(stg[x.stage]||x.stage,`from age ${x.age} (${fullDate(x.d).slice(4)})`)).join('');
-  const jobs=L1.jobs.map(j=>kv(`${JOBS[j.job].ic} ${cap(JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
+  const jobs=L1.jobs.map(j=>kv(`${j.ic||JOBS[j.job].ic} ${cap(j.t||JOBS[j.job].role0||JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
   const kids=L1.grow?L1.grow.kids:(typeof KIDS!=='undefined'&&S.kids?KIDS.filter(k=>S.kids[k.id]&&S.kids[k.id].met).map(k=>({n:k.n,f:Math.round(S.kids[k.id].f)})):[]);
   const nb=typeof NEIGHBORS!=='undefined'&&S.met?NEIGHBORS.filter(x=>S.met[x.id]).map(x=>x.n):[];
   const people=(kids.length?kv('🤝 Friends from growing up',kids.map(k=>k.n).join(', ')):'')+(L1.grow&&L1.grow.best?kv('⭐ Best friend',L1.grow.best):'')+(nb.length?kv('🏘️ Neighbors',nb.slice(0,8).join(', ')+(nb.length>8?` and ${nb.length-8} more`:'')):'')+kv('🏠 Family',isGrow()?S.family:Math.round(L1.family));
@@ -535,7 +536,7 @@ window.lifeFF=(n=1e9,safe=true)=>{
     if(k>=n&&!document.getElementById('mbg'))break;
     const m=document.getElementById('mbg');
     if(m){const bs=[...m.querySelectorAll('.modal > button.act')],i=bs.findIndex(b=>!b.disabled);if(i>=0)MBTN(i);else m.remove();continue}
-    if(safe){if(isGrow()){S.family=Math.max(S.family,50);S.mood=Math.max(S.mood,50)}else{S.money=Math.max(S.money,2500);S.standing=Math.max(S.standing,60);S.stress=Math.min(S.stress,40);S.food=Math.max(S.food,2);if(!S.rent.paid&&S.money>=S.rent.amt){money(-S.rent.amt);S.rent.paid=true;S.rent.paidDay=day()}}}
+    if(safe){if(isGrow()){S.family=Math.max(S.family,50);S.mood=Math.max(S.mood,50)}else{S.money=Math.max(S.money,2500,S.rent.amt+500);S.standing=Math.max(S.standing,60);S.stress=Math.min(S.stress,40);S.food=Math.max(S.food,2);if(!S.rent.paid&&S.money>=S.rent.amt){money(-S.rent.amt);S.rent.paid=true;S.rent.paidDay=day()}}}
     S.loc='home';endDay('home');
   }
   return {kwi:S&&S.kwi,over:!S||S.over,cur:S&&S.cur};

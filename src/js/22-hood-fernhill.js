@@ -87,11 +87,31 @@ defHood({
 });
 
 defEvent({id:'fernhill_reading',hook:'arrive',tile:['🏆','Summer reading prizes','good'],chance:0.4,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_library'&&tod()>=600&&tod()<1020,
-  run:()=>{adj('stress',-4);adj('community',2);say('🏆 The library is handing out summer reading prizes: paper medals, a coupon for a free scoop, a poster of a very tired owl. A kid proudly counts her books out loud (forty-one). The librarian hands you a bookmark “for moral support.”')}});
+  run:()=>{say('🏆 The library is handing out summer reading prizes: paper medals, a coupon for a free scoop, a poster of a very tired owl.')},
+  choices:()=>[
+    {ic:'📚',l:'Join the reading circle',s:'25 min. Energy −3, stress −4, community +3',fn:()=>{pass(25);adj('energy',-3);adj('stress',-4);adj('community',3);say('📚 A kid proudly counts her books out loud (forty-one). You sit on the carpet with a circle of readers and trade favorites.')}},
+    {ic:'🏆',l:'Cheer for the winners',s:'5 min. Stress −2, community +1',fn:()=>{pass(5);adj('stress',-2);adj('community',1);say('🏆 The librarian hands you a bookmark “for moral support.”')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You let the applause fade behind you.')}}],
+  dflt:2});
 defEvent({id:'fernhill_thrift',hook:'arrive',tile:['🎁','A thrift-shop treasure','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_main'&&tod()>=420&&tod()<1080,
-  run:()=>{adj('stress',-4);adj('community',1);say('🎁 A volunteer waves you over to the ‘just in’ cart: a hand-knit blanket, still smelling faintly of cedar. “Free to anyone who looks like they could use a nap,” she says. You look like you could use a nap.')}});
+  run:()=>{say('🎁 A volunteer waves you over to the “just in” cart: a hand-knit blanket, still smelling faintly of cedar. “Free to anyone who looks like they could use a nap,” she says.')},
+  choices:()=>{const g=rp(3);return[
+    {ic:'😴',l:'Take the blanket and rest a while',s:'25 min. Energy +10, stress −5',fn:()=>{pass(25);adj('energy',10);adj('stress',-5);say('😴 You look like you could use a nap. You take one, on a bench, under cedar-smelling wool.')}},
+    {ic:'🛍️',l:`Browse and leave a ${$(g)} donation`,s:'15 min. Community +3, stress −3',dis:!canAfford(g),fn:()=>{spend(g);pass(15);adj('community',3);adj('stress',-3);say('🛍️ The volunteers show you the best shelf and the worst lamp. The donation jar gets heavier by a little.')}},
+    {ic:'🚶',l:'Pass, someone else needs it',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You point the blanket toward a man carrying too many bags. He takes it gratefully.')}}]},
+  dflt:2});
 defEvent({id:'fernhill_cleanup',hook:'arrive',tile:['🧹','Neighborhood cleanup','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_garden'&&daytime(),
-  run:()=>{pass(30);adj('energy',-4);adj('stress',-5);adj('community',3);say('🧹 A neighborhood cleanup crew hands you a bag and a pair of gloves. Thirty minutes of litter, one lost shoe and a surprising amount of bottle caps later, the corner looks great. Someone high-fives you with a trash grabber.')}});
+  run:()=>{say('🧹 A neighborhood cleanup crew hands out bags and gloves at the garden corner.')},
+  choices:()=>[
+    {ic:'🧹',l:'Work the whole shift',s:'30 min. Energy −8, stress −5, community +4',fn:()=>{setEventFlag('fh_cleanup','worked');pass(30);adj('energy',-8);adj('stress',-5);adj('community',4);say('🧹 One lost shoe and a surprising amount of bottle caps later, the corner looks great. Someone high-fives you with a trash grabber.')}},
+    {ic:'🧤',l:'Bag a few and go',s:'10 min. Energy −2, stress −2, community +1',fn:()=>{setEventFlag('fh_cleanup','bit');pass(10);adj('energy',-2);adj('stress',-2);adj('community',1);say('🧤 You fill one bag, hand the gloves back and promise to bring a friend next time.')}},
+    {ic:'🚶',l:'Wave and keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wish them luck and go on your way.')}}],
+  dflt:2});
 defEvent({id:'fernhill_icecream',hook:'arrive',tile:['🍦','Ice-cream social','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='fernhill'&&c.at==='fh_garden'&&tod()>=900&&tod()<1200,
-  run:()=>{pass(25);adj('stress',-6);adj('community',3);say('🍦 The block club is hosting an ice-cream social under the maple: three flavors, a mountain of sprinkles, a folding table with a hand-lettered “Donations welcome, seconds encouraged.” You have seconds.')}});
+  run:()=>{say(`🍦 The block club is hosting an ice-cream social under the maple: three flavors, a mountain of sprinkles, a folding table with a hand-lettered “Donations welcome, seconds encouraged.”${eventFlag('fh_cleanup')==='worked'?' A volunteer recognizes you from the cleanup and shouts, “Cleanup crew eats first!”':''}`)},
+  choices:()=>{const w=eventFlag('fh_cleanup')==='worked';return[
+    {ic:'🍦',l:'Stay for seconds and talk',s:'25 min. Stress −6, community +'+(w?4:3),fn:()=>{pass(25);adj('stress',-6);adj('community',w?4:3);say('🍦 You have seconds. Then, with encouragement, thirds.')}},
+    {ic:'🥄',l:'One quick scoop to go',s:'8 min. Stress −3, community +1',fn:()=>{pass(8);adj('stress',-3);adj('community',1);say('🥄 One scoop, one napkin, one thank-you.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You wave at the maple and keep going.')}}]},
+  dflt:2});
 })();

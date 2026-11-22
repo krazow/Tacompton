@@ -108,13 +108,29 @@ defHood({
 });
 
 // ---- events ----
-const inHood=c=>hoodOf(c.at)===KEY;
+const inHood=c=>!isGrow()&&hoodOf(c.at)===KEY;
 defEvent({id:'proctor_peaches',hook:'arrive',tile:['🍑','The best peaches of the summer','good'],chance:0.45,max:1,cond:c=>c.at==='pr_market'&&marketOpen(),
-  run:()=>{S.food++;adj('stress',-5);say('🍑 A hand-lettered sign: FIRST OF THE ELBERTAS. The woman at the stall cuts one open and the whole aisle smells like July. You are given a slice, then another, then a bag. Food +1, stress −5.')}});
+  run:()=>{say('🍑 A hand-lettered sign: FIRST OF THE ELBERTAS. The woman at the stall cuts one open and the whole aisle smells like July.')},
+  choices:()=>{const p=rp(5);return [
+    {ic:'🛍️',l:`Buy a whole bag — ${$(p)}`,s:'15 min. Food +2, stress −5.',dis:!canAfford(p),fn:()=>{spend(p);pass(15);S.food+=2;adj('stress',-5);say('🍑 A paper bag, heavy and warm from the sun. You eat one on the walk and the juice runs to your elbow. Food +2.')}},
+    {ic:'🗣️',l:'Take a slice and chat',s:'10 min. Free. Stress −4, community +1.',fn:()=>{pass(10);adj('stress',-4);adj('community',1);say('🍑 You are handed a slice, then another, and learn which orchard they came from and why this week is the week. You leave sticky and informed.')}},
+    {ic:'🚶',l:'Keep walking',s:'Nothing changes.',fn:()=>{say('🍑 You breathe the peach air in passing and keep your errands.')}}]},dflt:2});
 defEvent({id:'proctor_movie_night',hook:'arrive',tile:['🎞️','Free movie night','good'],chance:0.4,max:1,cond:c=>c.at==='pr_main'&&tod()>=1080&&tod()<1260,
-  run:()=>{adj('stress',-8);adj('community',3);say('🎞️ A bedsheet on the side of the hardware store, a projector on a milk crate and forty folding chairs. Free movie night. Walt hands out popcorn from a paint bucket (new, he swears). Stress −8, community +3.')}});
+  run:()=>{say('🎞️ A bedsheet on the side of the hardware store, a projector on a milk crate and forty folding chairs. Free movie night. Walt hands out popcorn from a paint bucket (new, he swears).')},
+  choices:()=>[
+    {ic:'🍿',l:'Stay for the whole movie',s:'2 hours. Energy −3, stress −8, community +3.',fn:()=>{pass(120);adj('energy',-3);adj('stress',-8);adj('community',3);say('🎞️ You laugh with forty strangers at the same joke, and Walt tops up your popcorn without asking.')}},
+    {ic:'🪑',l:'Watch the first reel',s:'40 min. Stress −4, community +1.',fn:()=>{pass(40);adj('stress',-4);adj('community',1);say('🎞️ You stay for the opening and slip out while the crowd is still laughing. Walt waves with a handful of popcorn.')}},
+    {ic:'🚶',l:'Pass for tonight',s:'Nothing changes.',fn:()=>{say('🎞️ You listen to the soundtrack drift down the block as you go.')}}],dflt:2});
 defEvent({id:'proctor_garage_sale',hook:'arrive',tile:['🏷️','A garage sale','good'],chance:0.4,max:1,cond:c=>inHood(c)&&c.at!=='pr_market'&&tod()>=540&&tod()<1020&&day()%7>=5,
-  run:()=>{const p=rp(3);if(canAfford(p)){spend(p);adj('stress',-4);adj('community',2);say(`🏷️ A garage sale, folding tables on a lawn: lamps, a bread machine, a box of vinyl and a sign that says EVERYTHING MUST GO, FOR REAL THIS TIME. You pay ${$(p)} for a brass reading lamp that will look great in your apartment. Stress −4, community +2.`)}else{adj('community',2);say('🏷️ A garage sale, folding tables on a lawn. You can’t buy anything today, but you chat with the whole street about the bread machine. Community +2.')}}});
+  run:()=>{say('🏷️ A garage sale, folding tables on a lawn: lamps, a bread machine, a box of vinyl and a sign that says EVERYTHING MUST GO, FOR REAL THIS TIME.')},
+  choices:()=>{const p=rp(3);return [
+    {ic:'💡',l:`Buy the brass reading lamp — ${$(p)}`,s:'20 min. Stress −4, community +2.',dis:!canAfford(p),fn:()=>{spend(p);pass(20);adj('stress',-4);adj('community',2);say('🏷️ A brass reading lamp that will look great in your apartment, and a handshake with the seller.')}},
+    {ic:'🗣️',l:'Browse and chat with the street',s:'15 min. Free. Stress −2, community +2.',fn:()=>{pass(15);adj('stress',-2);adj('community',2);say('🏷️ You chat with half the street about the bread machine and buy nothing. It was still a good morning.')}},
+    {ic:'🚶',l:'Walk on by',s:'Nothing changes.',fn:()=>{say('🏷️ You wave at the seller and keep going.')}}]},dflt:2});
 defEvent({id:'proctor_lemonade',hook:'arrive',tile:['🍋','A lemonade stand','good'],chance:0.4,max:1,cond:c=>inHood(c)&&c.at!=='pr_market'&&tod()>=600&&tod()<1080,
-  run:()=>{const p=rp(1);if(canAfford(p)){spend(p);adj('energy',3);adj('stress',-4);adj('community',1);say(`🍋 Two kids with a card table, a hand-painted sign (LEMONADE 4 SALE, “ice cold, 90% sugar”) and a very serious cash box. You pay ${$(p)} and are given a change you didn’t ask for and a review: “You’re our best customer.” Energy +3, stress −4.`)}else{adj('stress',-3);say('🍋 Two kids with a lemonade stand insist you take a cup on the house. “Customer service,” says the older one. Stress −3.')}}});
+  run:()=>{say('🍋 Two kids with a card table, a hand-painted sign (LEMONADE 4 SALE, “ice cold, 90% sugar”) and a very serious cash box.')},
+  choices:()=>{const p=rp(1);return [
+    {ic:'🥤',l:`Buy a cup — ${$(p)}`,s:'5 min. Energy +3, stress −4, community +1.',dis:!canAfford(p),fn:()=>{spend(p);pass(5);adj('energy',3);adj('stress',-4);adj('community',1);say('🍋 You are given a cup, your change and a review: “You’re our best customer.”')}},
+    {ic:'💬',l:'Stop and hear about the business',s:'10 min. Free. Stress −3.',fn:()=>{pass(10);adj('stress',-3);say('🍋 They explain their pricing, their supply chain and a rival stand two streets over. A volunteer cup appears in your hand “on the house.”')}},
+    {ic:'🚶',l:'Wave and keep going',s:'Nothing changes.',fn:()=>{say('🍋 “Maybe next time!” the older one calls after you.')}}]},dflt:2});
 })();

@@ -108,12 +108,29 @@ defHood({
 });
 
 defEvent({id:'stadium_picnic',hook:'arrive',tile:['🧺','A picnic in Wright Park','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_park'&&daytime(),
-  run:()=>{pass(20);adj('stress',-6);adj('community',2);say('🧺 A birthday picnic under the big beech tree waves you over: a card table of potluck, a bubble machine, a cake shaped like a frog. “We have way too much food,” says the host. “Please.” You have a deviled egg and a paper cup of lemonade, and sing along to the second verse.')}});
+  run:()=>{say('🧺 A birthday picnic under the big beech tree waves you over: a card table of potluck, a bubble machine, a cake shaped like a frog. “We have way too much food,” says the host. “Please.”')},
+  choices:()=>[
+    {ic:'🎂',l:'Join the party',s:'40 min. Energy +3, stress −6, community +2.',fn:()=>{pass(40);adj('energy',3);adj('stress',-6);adj('community',2);say('🧺 A deviled egg, a paper cup of lemonade and a slice of frog. You sing along to the second verse.')}},
+    {ic:'🫧',l:'Stop by for a minute',s:'10 min. Stress −2, community +1.',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('🧺 You wish the birthday kid well, pop a bubble and take a deviled egg for the road.')}},
+    {ic:'🚶',l:'Wave and walk on',s:'Nothing changes.',fn:()=>{say('🧺 “Next year!” calls the host.')}}],dflt:2});
 defEvent({id:'stadium_plantsale',hook:'arrive',tile:['🪴','Conservatory plant sale','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_park'&&tod()>=600&&tod()<960,
-  run:()=>{const c=rp(6);if(canAfford(c)){spend(c);adj('stress',-5);adj('community',2);say(`🪴 Folding tables outside the conservatory: succulents, ferns, tomato starts, a wobbly tower of pothos cuttings. The volunteers’ sign says “Every plant here wants to go home with someone.” You pick a small jade plant for ${$(c)}. Your windowsill is going to look so smart.`)}
-    else{adj('stress',-2);say('🪴 A plant sale outside the conservatory: ferns, succulents, tomato starts. You can’t spare a dollar this week, but a volunteer slips a pothos cutting into your hand anyway. “Stick it in water,” she says. “It’s tough. Like you.”')}}});
+  run:()=>{say('🪴 Folding tables outside the conservatory: succulents, ferns, tomato starts, a wobbly tower of pothos cuttings. The volunteers’ sign says “Every plant here wants to go home with someone.”')},
+  choices:()=>{const c=rp(6);return [
+    {ic:'🌱',l:`Take the small jade plant home — ${$(c)}`,s:'15 min. Stress −5, community +1. It might bloom later.',dis:!canAfford(c),fn:()=>{spend(c);pass(15);adj('stress',-5);adj('community',1);setEventFlag('stadium_jade',day()+1);say('🪴 You pick a small jade plant. Your windowsill is going to look so smart.')}},
+    {ic:'🗣️',l:'Browse and take a free cutting',s:'15 min. Stress −2, community +1. Free.',fn:()=>{pass(15);adj('stress',-2);adj('community',1);say('🪴 A volunteer slips a pothos cutting into your hand. “Stick it in water. It’s tough. Like you.”')}},
+    {ic:'🚶',l:'Admire from the path',s:'Nothing changes.',fn:()=>{say('🪴 You admire the ferns from a distance and keep your money.')}}]},dflt:2});
+defEvent({id:'stadium_jade_grows',hook:'wake',tile:['🪴','A new leaf','good'],chance:0.6,max:1,cond:()=>{const f=eventFlag('stadium_jade');return !isGrow()&&!!f&&day()>=f},
+  run:()=>{say('🪴 Your little jade plant from the Wright Park sale has pushed out a bright new leaf on the sill.')},
+  choices:()=>[
+    {ic:'☀️',l:'Move it into the good light',s:'5 min. Stress −5, energy +3.',fn:()=>{pass(5);adj('stress',-5);adj('energy',3);say('🪴 You turn the pot toward the window and make a point of noticing it every morning.')}},
+    {ic:'🎁',l:'Pot a cutting for a neighbor',s:'20 min. Energy −2, community +3.',fn:()=>{pass(20);adj('energy',-2);adj('community',3);say('🪴 A cutting in a jam jar, a note, and a neighbor’s surprised smile at the door.')}}],dflt:0});
 defEvent({id:'stadium_band',hook:'arrive',tile:['🎺','The band practices','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_castle'&&tod()>=900&&tod()<1200,
-  run:()=>{adj('stress',-5);adj('community',1);say('🎺 The school marching band is practicing on the field below the castle: forty teenagers, one long wobbly tuba note, a drum major shouting “again from bar twelve!” By the fifth try it clicks and the whole bluff seems to straighten up. A couple walking dogs applauds. The band bows, then groans, then starts bar twelve again.')}});
+  run:()=>{say('🎺 The school marching band is practicing on the field below the castle: forty teenagers, one long wobbly tuba note, a drum major shouting “again from bar twelve!”')},
+  choices:()=>stopWatch({mins:15,calm:5,community:1,text:'🎺 By the fifth try it clicks and the whole bluff seems to straighten up. A couple walking dogs applauds. The band bows, then groans, then starts bar twelve again.'}),dflt:1});
 defEvent({id:'stadium_wedding',hook:'arrive',tile:['📸','A wedding photo shoot','good'],chance:0.3,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='stadium'&&c.at==='st_castle'&&tod()>=600&&tod()<1080,
-  run:()=>{pass(15);adj('stress',-5);adj('community',2);say('📸 A bride in a cloud of ivory tulle and a groom in a very warm suit are posing in front of the turrets while a photographer climbs a bench for a better angle. “Could you hold this?” she asks, and hands you a veil corner so the wind won’t take it. Click. They thank you, and you know you’re in the background of somebody’s album forever.')}});
+  run:()=>{say('📸 A bride in a cloud of ivory tulle and a groom in a very warm suit are posing in front of the turrets while a photographer climbs a bench for a better angle.')},
+  choices:()=>[
+    {ic:'🤲',l:'Hold the veil corner',s:'15 min. Energy −1, stress −3, community +2.',fn:()=>{pass(15);adj('energy',-1);adj('stress',-3);adj('community',2);say('📸 “Could you hold this?” she asks, and hands you a veil corner so the wind won’t take it. Click. You are in the background of somebody’s album forever.')}},
+    {ic:'👏',l:'Clap from the lawn',s:'8 min. Stress −3.',fn:()=>{pass(8);adj('stress',-3);say('📸 You clap when the photographer calls “one more!” They wave. Everyone laughs.')}},
+    {ic:'🚶',l:'Give them room',s:'Nothing changes.',fn:()=>{say('📸 You circle wide around the tulle and the tripod.')}}],dflt:2});
 })();

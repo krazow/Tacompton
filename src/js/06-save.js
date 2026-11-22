@@ -55,7 +55,7 @@ function loadSave(n){
     saveNotice='Your saved game couldn’t be read, so it was set aside. Start a new game.';return null}
 }
 function adopt(d){
-  S=d.S;uiNarr=d.uiNarr;tab=d.tab;
+  S=d.S;uiNarr=d.uiNarr;tab=d.tab;for(const k in AMB)delete AMB[k];
   render();
   if(d.newer&&newerWarned!==d.newer){newerWarned=d.newer;modal('⚠️ Save from a newer version',`<p>This save is from ${esc(GAME.title)} ${esc(d.newer)}, newer than this copy (${APP_VERSION}). Update to keep everything: whatever this copy doesn’t know about is ignored, and may be lost if you keep playing here.</p>`,[{l:'Continue anyway',fn:()=>{}}])}
   if(d.notes&&d.notes.length) modal('Save loaded',`<p>Welcome back. Note: ${d.notes.join('; ')}.</p>`,[{l:'Continue',fn:()=>{}}]);
