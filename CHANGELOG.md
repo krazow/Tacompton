@@ -20,6 +20,10 @@ are taken from it.
 - Lifetime ends at old age with a life summary: stages, work, people and moments.
 - ⚙️ Settings → 🎮 Game options: lengthen or shorten the game (or finish here), change the difficulty one step a week, event pop-ups, tips, full weeks or highlights (3 days of each key week), and rename your character. Starting age and mode show grayed out, with the reason.
 - 🏅 Best scores: scores are per month played, each length keeps its own best, and the list shows every run's length and starting age.
+- 🏫 School years in the longer Growing Up games: on school days, Go to school (first bell 8:15 AM, out at 2:45 PM), then homework at home. Skipping school costs Grades and Family; a winter morning can bring a snow day (sledding at Wright Park, cocoa with Nia).
+- Middle school at Summit View: the first day of eighth grade, the fall concert (band or choir, with the whole family in the third row), winter break, spring testing week (how you study moves your Grades) and the last day (yearbooks and summer plans).
+- High school at Hilltop High: orientation, finals in December and June, prom as a friends' night out at 16 and 17 (photos at Wright Park, then dancing), a summer job at 16 (the corner market, lifeguarding at the People's pool or the Sunbreak Café, paid through the summer's time skips) and graduation week.
+- Kids' key weeks now move onto those school dates when one is close, so a year at 12 plays the concert, winter break, testing week and the last day.
 
 ### Changed
 - Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.

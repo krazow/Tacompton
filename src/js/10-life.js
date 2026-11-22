@@ -26,6 +26,8 @@
 //    LIFE_HOOKS.weekEnd.push(kw=>{…})        the last night of every key week, before the summary
 //    LIFE_HOOKS.skip.push((from,to,choice,notes)=>{…})   after a time skip is simulated: push lines to notes
 //    LIFE_HOOKS.birthday.push(age=>{…})      every birthday, played or skipped
+//    LIFE_HOOKS.plan.push((W,{len,o,T})=>{…})   kids' runs: move W's month/season/milestone weeks ({w, kind, age}) before they are merged
+//    LIFE_HOOKS.schoolDay = d=>{…}          runs a Growing Up school day instead of the built-in one (32-school.js)
 //    LIFE_HOOKS.memorial = ()=>html          the memorial screen's body for endLife('death') (content comes later)
 //    endLife(reason)  → ends the run: 'oldage' shows the life summary, 'death' the memorial, then the score
 // ============================================================
@@ -40,7 +42,7 @@ const LIFE_LEN={
   '2y':{n:'2 years',ic:'🗓️',d:'One key week a season, plus two birthdays: about ten.',short:'2 yrs'},
   life:{n:'Lifetime',ic:'🌳',d:'One or two key weeks a year at the milestones, all the way to old age.',short:'Life'},
 };
-const LIFE_HOOKS={weekStart:[],weekEnd:[],skip:[],birthday:[],memorial:null};
+const LIFE_HOOKS={weekStart:[],weekEnd:[],skip:[],birthday:[],memorial:null,plan:[],schoolDay:null};
 const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let LIFE_PICK=null;   // {length, startAge, birthday}: the start screen's choice, used by the next new game (null = Quick play)
@@ -97,6 +99,7 @@ function lifeBuild(len,o){
     for(let a=o.startAge+1;a<=80;a++){const w=bw(a);add(w,a===18&&kid?'graduation':a===67?'retire':'birthday',{age:a});
       if(a===18&&kid)add(w+2,'movein');
       if(a<80&&(a<22||a%5===0))add(Math.floor((lifeBday(o,a)+182)/7),'milestone',{age:a})}}
+  if(kid)LIFE_HOOKS.plan.forEach(f=>{try{f(W,{len,o,T})}catch(e){console.error(e)}});   // content can move month/season/milestone weeks onto its own key dates
   add(T-1,'final');
   W.sort((a,b)=>a.w-b.w||KW_PRIO[b.kind]-KW_PRIO[a.kind]);
   const out=[];
@@ -176,6 +179,7 @@ function lifeMorning(d){
   const o=dateOf(d),b=S.birthday;
   if(o.m===b.m&&o.d===b.d&&d>0){const lines=lifeBirthday(S.age+1,true);lines.forEach(l=>{say(l);digestLine(l)})}
   if(isGrow()&&typeof gSchoolDay==='function'&&d>gSchoolDay()&&isSchoolDay(d)){
+    if(LIFE_HOOKS.schoolDay){LIFE_HOOKS.schoolDay(d);return}   // content can run the school day itself (32-school.js)
     const ok=S.energy>=30&&S.mood>=30;S.life.schoolDays++;S.grades=clamp((S.grades==null?60:S.grades)+(ok?1:0),0,100);
     S.t=Math.max(S.t,d*1440+925);S.loc='home';adj('energy',-12);adj('mood',ok?1:-2);
     say(`🏫 A school day at ${gSchoolShort()}. ${pick(['A pop quiz you were ready for, mostly.','Lunch was loud, PE was louder.','A substitute in math and a real experiment in science.','Group project. Your group is fine. One of them is great.'])} ${ok?'Grades +1.':'You were too tired to follow much.'} Home by ${fmt(925)}.`)}
