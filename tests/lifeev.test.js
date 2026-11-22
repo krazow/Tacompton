@@ -138,6 +138,33 @@ module.exports = [
     assert.ok(l['first Link ride (no map)'].run.t > 0 && !l['first Link ride (map)'].run.t, 'the route map gets you there on time');
     noErrors(errors);
   } },
+  { name: 'in play: an urgent setback opens its sheet at once; a non-urgent one waits, defaults at night, and its follow-up comes', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await start(page);
+    const u = await page.evaluate(() => {
+      S.loc = 'dt_dome'; S.t = S.cur * 1440 + 900; S.money = 500; S.ev.last = {}; S.ev.count = {};
+      forceEvent('lev_wallet'); fireHook('travel', { from: 'link', to: 'dt_dome' });
+      const m = document.getElementById('mbg'), o = { open: !!(m && m.querySelector('.choice-sheet')), dflt: choiceBtn(), n: m ? m.querySelectorAll('.modal > button.act').length : 0, money: S.money };
+      MBTN(0); o.after = { pending: S.ev.pending.length, open: !!document.getElementById('mbg'), log: S.log.slice(-1)[0].s };
+      return o;
+    });
+    assert.ok(u.open, 'the urgent sheet is open'); assert.strictEqual(u.dflt, 2); assert.strictEqual(u.n, 3, 'three options, no "Not now"');
+    assert.strictEqual(u.money, 458); assert.strictEqual(u.after.pending, 0); assert.match(u.after.log, /transit security|officer/);
+    const n = await page.evaluate(() => {
+      closeModals(); S.cur = 2; S.t = S.cur * 1440 + 400; S.loc = 'home'; S.ev.last = {}; S.ev.count = {}; S.ev.pending = [];
+      forceEvent('lev_package'); fireHook('wake', {});
+      const o = { pending: S.ev.pending.map(p => p.id), sheet: !!document.querySelector('#mbg .choice-sheet') };
+      render(); o.card = !!document.querySelector('.decide');
+      const rnd = Math.random; Math.random = () => 0.5;
+      try { endDay('home'); closeModals(); o.claim = eventFlag('lev_pkg_claim'); o.let = S.log.some(l => /You let it go: 📦 The porch is empty/.test(l.s));
+        S.ev.pending = []; endDay('home'); closeModals(); S.ev.pending = []; endDay('home'); closeModals(); } finally { Math.random = rnd; }
+      o.back = S.ev.history.some(h => h.id === 'lev_package_back');
+      return o;
+    });
+    assert.deepStrictEqual(n.pending, ['lev_package']); assert.ok(!n.sheet, 'no sheet with pop-ups off'); assert.ok(n.card, 'a Decide card');
+    assert.strictEqual(n.claim, 2, 'the default files the claim'); assert.ok(n.let); assert.ok(n.back, 'the replacement shoes come');
+    noErrors(errors);
+  } },
   { name: 'the supporting actions: the savings jar, habits, corner-market items, the locker, the group chat and the block club', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page);
