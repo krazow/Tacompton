@@ -3,12 +3,13 @@ const { open, newGame, noErrors, assert } = require('./helpers');
 const BAD = /\b(fish\w*|salmon|marina|charter|wdfw|chinook|coho|herring)\b/i;
 
 module.exports = [
-  { name: 'neighborhoods: six Tacoma neighborhoods beyond Hilltop, each with places, a hub, neighbors and art', fn: async ctx => {
+  { name: 'neighborhoods: ten Tacoma neighborhoods beyond Hilltop, each with places, a hub, neighbors and art', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);
     const r = await page.evaluate(() => Object.values(HOODS).map(h => ({ key: h.key, hub: h.hub, places: Object.keys(h.places), hubOk: !!L[h.hub] && L[h.hub].hood === h.key,
       neighbors: (h.neighbors || []).length, art: Object.keys(h.places).every(k => typeof L[k].art === 'function' && /<(rect|path|circle|polygon)/.test(L[k].art({ night: false })) && /<(rect|path|circle|polygon)/.test(L[k].art({ night: true }))) })));
-    assert.deepStrictEqual(r.map(x => x.key).sort(), ['downtown', 'eastside', 'proctor', 'ruston', 'southend', 'stadium']);
+    const keys = r.map(x => x.key);
+    for (const k of ['downtown', 'eastside', 'proctor', 'ruston', 'southend', 'stadium', 'oldtown', 'fernhill', 'netacoma', 'westend']) assert.ok(keys.includes(k), 'missing neighborhood ' + k);
     for (const h of r) {
       assert.ok(h.places.length >= 2 && h.places.length <= 3, h.key + ' has 2–3 places');
       assert.ok(h.hubOk, h.key + ' hub is one of its places');
@@ -67,7 +68,7 @@ module.exports = [
     await newGame(page);
     await page.evaluate(() => { closeModals(); setPref('goOpen', true); render(); });
     const heads = await page.$$eval('.gohood', els => els.map(e => e.textContent));
-    assert.ok(heads.length >= 7, 'Hilltop + six neighborhood headings: ' + heads.length);
+    assert.ok(heads.length >= 11, 'Hilltop + ten neighborhood headings: ' + heads.length);
     assert.match(heads[0], /Hilltop/);
     noErrors(errors);
   } },

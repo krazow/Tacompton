@@ -10,6 +10,7 @@ are taken from it.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
 - "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.
 - 🗺️ A new achievement, All Over Tacoma: visit every neighborhood.
+- Four more neighborhoods: Old Town, Fern Hill, Northeast Tacoma and the West End, for ten beyond Hilltop.
 
 ## 0.2.0 (2026-11-19)
 
