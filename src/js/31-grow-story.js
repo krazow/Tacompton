@@ -18,7 +18,8 @@ GROW.onNewGame=()=>{
 const G_MORNING=['☀️ Warm already. The last week of summer and it knows it.','🌫️ A marine layer over the bay. It’ll burn off by ten.','🐦 The crows on the power line are holding a meeting. Loudly.','🎶 Somebody down the block is playing old Motown with the windows open.','🚋 The first Link of the day dings past on MLK.','🥞 Dad is making pancakes and singing about it.','🌤️ Haze from a fire somewhere over the Cascades. The sun comes up orange.'];
 GROW.onMorning=d=>{
   if(d===0) return;
-  say(`${gLong(d)}, ${fmt(S.t)}. ${d===gSchoolDay()?'🎒 Today is the day.':pick(G_MORNING)}`);
+  const o=dateOf(d),late=o.m===8&&o.d>=20;   // the end-of-summer line only in late August
+  say(`${gLong(d)}, ${fmt(S.t)}. ${d===gSchoolDay()?'🎒 Today is the day.':pick(late?G_MORNING:G_MORNING.slice(1))}`);
   if(d===gSat()){gEarn(10);say('💵 Saturday: allowance day. Dad leaves $10 on the counter under the salt shaker. The back-to-school giveaway is at People’s, 10 AM to 2 PM, and Tavita’s family across the street is firing up the grill tonight.')}
   else if(d===6) say('☀️ Sunday. The last day of summer. Church bells all over the hill, then a long, slow afternoon.');
   else if(d===gSchoolDay()) say(`🏫 The first day of ${gGradeWord()} grade at ${gSchool()}. The bell rings at ${fmt(G_BELL)}, and it’s ${travelMins('home','school')} minutes up the hill.`);
@@ -50,7 +51,7 @@ GROW.onArrive=(dest)=>{
   if(dest==='school'&&!S.ready.route){gGetReady('route');adj('mood',3);
     say(`🗺️ You found the way: up the hill, past the church and the corner with the blue house, ${travelMins('home','school')} minutes from your door. You’ll be able to do it Monday without thinking.`)}
 };
-GROW.daySummary=d=>[`⚡ ${S.energy}`,`🙂 ${S.mood}`,`🏠 ${S.family}`,`🤝 ${gFriends()}`,`🎒 ${gReady()}%`];
+GROW.daySummary=d=>[`⚡ ${S.energy}`,`🙂 ${S.mood}`,`🏠 ${S.family}`,`🤝 ${gFriends()}`,gCh1(d)?`🎒 ${gReady()}%`:`📚 ${gGrades()}`];   // Ready in the first week, Grades after
 GROW.hudDay=d=>d===gSchoolDay()?`${gDate(d)} · First day of school`:`${gDate(d)} · Day ${d+1} of ${GAME.days}`;
 GROW.checkLoss=()=>null;   // no game over in Chapter 1: a rough week still gets to Monday
 const G_LOSSES={};
@@ -175,7 +176,7 @@ GROW.todoItems=()=>{
   it.push({l:`🏠 Home by ${fmt(gCurfew())}`,s:S.curfew[d]?'Missed tonight.':S.loc==='home'?'You’re home.':`You’re ${travelMins(S.loc,'home')} min away.`,ok:S.loc==='home'&&!S.curfew[d],fail:!!S.curfew[d],urgent:S.loc!=='home'&&m>=gCurfew()-45});
   it.push({l:'🍽️ Family dinner',s:'At home, 5:30–7:30 PM.',ok:!!S.dinner[d],fail:!S.dinner[d]&&m>=1170});
   it.push({l:'🤝 Make friends',s:`You know ${gMetCount()} of ${KIDS.length} kids · Friends ${gFriends()}/100`,ok:gMetCount()>=3});
-  it.push({l:'📦 Unpack your room',s:`${S.boxes} of ${G_BOXES} boxes. One a day.`,ok:S.boxes>=G_BOXES});
+  if(gCh1()) it.push({l:'📦 Unpack your room',s:`${S.boxes} of ${G_BOXES} boxes. One a day.`,ok:S.boxes>=G_BOXES});
   if(d<=gSat()) it.push({l:'Optional: the back-to-school giveaway',s:'Sat Aug 29 at People’s, 10 AM–2 PM.',ok:S.giveaway,fail:!S.giveaway&&(d>gSat()||(d===gSat()&&m>=G_GIVE[1]))});
   return it;
 };

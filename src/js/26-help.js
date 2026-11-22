@@ -51,6 +51,124 @@ const HSVG_GRADES=()=>{const c=HELP_CUTS(),max=c[0]+900,x=v=>20+v/max*300,G=[['F
   return `<svg viewBox="0 0 340 58" role="img" aria-label="The grade bands from F to A">${G.map(([g,a,b,col])=>`<rect x="${x(a)}" y="8" width="${x(b)-x(a)}" height="24" fill="${col}"/><text x="${(x(a)+x(b))/2}" y="25" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" font-family="Fraunces, Georgia, serif">${g}</text>`).join('')}
   ${c.map(v=>`<text x="${x(v)}" y="46" font-size="8.5" text-anchor="middle" fill="#6b7478" font-family="DM Sans, sans-serif">${grp(v)}</text>`).join('')}</svg>`};
 
+// ---- the longer games: lengths and ages, and growing up (numbers from 10-life.js, 30–34) ----
+const HELP_BD={m:3,d:14,label:'March 14'};   // a sample birthday for the key-week counts (each life's own birthday moves them a little)
+const hRange=a=>{const lo=Math.min(...a),hi=Math.max(...a);return lo===hi?String(lo):`${lo}–${hi}`};
+const hPlan=(len,age)=>lifeBuild(len,{startDate:LIFE_START[age],startAge:age,birthday:HELP_BD});
+const hStartDay=age=>{const o=dAt(LIFE_START[age],0);return `${o.label}, ${o.y}`};
+// key weeks over the first two years, starting at 12: one row per length
+const HSVG_KW=()=>{const L0=['6m','1y','2y'],W=104,x=w=>78+w/W*250,col={start:'#e3642e',birthday:'#f2b630',final:'#1d3346',graduation:'#2f6d5a',movein:'#2f6d5a'};
+  return `<svg viewBox="0 0 340 ${40+L0.length*30}" role="img" aria-label="The key weeks of a 6-month, 1-year and 2-year game, starting at 12">
+  ${[0,26,52,78,104].map(w=>`<line x1="${x(w)}" y1="12" x2="${x(w)}" y2="${16+L0.length*30}" stroke="#ddd4c0"/><text x="${x(w)}" y="9" font-size="8.5" text-anchor="${w===W?'end':'middle'}" fill="#6b7478" font-family="DM Sans, sans-serif">${w?`${w/52} yr`.replace('0.5 yr','6 mo').replace('1.5 yr','18 mo'):'start'}</text>`).join('')}
+  ${L0.map((k,i)=>{const p=hPlan(k,12),last=p[p.length-1];return `<g transform="translate(0,${22+i*30})"><text x="4" y="11" font-size="10" font-weight="700" fill="#1b2326" font-family="DM Sans, sans-serif">${LIFE_LEN[k].ic} ${LIFE_LEN[k].short}</text>
+    <rect x="${x(0)}" y="5" width="${x((last.end+1)/7)-x(0)}" height="4" rx="2" fill="#e6dfcf"/>${p.map(w=>`<rect x="${x(w.start/7)-2}" y="0" width="5" height="14" rx="2" fill="${col[w.kind]||'#1f5d63'}"/>`).join('')}</g>`}).join('')}
+  <g transform="translate(40,${26+L0.length*30})" font-size="8.5" font-family="DM Sans, sans-serif" fill="#33403f">${[['#e3642e','first week',0],['#1f5d63','month or season',62],['#f2b630','birthday',150],['#1d3346','last week',212]].map(([c,t,x])=>`<rect x="${x}" y="-7" width="7" height="7" rx="1.5" fill="${c}"/><text x="${x+10}" y="0">${t}</text>`).join('')}</g></svg>`};
+function helpLengths(){
+  const MD=typeof MODE_DATA!=='undefined'?MODE_DATA:{adult:{days:14},grow:{days:8}},G=MD.grow||{days:8},A=MD.adult||{days:14};
+  const rows=LIFE_ORDER.map(k=>{const n=LIFE_AGES.map(a=>hPlan(k,a).length),p=hPlan(k,12),days=p[p.length-1].end+1;
+    const long=k==='quick'?`${A.days} days at 18, ${G.days} at 12 or 15`:k==='life'?`to age ${lifePlanText({length:k,startAge:12,birthday:HELP_BD}).endAge}`:`about ${Math.round(days/30.44)} months`;
+    return [`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LIFE_LEN[k].d.replace(/: about \w+\.$/,'.'),hRange(n),long]});
+  const cutsG=typeof G_CUTS!=='undefined'?G_CUTS:[3400],cutsA=HELP_CUTS(),D=DIFFS;
+  return `
+    <p>Tap <b>🌱 New life</b> on the title screen to choose how long to play and how old you start. Your birthday is picked at random and shown before you begin (🎲 picks another). One save holds the whole life.</p>
+    ${hTable(['Length','What you play','Key weeks','How long'],rows)}
+    <p class="tut-small">Key weeks for starting ages 12, 15 and 18; your birthday moves the count a little.</p>
+    <h3>Starting ages</h3>
+    ${hTable(['Age','Starts','Where you begin'],[
+      ['12',hStartDay(12),`Growing Up: your family’s first week on Hilltop, then seventh grade at Summit View Middle School. Home by ${fmt(G_CURFEW)}.`],
+      ['15',hStartDay(15),`Growing Up as a sophomore at Hilltop High: curfew ${fmt(G_CURFEW_HIGH)}, twice the allowance, and Grades start at 65.`],
+      ['18',hStartDay(18),'The adult game: your own apartment, a job to pick and rent to make.']])}
+    <h3>Key weeks and the summaries between them</h3>
+    ${hFig(HSVG_KW(),'The key weeks of the first two years, starting at 12. Each mark is a week you play; the rest is skipped.')}
+    <ul><li><b>Quick play</b> is the classic game: every day of the two weeks at 18, or Growing Up’s first week at 12.</li>
+    <li>The longer games play <b>key weeks</b> day by day: your first week, one a month or a season, every birthday, and in a Lifetime the milestones (half a year after each birthday until 22, then every five years), graduation and moving day at 18, retirement at 67 and the last week.</li>
+    <li>Growing Up’s month and season weeks move onto the school calendar when one is close: the fall concert, winter break, testing week, finals, prom and the last day of school.</li>
+    <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
+    <li><b>📋 While you were away</b> shows each stat before and after, your school or work, your closest friends, and what happened along the way: birthdays, rent, school days, the weather, city news and the street fair.</li>
+    <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The Hilltop Street Fair comes back on the second Saturday of every August.</li></ul>
+    <h3>Changing the length later</h3>
+    <p>In a game, open <b>⚙️ Settings → 🎮 Game options → 📏 Game length</b>.</p>
+    <ul><li><b>➕ Lengthen</b> any time. The weeks you’ve played stay, and the rest of the plan is rebuilt for the new length.</li>
+    <li><b>➖ Shorten</b> only to a length that still ends ahead of today. A length you’re already past shows “Too short now”. Quick play is only possible in the first key week.</li>
+    <li><b>🏁 Finish here</b> ends the game now and scores the months you played.</li></ul>
+    <h3>The other Game options</h3>
+    <ul><li><b>🎂 Starting age</b> and <b>🎒 Mode</b> are shown grayed out: they’re set when a life begins (Growing Up turns into the adult game at 18, in the same save).</li>
+    <li><b>🎚️ Difficulty:</b> one step easier or harder (${DIFF_ORDER.map(k=>`${D[k].ic} ${D[k].n}`).join(', ')}), at most once a week. It changes prices, luck and strain, never the score.</li>
+    <li><b>🔔 Event pop-ups</b> and <b>💡 Tips</b>, on or off.</li>
+    <li><b>📅 Week play:</b> a full week, or <b>Highlights</b>: 3 days of each key week (around your birthday when it falls in that week), from the next key week on.</li>
+    <li><b>✏️ Rename your character.</b></li></ul>
+    <h3>Scores per month</h3>
+    <p>Each key week gets its mode’s own score (in the adult game, cash counts up to ±${$(2500)} and shifts are scaled to a two-week game). Your score is the average over the life, weighted by the months each key week stands for, so a 6-month game and a Lifetime compare fairly. The grade uses the same cutoffs as the mode you finish in (an A is ${grp(cutsA[0])} in the adult game, ${grp(cutsG[0])} in Growing Up). An adult life that ends early is graded F, “Cut Short”, but every month still counts. <b>🏅 Best scores</b> keeps a best for each length.</p>
+    <h3>How a Lifetime ends</h3>
+    <ul><li>At <b>67</b> you retire: the shifts stop, a pension comes in every week, and the choices between key weeks turn to friends, family and volunteering.</li>
+    <li>The last key week is the one of your <b>${lifePlanText({length:'life',startAge:12,birthday:HELP_BD}).endAge}th birthday</b>. When it ends you get <b>A life on Hilltop</b>: your stages, your work, the people (friends from growing up, a best friend, neighbors, family) and the moments worth remembering. Then the score.</li>
+    <li><b>🏁 Finish here</b> ends any length early. In the adult game, the three losses (let go, burned out, out of the apartment) can still end a life.</li></ul>`;
+}
+function helpGrowing(){
+  const ages=[12,13,14,15,16,17,18],from=st=>ages.find(a=>stage(a)===st),to=st=>ages.filter(a=>stage(a)===st).pop();
+  const T=typeof SCH_TERMS!=='undefined'?SCH_TERMS:[],tn=id=>{const t=T.find(x=>x.id===id);return t?`${t.ic} ${t.n}`:id};
+  const W={orient:'The Thursday before school starts','first':'The first week of school',concert:'The Thursday a week before Thanksgiving, 7 PM',finalsDec:'The school week of Dec 15',winter:'Dec 20 to Jan 2',testing:'The school week of May 12',
+    prom:'The third Saturday in May, at 16 and 17',finalsJun:'The last week or so of school',last:'June 15, or the weekday before',job:'From June 16, at 16 and 17'};
+  const X={orient:'A tour with a senior, your schedule and the club fair. Pick one: questions, clubs or lockers.','first':'Find your friends, sit up front, or sit with someone new at lunch.',
+    concert:'Band or choir, with the family in the third row. Practice at home in the days before for the solo. Miss it: Family −4.',finalsDec:'A choice in the morning: how you study. It moves your Grades on each test day.',
+    winter:'Two weeks off: baking, Zoolights at Point Defiance, a call with Grandma, or sleeping in, and family game night at home.',testing:'The state tests. How you get ready moves your Grades on each test day.',
+    prom:'A friends’ night out as one big group: photos at Wright Park, then dancing in the gym. Home by 11, just this once.',finalsJun:'Like December: how you study counts on test days.',
+    last:'Yearbooks: get them signed, write a long note, or make summer plans.',job:'The corner market, lifeguarding at the People’s pool or the Sunbreak Café.'};
+  const term=id=>[tn(id),W[id]||'',X[id]||''];
+  const has=id=>T.some(t=>t.id===id),mid=['first','concert','winter','testing','last'].filter(has),high=['orient','first','finalsDec','winter','prom','finalsJun','last','job'].filter(has);
+  const H=typeof GROW!=='undefined'&&GROW.hoods?GROW.hoods:null,OPEN=H?H.OPEN:{},byAge={};
+  for(const h in OPEN)if(typeof HOODS!=='undefined'&&HOODS[h])(byAge[OPEN[h]]=byAge[OPEN[h]]||[]).push(`${HOODS[h].ic} ${HOODS[h].name} (${HOODS[h].ride.via.replace(/^(\S+ )(Walk|Bus)/,(m,a,b)=>a+b.toLowerCase())})`);
+  let wage=17.13;try{if(H&&typeof S!=='undefined'&&S)wage=H.wage()}catch(e){}
+  const GJ=H?Object.values(H.JOBS):[],SJ=typeof SCH_JOBS!=='undefined'?SCH_JOBS:{};
+  const dec=dayIndexOf(2026,12,21),jun=dayIndexOf(2027,6,21),sr=d=>typeof sunriseOn==='function'?fmt(sunriseOn(d)):'',ss=d=>typeof sunsetCal==='function'?fmt(sunsetCal(d)):'';
+  const rentCap=typeof CITY_RENT_CAP!=='undefined'?Math.round((CITY_RENT_CAP-1)*100):20,nCity=typeof CITY!=='undefined'?CITY.length:0;
+  const snow=typeof WX_MONTH!=='undefined'?hRange([1,2,12].map(m=>WX_MONTH[m].snow||0)):'2–3';
+  const help=f=>Math.round(f*3/10)*10;
+  return `
+    <p>In the longer games, Growing Up keeps going after the first week: school years, birthdays, a bigger city and, at 18, a life of your own, all in one save. There’s still no game over while you’re a kid.</p>
+    ${hTable(['Stage','Ages','School','Home by'],[
+      ['🏫 Middle school',`${from('middle')}–${to('middle')}`,'Summit View Middle School: seventh and eighth grade',fmt(G_CURFEW)],
+      ['🎓 High school',`${from('high')}–${to('high')}`,'Hilltop High: ninth to twelfth grade',fmt(G_CURFEW_HIGH)],
+      ['🏠 Adulthood',`${from('adult')} and up`,'Graduation, then work, college or a trade program','your own place']])}
+    <h3>School days</h3>
+    <ul><li>The school year runs on weekdays from the Monday of the week of Sept 1 to June 15, with winter break (Dec 20 to Jan 2) and spring break (Apr 1–7) off.</li>
+    <li>On a school day, tap <b>🏫 Go to school</b>: the first bell is at <b>${fmt(G_BELL)}</b> and you’re out at <b>${fmt(SCH_OUT)}</b>. Rested (Energy and Mood 30 or more) and on time, Grades +1.</li>
+    <li><b>📚 Do your homework</b> at home after school, once a school day: 45 minutes, Grades +3.</li>
+    <li><b>Skipping:</b> after ${fmt(SCH_LATE)} the day counts as skipped. The attendance line calls home: Grades −3, Family −5.</li>
+    <li>After the first week, <b>Grades</b> takes Ready’s place on the top bar, in the day summary and in the score.</li></ul>
+    <h3>Middle school at Summit View</h3>
+    ${hTable(['Event','When','What happens'],mid.map(term))}
+    <h3>High school at Hilltop High</h3>
+    ${hTable(['Event','When','What happens'],high.map(term).concat([['🎓 Senior week and graduation','The key week you turn 18','One last sunset with the crew, the party, or thank-you notes. Then the ceremony and the big choice.']]))}
+    <p class="tut-small">An event happens on its own day if you play it, or on the nearest day you play in its window that key week.</p>
+    <h3>Birthdays</h3>
+    <ul><li>Every year, played or skipped: a small family celebration (Family +3, Mood +5), and birthday money from the family when it falls in a time skip.</li>
+    <li><b>14:</b> high school, curfew moves to ${fmt(G_CURFEW_HIGH)}, and a Youth ORCA card. <b>16:</b> a learner’s permit, and you can work. <b>18:</b> graduation.</li></ul>
+    <h3>Curfew</h3>
+    <p>Be home by <b>${fmt(G_CURFEW)}</b> in middle school and <b>${fmt(G_CURFEW_HIGH)}</b> from 14. Miss it and Mom calls you home: Family −12, Mood −3. Across town, Mom texts when it’s getting close, and a <b>🏠 Head home</b> button shows when to leave.</p>
+    <h3>Tacoma opens up</h3>
+    ${hTable(['From age','Neighborhoods (how you get there)'],Object.keys(byAge).sort((a,b)=>a-b).map(a=>[a,byAge[a].join(', ')]))}
+    <p>Riders 18 and under ride Pierce Transit buses and the Link free, so every trip costs ${H&&H.FARE?$(H.FARE):'nothing'}. Trips across town go through Hilltop’s stop on MLK and take longer, so watch the clock.</p>
+    <h3>Your first job at 16</h3>
+    <ul><li><b>🧾 The corner market on MLK:</b> a 4-hour shift for about ${$(56)}, once a day, starting between 10 AM and 6 PM (after school on school days).</li>
+    ${GJ.map(j=>`<li><b>${j.ic} ${cap(j.role)} at ${j.n}</b> (downtown): ${j.when}, at Washington’s minimum wage (${$(wage)} an hour).</li>`).join('')}
+    <li>One job at a time. Miss three shifts and they’ll find somebody else. Between key weeks a job keeps paying.</li>
+    <li><b>💼 A summer job</b> at 16 and 17: ${Object.values(SJ).map(j=>`${j.ic} ${j.n} (about ${$(j.pay||56)} a shift${j.tips?' plus tips':''})`).join(', ')}. In the summer’s time skips it pays two shifts a week.</li></ul>
+    <h3>Graduation and the choice at 18</h3>
+    <p>The key week you turn 18 is graduation week. After the ceremony you choose what comes next and move into your own apartment on Hilltop; the same save carries on as the adult game.</p>
+    <ul><li><b>💼 Go to work:</b> one of the three jobs, full-time.</li>
+    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café.</li>
+    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK.</li></ul>
+    ${hTable(['You bring','It becomes'],[['🏠 Family',`Rent help for a year (Family 60 is ${$(help(60))} a month), and ${$(4)} of graduation money per point`],['🤝 Friends','Community: 5 plus half your Friends'],['📚 Grades','Job standing: 50 plus 30% of your Grades']])}
+    <h3>Seasons and weather</h3>
+    <ul><li>The weather is rolled once a day from the month: Tacoma rain and drizzle from October through spring, June gloom, dry summers with the odd wildfire-smoke day, windstorms, sun breaks, and once a year the first sunny day of spring, when the whole block comes outside.</li>
+    <li><b>Snow</b> is rare (about ${snow} days in 100 from December to February). On a school day it’s a <b>snow day</b>: school is closed, and you can sled the hill and have cocoa with Nia.</li>
+    <li>Rain, wind and smoke put some outdoor plans off; sun gives them a small lift. Each morning the weather nudges your stats a little.</li>
+    <li>Sunrise and sunset follow the year: about ${sr(dec)} and ${ss(dec)} in late December, ${sr(jun)} and ${ss(jun)} in late June.</li></ul>
+    <h3>The changing city</h3>
+    <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up a few percent every August, about ${rentCap}% in all, until the city’s tenant protections hold them. Each birthday notes how much the block has changed.</p>`;
+}
+
 // ---- the chapters: [key, title, html] (numbered in this order) ----
 function helpChapters(){
   const J=JOBS,w=HELP_W(),c=HELP_CUTS(),B=HELP_B(),rent=$(HELP_RENT()),D=DIFFS,N=typeof NEIGHBORS!=='undefined'?NEIGHBORS:[],boxes=typeof BOXES!=='undefined'?BOXES:6;
@@ -233,6 +351,7 @@ function helpChapters(){
     <ul><li><b>👤 Change name</b>, <b>🔊 Sound</b>, <b>💡 Tips</b> (one short tip at a time) and <b>🔔 Event pop-ups</b>.</li>
     <li><b>♿ Accessibility:</b> text size (Normal, Large, Extra large), high contrast, and reduce motion.</li>
     <li><b>⌨️ Keyboard:</b> on a computer, 1–9 press the numbered buttons, a tab’s first letter opens it, Enter presses the highlighted button, Esc closes a pop-up (and this guide), and ? lists the shortcuts.</li>
+    <li><b>🎮 Game options</b> (during a game): the game’s length, difficulty, week play and more. See <b>Game lengths and ages</b>.</li>
     <li><b>🏆 Achievements</b> and <b>❓ Help</b> (this guide).</li></ul>
     <h3>Saving</h3>
     <ul><li>The game <b>saves itself</b> after every tap and when you switch away. <b>Continue</b> on the title screen picks up where you left off.</li>
@@ -254,20 +373,13 @@ function helpChapters(){
     ${hTable(['On the top bar','What it means'],[['Money','Your allowance. Chores pay $3, and Saturday is allowance day ($10).'],['Energy','Rest, dinner and bed by 10:30 PM keep it up.'],['Mood','Fun, friends and the view bring it up; nerves bring it down.'],['Family','Chores, family dinner (5:30–7:30 PM), playing with Nia. Missing curfew costs 12.'],['Friends','Every kid you know, and how well. Hang out once a day.'],['Ready','Supplies, the way to school, a haircut, the forms signed and turned in, and an outfit.']])}
     <ul><li><b>Curfew:</b> be home by <b>8:30 PM</b>, or Family drops and you’re sent straight home.</li>
     <li><b>Places:</b> home, MLK Jr Way (the corner market, the barbershop and salon, the murals), People’s Center and Park (the pool, the courts, the summer rec program), the Reading Room (a little community library), Summit View Middle School and the overlook.</li>
-    <li><b>The rest of Tacoma</b> (the longer games): at 14 a Youth ORCA card (free rides under 18) opens the Stadium District and Downtown, more neighborhoods open at 15, 16 and 17, and at 16 you can take a part-time job downtown. Curfew is 10 PM from 14.</li>
     <li><b>Five kids</b> to meet: Marcus on the courts, Ana on MLK, Tavita across the street, Linh at the Reading Room and Zay at the overlook. Any of them can become your best friend.</li>
     <li><b>Saturday:</b> a free back-to-school giveaway at People’s (10 AM–2 PM) and a barbecue across the street in the evening.</li>
     <li><b>Monday, Aug 31:</b> walk to school by the 8:15 AM bell, and Chapter 1 ends with your grade. There’s no game over in Growing Up: every week gets to Monday.</li></ul>
     ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}
-    <h3>🌱 New life: lengths and ages</h3>
-    <p>Tap <b>🌱 New life</b> on the title screen to pick how long to play and how old to start. <b>Quick play</b> is the classic game: two weeks at 18, or Growing Up’s first week at 12. The longer games play the <b>key weeks</b> and skip the time between them:</p>
-    <ul><li><b>6 months:</b> one key week a month. <b>1 year:</b> one about every six weeks, plus your birthday. <b>2 years:</b> one a season, plus two birthdays. <b>Lifetime:</b> one or two a year at the milestones, to old age.</li>
-    <li><b>Starting age:</b> 12 (seventh grade at Summit View), 15 (a sophomore at Hilltop High, curfew 10 PM) or 18 (your own apartment, a job and rent).</li>
-    <li><b>Between key weeks</b> a summary shows what changed (money, stats, age, school or work, friends and family) after one choice about how you spend the time.</li>
-    <li><b>Birthdays</b> come every year. At 14 you start high school, at 16 you can work a part-time job, and at 18 you graduate, choose work, college or a trade program, and move into your own place: the same save carries on as the adult game.</li>
-    <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The street fair comes back every August.</li>
-    <li><b>⚙️ Settings → 🎮 Game options</b> lengthens or shortens the game, changes the difficulty a step at a time, and switches between full weeks and highlights (3 days of each key week).</li>
-    <li><b>The score</b> is per month played, so every length compares fairly. Each length keeps its own best score.</li></ul>`],
+    <p>That’s Quick play. In the longer games the same week opens a whole life: the next two chapters, <b>Game lengths and ages</b> and <b>Growing up</b>, cover how long you can play and what happens as you grow.</p>`],
+  ['lengths','Game lengths and ages',helpLengths()],
+  ['growup','Growing up',helpGrowing()],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>

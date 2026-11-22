@@ -235,7 +235,7 @@ function lifeSkipSheet(d,night){
     <p><b>Key week ${S.kwi+1} of ${S.keyWeeks.length} is done.</b> Next up: <b>${kwName(nk)}</b>, ${monthDay(r.from)} to ${fullDate(r.to)}.</p>
     <p>That’s about <b>${wk} week${wk===1?'':'s'}</b> from here. How do you spend them?</p>`;
   modal(`⏩ ${monthDay(from)} → ${monthDay(to)}`,body,lifeChoices().map(c=>({l:c.l,s:c.s,np:true,stay:true,fn:()=>{
-    const notes=lifeSimulate(from,to,c.k);S.life.lastSkip={from,to,choice:c.k};lifeHook('skip',from,to,c.k,notes);
+    const notes=lifeSimulate(from,to,c.k);S.life.lastSkip={from,to,choice:c.k};lifeHook('skip',from,to,c.k,notes);lifeRound();
     lifeResultSheet(before,notes,i,c)}})),true);
 }
 function lifeResultSheet(before,notes,i,c){
@@ -294,6 +294,11 @@ function lifeSimulate(from,to,ch){
   if(fair){notes.push('🎪 The Hilltop Street Fair came around again in August. You were there, in the barbecue line.');if(!S.life.moments.some(m=>m.ic==='🎪'))lifeMoment('🎪','The Hilltop Street Fair: the first of many.')}
   const dm=Math.round(S.money-cash0);notes.push(`💵 ${dm>=0?'Saved':'Spent down'} ${$(Math.abs(dm))} over these weeks.`);
   return notes;
+}
+// after a time skip: whole numbers on every stat (the day-by-day simulation adds fractions, e.g. friendship +0.1 a day)
+function lifeRound(){
+  for(const k of ['money','energy','mood','family','grades','stress','standing','community','food'])if(typeof S[k]==='number')S[k]=Math.round(S[k]);
+  if(S.kids)for(const id in S.kids){const s=S.kids[id];if(s&&typeof s.f==='number')s.f=clamp(Math.round(s.f),0,20)}
 }
 const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(S.life.done&&S.life.path!=='job'?1.25:1):1);
 // the first morning of key week i

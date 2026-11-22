@@ -30,9 +30,13 @@ are taken from it.
 - 🗺️ Growing Up: Tacoma opens up as you grow. At 14 a Youth ORCA card (riders 18 and under ride free) opens the Stadium District (a walk) and Downtown & the Dome District (the free Link); Proctor, Ruston & Point Defiance and the South End at 15; Old Town, the West End and the Eastside at 16; Fern Hill and Northeast Tacoma at 17. The neighborhoods' own places and drawings, with kid versions of what to do there, trips through the hubs, curfew (10 PM) and a Head home button with the time to leave.
 - 💼 A first job at 16: the Copper Kettle café on Pacific Ave (Tue/Thu after school, Saturdays) or the Museum of Glass gift shop (weekends), at Washington's minimum wage, paid into Money. Shifts keep paying between key weeks; miss three and they let you go.
 - Kid-friendly happenings around town (a frisbee game, a harbor seal, the glassblowers, a lost little kid), Running Start at TCC at 16, and two achievements: Youth ORCA and First Paycheck. Growing Up's Go somewhere groups places by neighborhood, like the adult game.
+- 📖 The guide has two new chapters: **Game lengths and ages** (Quick play to Lifetime, the key weeks and the summaries between them, starting ages 12, 15 and 18, changing the length later in ⚙️ Settings → 🎮 Game options, the other options, scores per month and how a Lifetime ends) and **Growing up** (middle school and Hilltop High, school days and homework, the school-year events, birthdays, curfew, neighborhoods by age with free youth rides, first jobs at 16, graduation and the choice at 18, seasons and the changing city), with numbers taken from the game.
 
 ### Changed
 - Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.
+
+### Fixed
+- Longer Growing Up games: “Unpack a box” is only offered in the first week; the “last week of summer” morning line only shows in late August; Friends and the other stats stay whole numbers after a time skip; the day summary shows Grades (📚) after the first week instead of “🎒 0%”.
 
 ## 0.2.0 (2026-11-19)
 
