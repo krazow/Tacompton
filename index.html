@@ -393,6 +393,17 @@ html.tut-open,html.tut-open body{overflow:hidden}
 .wn-older>summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
 .wn-more{font-size:13.5px;color:var(--mute)}
 .linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;background:none;border:0;font:inherit;font-weight:700;color:var(--brand);text-decoration:underline;cursor:pointer}
+/* 🌱 New life (10-life.js): the start sheet's length and age chips, the title row, the life summary */
+.lchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.lchip{min-height:44px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:700;font-size:14.5px}
+.lchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.lchip.sm{min-height:32px;padding:2px 8px;font-size:13px;margin-left:6px}
+.lnote{font-size:13px;color:var(--mute);margin:4px 0 8px}
+.lplan{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+.title .t-life{background:rgba(255,255,255,.16);color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.title .t-life .t-ic{background:rgba(255,255,255,.18)}
+.title .t-life .t-tx span{color:rgba(255,255,255,.8)}
+.life-sum h1{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -429,7 +440,7 @@ const GAME={
   tagline:'Two weeks on Hilltop',
   codePrefix:'TACOMPTON',   // transfer codes start with this, e.g. POCKETWEEK:eyJ…
   version:'0.2.0',           // bump on every release: shown in Settings, stamped into saves and sw.js
-  schema:1,                  // bump when the shape of S changes, and add a MIGRATIONS entry (21-story.js)
+  schema:2,                  // bump when the shape of S changes, and add a MIGRATIONS entry (21-story.js)
   days:14,                   // two weeks: Mon Aug 3 – Sun Aug 16, 2026, your first two weeks on Hilltop
   wake:330,                  // 5:30 AM on day one (the job you pick sets your own alarm after that)
   startLoc:'home',
@@ -1164,6 +1175,7 @@ function accessModal(){
 window.openSettings=()=>{
   const inGame=S&&!S.over&&!document.querySelector('.title,.end');
   modal('⚙️ Settings',`<p>Playing as <b>{{name}}</b>${inGame?` · ${DF().ic} ${DF().n}`:''}.</p><p style="font-size:12px;color:var(--mute)">${esc(GAME.title)} version ${APP_VERSION}</p>`,[
+    ...(inGame&&typeof gameOptionsModal==='function'?[{l:'🎮 Game options',s:'Game length, difficulty, week play, pop-ups, tips and your name.',fn:()=>gameOptionsModal()}]:[]),
     {l:'👤 Change name',s:'Updates your name everywhere in the game.',fn:()=>nameModal({back:openSettings})},
     {l:`🔊 Sound: ${prefs().sound?'On':'Off'}`,s:'Alerts and chimes.',fn:()=>{setPref('sound',!prefs().sound);if(prefs().sound)sfx('good');openSettings()}},
     ...(ART.any()?[{l:`🖼️ Illustrations: ${artPref()?'On':'Off'}`,s:'Pictures on the Home tab and in events. Turn off to keep the drawn scenes only (and save data).',fn:()=>{setPref('art',!artPref());if(S&&!S.over&&!document.querySelector('.title,.end'))render();openSettings()}}]:[]),
@@ -1232,6 +1244,539 @@ document.addEventListener('keydown',e=>{
   try{new MutationObserver(ms=>{if(q)return;if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&!n.classList.contains('kn'))||[...m.removedNodes].some(n=>n.nodeType===1&&n.id==='mbg'))){q=true;requestAnimationFrame(go)}})
     .observe(document.body,{childList:true,subtree:true})}catch(e){}}
 // ============================================================
+//  TACOMPTON · LIFE: game lengths, starting ages, the calendar, aging, and the key-week scheduler.
+//  Loaded after the engine (00-09) and before the content (20+). One save holds one whole life.
+//
+//  ---- Stable API for content (phase-2 agents: use these, don't reach into S.life) ----
+//  Calendar (day index 0 = the first morning of the run, always a Monday):
+//    dateOf(d)        → {y, m (1–12), d (1–31), dow (0 = Monday … 6 = Sunday, the same as dayName()), label:'Mon Aug 3'}
+//    monthDay(d)      → 'Aug 3'          longDate(d) → 'Monday, Aug 3'      fullDate(d) → 'Mon Aug 3, 2026'
+//    dayIndexOf(y,m,d)→ the day index of a calendar date (may be negative or past the end)
+//    season(d=day())  → 'summer' (Jun–Aug) | 'fall' (Sep–Nov) | 'winter' (Dec–Feb) | 'spring' (Mar–May)
+//    isSchoolDay(d=day()) → true on weekdays of the school year: from the Monday of the week of Sept 1 to June 15,
+//                     minus winter break (Dec 20 – Jan 2) and spring break (Apr 1–7)
+//    isFairDay(d=day()) → the Hilltop Street Fair: every year on the second Saturday of August
+//    The run starts Mon Aug 3, 2026 at age 18, Mon Aug 24, 2026 at ages 12 and 15 (LIFE_START).
+//  Age and stage:
+//    S.age, S.birthday {m, d} (S.birthday.label 'March 14'), stage(age=S.age) → 'middle' (12–13) | 'high' (14–17) | 'adult' (18+)
+//    lifeLong()       → true for 6 months, 1 year, 2 years and Lifetime; false for Quick play (today's two-week games)
+//  Key weeks (S.keyWeeks[i] = {start, end, kind, from, to}; you play days from..to, the rest is a time skip):
+//    lifeKw()         → the key week being played;  lifeKwIs(kind) → its kind is kind
+//      kinds: 'start' | 'month' | 'season' | 'birthday' | 'graduation' | 'movein' | 'milestone' | 'retire' | 'final'
+//    lifeWeekDays()   → the day indices you play this key week (Quick play: every day)
+//  Content registers key-week events with defLifeEvent(e): a defEvent() whose cond also checks the key week.
+//    defLifeEvent({id, hook:'wake'|'arrive'|…, kinds:['birthday'], stages:['high'], seasons:['winter'], mode:'grow'|'adult',
+//                  cond, chance, run, …})   everything else is plain defEvent (03-events.js)
+//    LIFE_HOOKS.weekStart.push(kw=>{…})      the first morning of every key week (after the time skip)
+//    LIFE_HOOKS.weekEnd.push(kw=>{…})        the last night of every key week, before the summary
+//    LIFE_HOOKS.skip.push((from,to,choice,notes)=>{…})   after a time skip is simulated: push lines to notes
+//    LIFE_HOOKS.birthday.push(age=>{…})      every birthday, played or skipped
+//    LIFE_HOOKS.memorial = ()=>html          the memorial screen's body for endLife('death') (content comes later)
+//    endLife(reason)  → ends the run: 'oldage' shows the life summary, 'death' the memorial, then the score
+// ============================================================
+
+const LIFE_START={18:'2026-08-03',15:'2026-08-24',12:'2026-08-24'};
+const LIFE_AGES=[12,15,18];
+const LIFE_ORDER=['quick','6m','1y','2y','life'];
+const LIFE_LEN={
+  quick:{n:'Quick play',ic:'⚡',d:'Today’s game: two weeks at 18, or Growing Up’s first week at 12.',short:'Quick'},
+  '6m':{n:'6 months',ic:'🍂',d:'About six key weeks, one a month, with a summary between them.',short:'6 mo'},
+  '1y':{n:'1 year',ic:'📅',d:'A key week every six weeks or so, plus your birthday: about nine.',short:'1 yr'},
+  '2y':{n:'2 years',ic:'🗓️',d:'One key week a season, plus two birthdays: about ten.',short:'2 yrs'},
+  life:{n:'Lifetime',ic:'🌳',d:'One or two key weeks a year at the milestones, all the way to old age.',short:'Life'},
+};
+const LIFE_HOOKS={weekStart:[],weekEnd:[],skip:[],birthday:[],memorial:null};
+const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let LIFE_PICK=null;   // {length, startAge, birthday}: the start screen's choice, used by the next new game (null = Quick play)
+
+// ---- calendar ----
+function lifeStartDate(s){s=s||(typeof S!=='undefined'?S:null);return (s&&s.startDate)||(typeof isGrow==='function'&&isGrow()?LIFE_START[12]:LIFE_START[18])}
+function dAt(sd,i){const [y,m,d]=sd.split('-').map(Number);const t=new Date(Date.UTC(y,m-1,d+i)),dow=(t.getUTCDay()+6)%7;
+  return {y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate(),dow,label:`${DAYS[dow].slice(0,3)} ${MON3[t.getUTCMonth()]} ${t.getUTCDate()}`}}
+function dateOf(d){return dAt(lifeStartDate(),d)}
+const monthDay=d=>dateOf(d).label.slice(4);
+const longDate=d=>`${dayName(d)}, ${monthDay(d)}`;
+const fullDate=d=>{const o=dateOf(d);return `${o.label}, ${o.y}`};
+function dIdx(sd,y,m,d){const [a,b,c]=sd.split('-').map(Number);return Math.round((Date.UTC(y,m-1,d)-Date.UTC(a,b-1,c))/864e5)}
+function dayIndexOf(y,m,d){return dIdx(lifeStartDate(),y,m,d)}
+function seasonOf(o){return o.m===12||o.m<=2?'winter':o.m<=5?'spring':o.m<=8?'summer':'fall'}
+function season(d){return seasonOf(dateOf(d==null?day():d))}
+function schoolOn(o){
+  if(o.dow>=5) return false;
+  const Y=o.m>=7?o.y:o.y-1;   // the school year that started in late summer of Y
+  const s1=new Date(Date.UTC(Y,8,1)),mon=new Date(Date.UTC(Y,8,1-((s1.getUTCDay()+6)%7))),t=Date.UTC(o.y,o.m-1,o.d);
+  if(t<mon.getTime()||t>Date.UTC(Y+1,5,15)) return false;
+  if((o.m===12&&o.d>=20)||(o.m===1&&o.d<=2)) return false;
+  if(o.m===4&&o.d<=7) return false;
+  return true;
+}
+function isSchoolDay(d){return schoolOn(dateOf(d==null?day():d))}
+function isFairDay(d){const o=dateOf(d==null?day():d);return o.m===8&&o.dow===5&&o.d>=8&&o.d<=14}
+
+// ---- age and stage ----
+function stage(age){if(age==null)age=(typeof S!=='undefined'&&S&&S.age)||18;return age<14?'middle':age<18?'high':'adult'}
+function lifeRandBirthday(){   // a random day of the year, without touching Math.random (seeded runs stay the same)
+  let r=0;try{const a=new Uint32Array(1);crypto.getRandomValues(a);r=a[0]}catch(e){r=Date.now()}
+  const t=new Date(Date.UTC(2027,0,1+(r%365)));return {m:t.getUTCMonth()+1,d:t.getUTCDate(),label:`${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}`}}
+// the day index on which you turn `age` (o: a save, or {startDate, startAge, birthday})
+function lifeBday(o,age){const sd=o.startDate,[y0,m0,d0]=sd.split('-').map(Number),b=o.birthday;
+  const y1=(b.m>m0||(b.m===m0&&b.d>d0))?y0:y0+1;return dIdx(sd,y1+(age-o.startAge-1),b.m,b.d)}
+const lifeLong=()=>typeof S!=='undefined'&&!!S&&!!S.length&&S.length!=='quick';
+const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
+
+// ---- the key-week schedule ----
+const KW_PRIO={start:9,final:8,graduation:7,movein:7,retire:6,birthday:5,milestone:2,season:1,month:1};
+function lifeBuild(len,o){
+  const kid=o.startAge<18,first=kid?8:7,qEnd=kid?7:13;
+  if(len==='quick') return [{start:0,end:qEnd,kind:'start'}];
+  const W=[],add=(w,kind,x)=>W.push(Object.assign({w,kind},x||{})),bw=a=>Math.floor(lifeBday(o,a)/7);
+  let T;
+  if(len==='6m'){T=26;for(let i=0;i<6;i++)add(Math.round(i*(T-1)/5),i?'month':'start')}
+  else if(len==='1y'){T=52;for(let i=0;i<9;i++)add(Math.round(i*(T-1)/8),i?'month':'start');for(let a=o.startAge+1;bw(a)<T;a++)add(bw(a),'birthday',{age:a})}
+  else if(len==='2y'){T=104;add(0,'start');let run=null;const runs=[];
+    for(let w=0;w<T;w++){const s=seasonOf(dAt(o.startDate,w*7+3));if(!run||run.s!==s){run={s,a:w,b:w};runs.push(run)}else run.b=w}
+    runs.slice(1,-1).forEach(r=>add(Math.round((r.a+r.b)/2),'season'));
+    for(let a=o.startAge+1;bw(a)<T;a++)add(bw(a),'birthday',{age:a})}
+  else{T=bw(80)+1;add(0,'start');
+    for(let a=o.startAge+1;a<=80;a++){const w=bw(a);add(w,a===18&&kid?'graduation':a===67?'retire':'birthday',{age:a});
+      if(a===18&&kid)add(w+2,'movein');
+      if(a<80&&(a<22||a%5===0))add(Math.floor((lifeBday(o,a)+182)/7),'milestone',{age:a})}}
+  add(T-1,'final');
+  W.sort((a,b)=>a.w-b.w||KW_PRIO[b.kind]-KW_PRIO[a.kind]);
+  const out=[];
+  for(const x of W){if(x.w<0||x.w>=T)continue;const p=out[out.length-1];
+    if(!p){out.push(x);continue}
+    if(x.w-p.w<2||(p.w===0&&kid&&x.w<2)){if(KW_PRIO[x.kind]>KW_PRIO[p.kind]&&p.kind!=='start'){if(p.age&&!x.age)x.age=p.age;out[out.length-1]=x}else if(x.age&&!p.age)p.age=x.age;continue}
+    out.push(x)}
+  return out.map(x=>{const k={start:x.w*7,end:x.w===0?first-1:x.w*7+6,kind:x.kind};if(x.age)k.age=x.age;return k});
+}
+// the days you actually play in a key week (Highlights: 3 of them, around a birthday if there is one, else Fri–Sun)
+function lifeRange(kw,s){s=s||S;if(kw.from!=null)return {from:kw.from,to:kw.to};
+  const hl=s&&s.life&&s.life.weekPlay==='highlights'&&kw.start>0&&s.length!=='quick'&&kw.end-kw.start>=3;
+  if(!hl) return {from:kw.start,to:kw.end};
+  const b=s.birthday,sd=s.startDate;let from=kw.end-2;
+  for(let d=kw.start;d<=kw.end;d++){const o=dAt(sd,d);if(o.m===b.m&&o.d===b.d){from=clamp(d-1,kw.start,kw.end-2);break}}
+  return {from,to:from+2};
+}
+const lifeEndDay=s=>{const k=s.keyWeeks[s.keyWeeks.length-1];return lifeRange(k,s).to};
+function lifeKw(){return S&&S.keyWeeks?S.keyWeeks[S.kwi||0]:null}
+function lifeKwIs(kind){const k=lifeKw();return !!k&&k.kind===kind}
+function lifeWeekDays(){const k=lifeKw();if(!k||!lifeLong())return Array.from({length:GAME.days},(_,i)=>i);const r=lifeRange(k),a=[];for(let d=r.from;d<=r.to;d++)a.push(d);return a}
+function lifePlayed(){if(!lifeLong())return Array.from({length:GAME.days},(_,i)=>i);const a=[];S.keyWeeks.slice(0,S.kwi+1).forEach(k=>{const r=lifeRange(k);for(let d=r.from;d<=Math.min(r.to,day());d++)a.push(d)});return a}
+// GAME.days follows the save being played: the last key week's last day + 1 (setMode() and adopt() call this)
+function lifeSync(){if(typeof S==='undefined'||!S||!S.keyWeeks||!S.keyWeeks.length)return;if((S.mode==='grow')!==(MODE==='grow'))return;GAME.days=lifeEndDay(S)+1}
+function kwName(k,s){s=s||S;const o=dAt(s.startDate,k.start+3);
+  return {start:'Your first week',final:'The last week',birthday:`Your ${ordinal(k.age||0)} birthday`,graduation:'Graduation',movein:'Moving day',retire:'Retirement',
+    milestone:`${MONTHS[o.m-1]}, age ${k.age?k.age:''}`.replace(/, age $/,''),season:`${cap(seasonOf(o))} ${o.y}`,month:`${MONTHS[o.m-1]} ${o.y}`}[k.kind]||'A week'}
+// the Week tab's footer in the longer games: the key weeks still to come
+function lifeWeekList(){if(!lifeLong())return '';const nx=S.keyWeeks.slice(S.kwi+1);
+  return `<div class="sect">Key weeks ahead · ${nx.length} left</div>`+nx.slice(0,6).map(k=>`<div class="todo"><span class="ck">⭐</span><div><b>${kwName(k)}</b><span>from ${fullDate(lifeRange(k).from)}</span></div></div>`).join('')
+    +(nx.length>6?`<div class="rules">…and ${nx.length-6} more, to ${fullDate(lifeEndDay(S))}.</div>`:'')}
+function defLifeEvent(e){const c=e.cond;defEvent(Object.assign({},e,{cond:ctx=>{const k=lifeKw();if(!k)return false;
+  if(e.mode&&(e.mode==='grow')!==isGrow())return false;if(e.kinds&&!e.kinds.includes(k.kind))return false;
+  if(e.stages&&!e.stages.includes(stage()))return false;if(e.seasons&&!e.seasons.includes(season()))return false;return c?c(ctx):true}}))}
+function lifeHook(name,...a){(LIFE_HOOKS[name]||[]).forEach(f=>{try{f(...a)}catch(e){console.error(e)}})}
+
+// ---- the life part of a save ----
+function lifeBlank(x){return {weekPlay:'full',diffWk:-1,snaps:[],moments:[],stages:[{stage:x.stage,age:x.age,d:0}],jobs:[],family:60,tot:{},
+  rentHelp:0,rentHelpLeft:0,path:null,parttime:false,prog:0,done:false,retired:false,graduated:false,schoolDays:0,ended:null,grow:null,lastSkip:null}}
+function lifeSetup(x,p){
+  x.length=p.length;x.startAge=p.startAge;x.age=p.startAge;x.birthday=p.birthday;x.startDate=LIFE_START[p.startAge];
+  x.stage=stage(x.age);x.lengthLog=[];x.keyWeeks=lifeBuild(p.length,x);x.kwi=0;x.life=lifeBlank(x);
+  const k=x.keyWeeks[0];k.from=k.start;k.to=k.end;
+}
+// old saves (0.3 and before) are Quick play: adult at 18, Growing Up at 12 (MIGRATIONS in 21-story.js)
+function lifeMigrateQuick(x){if(x.length)return;const g=x.mode==='grow';lifeSetup(x,{length:'quick',startAge:g?12:18,birthday:x.birthday||lifeRandBirthday()})}
+function lifeMoment(ic,t){if(!S||!S.life)return;S.life.moments.push({d:day(),age:S.age,ic,t});if(S.life.moments.length>80)S.life.moments.splice(1,1)}
+// called first thing in onNewGame() (21-story.js)
+function lifeNew(){
+  const p=LIFE_PICK||{length:'quick',startAge:isGrow()?12:18,birthday:lifeRandBirthday()};LIFE_PICK=null;
+  lifeSetup(S,p);
+  if(p.startAge===15){S.money=Math.round(S.money*2);S.grades=65}
+  if(lifeLong()){
+    if(!isGrow()){S.rent.due=lifeKw().to;S.life.jobs=[]}
+    lifeMoment('🌱',p.startAge<18?`Moved to Hilltop with your family, age ${p.startAge}.`:'Moved into your own apartment on Hilltop, age 18.');
+  }
+  lifeSync();
+}
+function lifeHud(d){return `${dateOf(d).label} · Age ${S.age} · Week ${S.kwi+1} of ${S.keyWeeks.length}`}
+
+// ---- birthdays and the school day (onMorning in 21-story.js calls this every morning) ----
+function lifeBirthday(age,played){
+  S.age=age;const st=stage(age),lines=[];
+  if(isGrow())lines.push(`🎂 You turn ${age}. ${pick(['Mom bakes a lopsided chocolate cake and Dad sings louder than anyone.','Pancakes with a candle in them at breakfast, and Nia made you a card with glitter that will never come off.','Grandma calls first thing and sings the whole song, both verses.'])} A small family celebration${played?' tonight':''}.`);
+  else lines.push(`🎂 You turn ${age}. ${pick(['Your family calls on speaker, all at once, and sings badly.','A card in the mail from home, and a cupcake from a neighbor with one candle in it.','Ms. Lorraine across the street somehow knew, and there is a slice of pound cake on your step.'])}`);
+  if(isGrow()){adj('family',3);adj('mood',5)}else{S.life.family=clamp(S.life.family+2,0,100);adj('stress',-4)}
+  if(st!==S.stage&&!(st==='adult'&&isGrow())){S.stage=st;S.life.stages.push({stage:st,age,d:day()});
+    if(st==='high'){lines.push('🎓 High school: Hilltop High, a bus pass in your backpack, and curfew moves to 10 PM.');lifeMoment('🎓','Started high school at Hilltop High.')}}
+  if(age===16&&isGrow()){lines.push('🚗 Sixteen: a learner’s permit, and you’re old enough for a part-time job (the corner market on MLK is hiring).');lifeMoment('🚗','Learner’s permit, and a first part-time job allowed.')}
+  if(age===67&&!isGrow()&&!S.life.retired){S.life.retired=true;lines.push('🎉 Retirement. The last shift, a sheet cake in the break room, and mornings that belong to you now.');lifeMoment('🎉',`Retired from ${job().place}.`)}
+  if([13,16,18,21,30,40,50,60,70,80].includes(age))lifeMoment('🎂',`Turned ${age}.`);
+  lifeHook('birthday',age);
+  return lines;
+}
+function lifeMorning(d){
+  if(!lifeLong())return;
+  const o=dateOf(d),b=S.birthday;
+  if(o.m===b.m&&o.d===b.d&&d>0){const lines=lifeBirthday(S.age+1,true);lines.forEach(l=>{say(l);digestLine(l)})}
+  if(isGrow()&&typeof gSchoolDay==='function'&&d>gSchoolDay()&&isSchoolDay(d)){
+    const ok=S.energy>=30&&S.mood>=30;S.life.schoolDays++;S.grades=clamp((S.grades==null?60:S.grades)+(ok?1:0),0,100);
+    S.t=Math.max(S.t,d*1440+925);S.loc='home';adj('energy',-12);adj('mood',ok?1:-2);
+    say(`🏫 A school day at ${gSchoolShort()}. ${pick(['A pop quiz you were ready for, mostly.','Lunch was loud, PE was louder.','A substitute in math and a real experiment in science.','Group project. Your group is fine. One of them is great.'])} ${ok?'Grades +1.':'You were too tired to follow much.'} Home by ${fmt(925)}.`)}
+}
+
+// saves: reading one uses that save's own length for GAME.days (06-save.js clamps the day to it); loading one switches to it
+{const mg=migrate;migrate=function(d){const s=d&&d.S;if(!s||!s.keyWeeks||!s.keyWeeks.length)return mg(d);const keep=GAME.days;try{GAME.days=lifeEndDay(s)+1;return mg(d)}finally{GAME.days=keep}}}
+{const ad=adopt;adopt=function(d){if(d&&d.S&&d.S.keyWeeks&&d.S.keyWeeks.length)GAME.days=lifeEndDay(d.S)+1;return ad(d)}}
+
+// ---- the end of a key week: the time skip ----
+{const ed=endDay;endDay=function(where){
+  if(!S||S.over||!lifeLong()) return ed(where);
+  const d=day(),kw=lifeKw();
+  if(!kw||d<lifeRange(kw).to||S.kwi>=S.keyWeeks.length-1) return ed(where);
+  closeModals();const notes=[];
+  onNight(where,notes,d);const nctx={where,notes,fired:[]};fireHook('night',nctx);
+  const card=dayCard(d);achCheck({night:true,where});
+  if(S.over) return;const loss=checkLoss();if(loss) return gameOver(loss);
+  lifeWeekEnd(d,card+notes.map(n=>`<p>${n}</p>`).join(''));
+}}
+// one key week's score: the mode's own score, with cash capped and shifts scaled to a two-week game, so every length compares fairly
+function lifeWeekScore(){
+  let sc=scoreOf();const k=lifeKw(),r=k?lifeRange(k):{from:0,to:13},n=Math.max(1,Math.min(day(),r.to)-r.from+1);
+  if(!isGrow()){sc+=Math.round(clamp(S.money,-2500,2500)*SCORE_W.cash)-Math.round(S.money*SCORE_W.cash);sc+=Math.round(SCORE_W.shift*(S.stats.shifts||0)*(14/n-1))}
+  return Math.round(sc);
+}
+function lifeWeekEnd(d,night){
+  const kw=lifeKw();
+  S.life.snaps=S.life.snaps.filter(x=>x.kw!==S.kwi);S.life.snaps.push({kw:S.kwi,start:kw.start,score:lifeWeekScore(),mode:MODE});
+  if(isGrow()&&S.grades==null)S.grades=clamp(40+Math.round(gReady()*0.5),0,100);
+  if(isGrow()&&typeof gBest==='function'){const b=gBest();if(b&&!S.life.best){S.life.best=b.id;lifeMoment('🤝',`Became best friends with ${b.n}.`)}}
+  lifeHook('weekEnd',kw);
+  const go=()=>lifeSkipSheet(d,night);
+  if(isGrow()&&S.age>=18&&!S.life.graduated) return lifeGraduation(go);
+  go();
+}
+function lifeSnapRows(){
+  if(isGrow()) return [['💵 Money',S.money,$],['⚡ Energy',S.energy],['🙂 Mood',S.mood],['🏠 Family',S.family],['🤝 Friends',gFriends()],['📚 Grades',S.grades==null?gReady():S.grades],['🎂 Age',S.age]];
+  return [['💵 Cash',S.money,$],['😣 Stress',S.stress,null,true],['💼 Job',S.standing],['🤝 Community',S.community],['🏠 Family',Math.round(S.life.family)],['🎂 Age',S.age]]
+    .concat(S.life.path&&S.life.path!=='job'?[[S.life.path==='college'?'🎓 College':'🔧 Trade program',Math.round(S.life.prog),v=>v+'%']]:[]);
+}
+function lifeChoices(){
+  if(isGrow()) return [{k:'study',l:'📚 Study hard',s:'Grades up. A little less fun, a little less time with friends.'},{k:'home',l:'🏠 Help out at home',s:'Chores, dinners, Nia. Family up, and a few extra dollars from chores.'},
+    {k:'friends',l:'🤝 See friends more',s:'Friends and mood up. Grades and home slip a little.'},...(S.age>=16?[{k:'work',l:'🧾 Pick up shifts at the market',s:'Weekend shifts at the corner market: money up, grades a little down.'}]:[])];
+  if(S.life.retired) return [{k:'friends',l:'🤝 See friends more',s:'The block club, the bench at the overlook, the grandkids next door. Community up, stress down.'},{k:'save',l:'🐷 Keep it simple',s:'Cook at home, call family. Costs down, family up.'},{k:'extra',l:'🤲 Volunteer more',s:'The free fridge, the reading program. Community up, a little tired.'}];
+  return [{k:'extra',l:'💼 Pick up extra shifts',s:'More money and job standing, more stress, less time for the neighborhood.'},{k:'save',l:'🐷 Save money',s:'Cook at home, skip the extras, call home more. Costs down, a little calmer.'},
+    {k:'friends',l:'🤝 See friends more',s:'Block club, pickup games, porch nights. Community up, stress down, a bit more spent.'}];
+}
+function lifeSkipSheet(d,night){
+  const i=S.kwi+1,nk=S.keyWeeks[i],r=lifeRange(nk),from=d+1,to=r.from-1,wk=Math.max(1,Math.round((to-from+1)/7));
+  const before=lifeSnapRows();
+  const body=`${night?`<div class="digest"><div class="sect">🌙 ${dayName(d)} night</div>${night}</div>`:''}
+    <p><b>Key week ${S.kwi+1} of ${S.keyWeeks.length} is done.</b> Next up: <b>${kwName(nk)}</b>, ${monthDay(r.from)} to ${fullDate(r.to)}.</p>
+    <p>That’s about <b>${wk} week${wk===1?'':'s'}</b> from here. How do you spend them?</p>`;
+  modal(`⏩ ${monthDay(from)} → ${monthDay(to)}`,body,lifeChoices().map(c=>({l:c.l,s:c.s,np:true,stay:true,fn:()=>{
+    const notes=lifeSimulate(from,to,c.k);S.life.lastSkip={from,to,choice:c.k};lifeHook('skip',from,to,c.k,notes);
+    lifeResultSheet(before,notes,i,c)}})),true);
+}
+function lifeResultSheet(before,notes,i,c){
+  const after=lifeSnapRows(),nk=S.keyWeeks[i],r=lifeRange(nk);
+  const rows=after.map(([k,v,f,bad],j)=>{const b=before.find(x=>x[0]===k),bv=b?b[1]:v,dv=Math.round(v-bv),fm=f||(x=>Math.round(x));
+    const col=dv===0?'var(--mute)':((dv>0)!==!!bad?'var(--good,#2f8f6a)':'var(--bad,#c0392b)');
+    return `<div class="kv"><span>${k}</span><b>${fm(bv)} → ${fm(v)} <small style="color:${col}">${dv===0?'':(dv>0?'+':'−')+(f===$?$(Math.abs(dv)):Math.abs(dv))}</small></b></div>`}).join('');
+  const prog=isGrow()?`<div class="kv"><span>🏫 School</span><b>${gSchoolShort()} · grades ${S.grades}</b></div>`:`<div class="kv"><span>💼 Work</span><b>${S.life.retired?'retired':`${job().ic} ${job().role}${S.life.parttime?' (part-time)':''}`}</b></div>`;
+  const ppl=isGrow()?(()=>{const k=KIDS.filter(x=>gMet(x.id)).sort((a,b)=>gF(b.id)-gF(a.id)).slice(0,3);return k.length?`<div class="kv"><span>🤝 Closest friends</span><b>${k.map(x=>x.n).join(', ')}</b></div>`:''})()
+    :`<div class="kv"><span>🤝 Neighbors who know you</span><b>${metCount()}</b></div>`;
+  const body=`<p>You chose <b>${c.l.replace(/^\S+\s/,'')}</b>.</p><div class="sect">What changed</div>${rows}${prog}${ppl}${notes.length?`<div class="sect">Along the way</div>${notes.map(n=>`<p>${n}</p>`).join('')}`:''}`;
+  if(S.over) return;
+  const loss=checkLoss();
+  modalSwap('📋 While you were away',body,[{l:loss?'See what happened':`▶️ Play ${kwName(nk).replace(/^Your/,'your')}: ${dateOf(r.from).label}`,fn:()=>{if(loss)return gameOver(loss);lifeEnter(i)}}],true);
+}
+// a few weeks of life, day by day: money, stats, rent, school, birthdays
+function lifeSimulate(from,to,ch){
+  const notes=[],grow=isGrow();let rentN=0,rentAmt=0,helpAmt=0,fair=false,school=0,cash0=S.money;
+  const f={},num=k=>f[k]!=null?f[k]:(f[k]=S[k]);
+  for(let d=from;d<=to;d++){
+    const o=dateOf(d),wd=d%7;
+    if(o.m===S.birthday.m&&o.d===S.birthday.d){const ls=lifeBirthday(S.age+1,false);if(grow){money(20)}notes.push(...ls)}
+    if(grow){
+      if(wd===5)money(10+(ch==='home'?5:0));
+      if(ch==='work'&&S.age>=16&&wd>=5)money(45);
+      money(-0.5);
+      const sd=schoolOn(o);if(sd)school++;
+      f.grades=clamp((f.grades!=null?f.grades:(S.grades==null?60:S.grades))+(sd?(ch==='study'?0.35:ch==='friends'||ch==='work'?-0.05:0.12):0),0,100);
+      f.mood=num('mood')+(60-num('mood'))*0.02+(ch==='friends'?0.25:ch==='study'?-0.08:0.05);
+      f.family=num('family')+(60-num('family'))*0.01+(ch==='home'?0.3:ch==='friends'?-0.08:0);
+      for(const k of KIDS){const s=S.kids[k.id];if(!s||!s.met)continue;s.f=clamp(s.f+(ch==='friends'?0.1:ch==='study'?-0.02:0.01),0,20)}
+    }else{
+      const J=job(),pf=lifePayF();
+      if(!S.life.retired){
+        if(J.days.includes(wd)){money(J.pay*pf+(J.tips?(J.tips[0]+J.tips[1])/2:0));S.life.tot.shifts=(S.life.tot.shifts||0)+1}
+        if(ch==='extra'&&wd===(J.days[0]===0?5:0))money(J.pay*pf*0.9);
+      }else money(500/7);
+      money(-((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0)));
+      if(o.d===1){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));rentN++;rentAmt+=S.rent.amt;helpAmt+=help;if(help)S.life.rentHelpLeft--;
+        if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-(S.life.path==='college'?380:120))}
+      if(isFairDay(d)){fair=true;S.fair=true;S.fairYear=o.y}
+      f.standing=num('standing')+(75-num('standing'))*0.01+(ch==='extra'&&!S.life.retired?0.15:0);
+      const tgt=ch==='extra'?(S.life.retired?30:50):ch==='save'?28:22;f.stress=num('stress')+(tgt-num('stress'))*0.03;
+      f.community=num('community')+0.07+(ch==='friends'?0.2:ch==='extra'&&S.life.retired?0.15:0)-(ch==='extra'&&!S.life.retired?0.05:0);
+      S.life.family=clamp(S.life.family+(60-S.life.family)*0.003+(ch==='save'?0.07:ch==='extra'?-0.03:0),0,100);
+      if(S.life.path&&S.life.path!=='job'&&!S.life.done){S.life.prog=Math.min(100,S.life.prog+100/(S.life.path==='college'?4*365:365));
+        if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the trade program and test out as a journey-level electrician’s helper. Better pay from here on.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+    }
+    if(S.age>=18&&grow)break;   // graduation comes next
+  }
+  for(const k in f) S[k]=clamp(Math.round(f[k]),0,100);
+  S.money=Math.round(S.money);
+  S.energy=80;if(!grow)S.food=Math.max(S.food,3);
+  if(!grow&&rentN)notes.push(`🧾 Rent paid ${rentN} time${rentN===1?'':'s'} (${$(rentAmt)})${helpAmt?`, ${$(helpAmt)} of it from your family`:''}.`);
+  if(grow&&school)notes.push(`🏫 ${school} school day${school===1?'':'s'} at ${gSchoolShort()}. Grades: ${S.grades}.`);
+  if(fair){notes.push('🎪 The Hilltop Street Fair came around again in August. You were there, in the barbecue line.');if(!S.life.moments.some(m=>m.ic==='🎪'))lifeMoment('🎪','The Hilltop Street Fair: the first of many.')}
+  const dm=Math.round(S.money-cash0);notes.push(`💵 ${dm>=0?'Saved':'Spent down'} ${$(Math.abs(dm))} over these weeks.`);
+  return notes;
+}
+const lifePayF=()=>(S&&S.life?(S.life.parttime?0.6:1)*(S.life.done&&S.life.path!=='job'?1.25:1):1);
+// the first morning of key week i
+function lifeEnter(i){
+  if(isGrow()&&S.age>=18&&!S.life.graduated) return lifeGraduation(()=>lifeEnter(i));
+  for(const k in S.stats)if(typeof S.stats[k]==='number')S.life.tot[k]=(S.life.tot[k]||0)+S.stats[k];
+  S.kwi=i;const kw=S.keyWeeks[i],r=lifeRange(kw);kw.from=r.from;kw.to=r.to;lifeSync();
+  S.stats=newState().stats;if(!isGrow())S.stats.neighbors=metCount();
+  if(S.log.length>300)S.log=S.log.slice(-300);if(S.ev.history.length>300)S.ev.history=S.ev.history.slice(-300);
+  if(!isGrow()){const has1=[...Array(kw.end-kw.start+1)].some((_,j)=>dateOf(kw.start+j).d===1);
+    S.rent=Object.assign({},S.rent,has1?{due:r.to,paid:false,paidDay:-1}:{due:-1,paid:true,paidDay:r.from});
+    S.haircut=false;const y=dateOf(r.from).y;if(S.fairYear!==y&&!isFairDay(r.from))S.fair=false}
+  closeModals();S.cur=r.from;S.t=S.cur*1440+S.alarm;S.loc='home';uiNarr=[];
+  say(`📅 <b>${kwName(kw)}</b>: ${monthDay(r.from)} to ${fullDate(r.to)}. Age ${S.age}.${!isGrow()&&!S.rent.paid?` Rent (${$(S.rent.amt)}) is due by ${longDate(S.rent.due)}.`:''}`);
+  lifeHook('weekStart',kw);
+  DIGEST={night:'',items:[],lines:[],held:[],open:false,from:r.from-1,nightIds:[]};
+  startDay();const D=DIGEST;DIGEST=null;morningReport(D,r.from-1);render();
+}
+
+// ---- 18: graduation, the choice, and the move into the Hilltop apartment (one save, MODE switches inside it) ----
+function lifeGraduation(next){
+  const b=gBest(),kids=KIDS.filter(k=>gMet(k.id));
+  const body=`<p>Cap, gown, the Hilltop High gym packed to the rafters. Mom cries before your name is even called; Dad films the whole thing sideways. ${S.age>=18?'You’re 18.':''}</p>
+    <p>${b?`${b.n} finds you in the crowd afterward and doesn’t let go for a long time.`:kids.length?`${kids[0].n} throws a cap in the air that lands on a stranger.`:'Kids you barely knew sign your yearbook like old friends.'} Nia, taller than you remember, holds a sign: WE KNEW YOU COULD.</p>
+    <div class="kv"><span>🏠 Family</span><b>${S.family}</b></div><div class="kv"><span>🤝 Friends</span><b>${gFriends()}</b></div><div class="kv"><span>📚 Grades</span><b>${S.grades==null?gReady():S.grades}</b></div>`;
+  modal('🎓 Graduation',body,[{l:'What’s next?',stay:true,fn:()=>lifePathSheet(next)}],true);
+}
+function lifePathSheet(next){
+  modalSwap('🧭 What comes next?','<p>You’re moving into your own apartment on Hilltop. What do you do with the next few years?</p>',[
+    {l:'💼 Go to work',s:'Pick one of the three jobs and start full-time.',np:true,stay:true,fn:()=>modalSwap('💼 Which job?','<p>Full-time, right away.</p>',Object.entries(JOBS).map(([k,j])=>({l:`${j.ic} ${j.n}`,s:`${fmt(j.start)}–${fmt(j.end)} · ${$(j.pay)} a shift`,np:true,stay:true,fn:()=>lifeHandoff('job',k,next)})),true)},
+    {l:'🎓 College: UW Tacoma',s:'Four years downtown. Tuition about $380 a month after aid, and a part-time job at a Hilltop café.',np:true,stay:true,fn:()=>lifeHandoff('college','cafe',next)},
+    {l:'🔧 A trade program',s:'A one-year electrical pre-apprenticeship ($120 a month), evenings on the line at a soul-food spot on MLK.',np:true,stay:true,fn:()=>lifeHandoff('trade','kitchen',next)}],true);
+}
+function lifeHandoff(path,jk,next){
+  const fam=S.family,fr=gFriends(),gr=S.grades==null?gReady():S.grades,b=gBest();
+  S.life.grow={family:fam,friends:fr,grades:gr,best:b?b.n:null,kids:KIDS.filter(k=>gMet(k.id)).map(k=>({n:k.n,f:Math.round(gF(k.id))}))};
+  for(const k in S.stats)if(typeof S.stats[k]==='number')S.life.tot[k]=(S.life.tot[k]||0)+S.stats[k];
+  setMode('adult');const A=newState(),keep=S.money;
+  for(const k in A) S[k]=A[k];
+  S.mode='adult';S.money=keep+Math.round(fam*4);S.job=jk;S.jobPicked=true;S.alarm=JOBS[jk].alarm;
+  S.community=clamp(5+Math.round(fr*0.5),0,100);S.standing=clamp(50+Math.round(gr*0.3),0,100);S.stress=25;
+  Object.assign(S.life,{family:fam,rentHelp:Math.round(fam*3/10)*10,rentHelpLeft:12,path,parttime:path!=='job',prog:0,done:false,graduated:true});
+  S.stage='adult';S.life.stages.push({stage:'adult',age:S.age,d:day()});S.life.jobs.push({job:jk,age:S.age,path});
+  lifeMoment('🎓',`Graduated from Hilltop High${path==='college'?', then started at UW Tacoma':path==='trade'?', then started a trade program':`, then went to work: ${JOBS[jk].role}`}.`);
+  S.rent.paid=true;S.rent.due=-1;   // the first rent is set when the next key week starts
+  S.loc='home';S.visited={home:true};lifeSync();saveGame();
+  const J=JOBS[jk];
+  modalSwap('🏠 Your own place',`<p>A third-floor walk-up on Hilltop, a bed, six boxes and a window that looks at the mountain. Same neighborhood, new key.</p>
+    <div class="sect">What you bring with you</div>
+    <div class="kv"><span>🏠 Family ${fam}</span><b>${$(S.life.rentHelp)} a month toward rent, for a year</b></div>
+    <div class="kv"><span>🤝 Friends ${fr}</span><b>Community starts at ${S.community}</b></div>
+    <div class="kv"><span>📚 Grades ${gr}</span><b>Job standing starts at ${S.standing}</b></div>
+    <div class="kv"><span>💵 Savings</span><b>${$(Math.round(S.money))} (with graduation money)</b></div>
+    <div class="kv"><span>${J.ic} Work</span><b>${J.role}, ${J.place}${path!=='job'?' (part-time)':''}</b></div>
+    <p style="font-size:13px;color:var(--mute)">The same save goes on: this is the young-adult chapter, the adult game.</p>`,
+    [{l:'🔑 Pick up the keys',fn:()=>{next()}}],true);
+}
+
+// ---- the end ----
+function lifeScore(){
+  const sn=(S.life&&S.life.snaps||[]).slice().sort((a,b)=>a.kw-b.kw),k=lifeKw();
+  if(!sn.some(x=>x.kw===S.kwi))sn.push({kw:S.kwi,start:k.start,score:lifeWeekScore()});
+  const end=Math.min(day(),lifeRange(k).to)+1;let w=0,t=0;
+  sn.forEach((x,j)=>{const nx=j+1<sn.length?sn[j+1].start:end,m=Math.max(1,nx-x.start)/30.44;w+=m;t+=x.score*m});
+  return Math.round(w?t/w:0);
+}
+const lifeMonths=()=>Math.max(0.5,Math.round((Math.min(day(),lifeRange(lifeKw()).to)+1)/30.44*2)/2);
+{const fi=finish;finish=function(){if(!lifeLong())return fi();if(S.length==='life')return endLife('oldage');lifeFinish('done')}}
+function lifeFinish(kind){
+  S.over=true;clearTiles();closeModals();sfx('win');S.life&&(S.life.ended=kind);
+  const L0=LIFE_LEN[S.length]||LIFE_LEN.quick;
+  if(!lifeLong()) return endScreen('{{name}}, you called it here',`You stopped on ${fullDate(day())}. ${FINISH_TEXT.sub()}`);
+  endScreen(kind==='here'?`{{name}}, you called it here`:`{{name}}: ${L0.n} on Hilltop`,`${fullDate(0)} to ${fullDate(day())}. Age ${S.startAge} to ${S.age}, ${S.keyWeeks.slice(0,S.kwi+1).length} key weeks played.`);
+}
+function endLife(reason){
+  if(!S)return;S.over=true;clearTiles();closeModals();S.life.ended=reason;
+  const memo=reason==='death';
+  const top=memo?(typeof LIFE_HOOKS.memorial==='function'?LIFE_HOOKS.memorial():`<h1>In memory of {{name}}</h1><p>${fullDate(0).slice(4)} on Hilltop, at ${S.startAge}, to ${fullDate(day())}, at ${S.age}. The block club sets out folding chairs and everybody brings a dish.</p>`)
+    :`<h1>A life on Hilltop</h1><p>{{name}}, from ${S.startAge} to ${S.age}: ${fullDate(0)} to ${fullDate(day())}.</p>`;
+  app.innerHTML=withName(`<div class="end life-sum">${top}${lifeSummaryHTML()}<button class="big" style="width:100%;margin-top:22px" onclick="lifeToScore()">See the score</button></div>`);
+  window.scrollTo(0,0);sfx(memo?'info':'win');
+}
+window.endLife=endLife;
+window.lifeToScore=()=>endScreen(S.life.ended==='death'?'In memory of {{name}}':'{{name}}, a whole life on Hilltop',`Age ${S.startAge} to ${S.age}. ${S.life.moments.length} moments worth remembering.`);
+function lifeSummaryHTML(){
+  const L1=S.life,sect=(h,b)=>b?`<div class="sect" style="margin-top:14px">${h}</div>${b}`:'',kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
+  const stg={middle:'🏫 Middle school',high:'🎓 High school',adult:'🏠 Adult'};
+  const stages=L1.stages.map((x,j)=>kv(stg[x.stage]||x.stage,`from age ${x.age} (${fullDate(x.d).slice(4)})`)).join('');
+  const jobs=L1.jobs.map(j=>kv(`${JOBS[j.job].ic} ${cap(JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
+  const kids=L1.grow?L1.grow.kids:(typeof KIDS!=='undefined'&&S.kids?KIDS.filter(k=>S.kids[k.id]&&S.kids[k.id].met).map(k=>({n:k.n,f:Math.round(S.kids[k.id].f)})):[]);
+  const nb=typeof NEIGHBORS!=='undefined'&&S.met?NEIGHBORS.filter(x=>S.met[x.id]).map(x=>x.n):[];
+  const people=(kids.length?kv('🤝 Friends from growing up',kids.map(k=>k.n).join(', ')):'')+(L1.grow&&L1.grow.best?kv('⭐ Best friend',L1.grow.best):'')+(nb.length?kv('🏘️ Neighbors',nb.slice(0,8).join(', ')+(nb.length>8?` and ${nb.length-8} more`:'')):'')+kv('🏠 Family',isGrow()?S.family:Math.round(L1.family));
+  const mom=L1.moments.slice(-14).map(m=>`<div class="todo"><span class="ck">${m.ic}</span><div><b>Age ${m.age}</b><span>${m.t}</span></div></div>`).join('');
+  return sect('Stages',stages)+sect('Work',jobs)+sect('People',people)+sect('Moments',mom);
+}
+// best scores: one per length, and every run's length and starting age
+const RUNS_KEY=KEY('runs');
+function lifeRuns(){try{const a=JSON.parse(localStorage.getItem(RUNS_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function lifeRecord(sc,lost){if(lost)return false;const a=lifeRuns(),len=(S&&S.length)||'quick',prev=a.filter(r=>r.len===len).reduce((m,r)=>Math.max(m,r.sc),-Infinity);
+  a.push({sc,len,age:(S&&S.startAge)||18,end:S&&S.age,mode:isGrow()?'grow':'adult',name:currentName(),at:Date.now()});a.sort((x,y)=>y.sc-x.sc);
+  try{localStorage.setItem(RUNS_KEY,JSON.stringify(a.slice(0,30)))}catch(e){}return sc>prev}
+function bestScoresModal(back){
+  const a=lifeRuns();
+  const per=LIFE_ORDER.map(k=>{const r=a.filter(x=>x.len===k)[0];return `<div class="kv"><span>${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}</span><b>${r?`${grp(r.sc)} · start ${r.age}`:'—'}</b></div>`}).join('');
+  const list=a.slice(0,12).map((r,i)=>`<div class="kv"><span>${i+1}. ${esc(r.name||'')} <small style="display:block;color:var(--mute);font-weight:400">${LIFE_LEN[r.len]?LIFE_LEN[r.len].n:r.len} · starting age ${r.age}${r.end&&r.end!==r.age?` → ${r.end}`:''}</small></span><b>${grp(r.sc)}</b></div>`).join('');
+  modal('🏅 Best scores',`<p style="font-size:13px;color:var(--mute)">Scores are per month played, so every length compares fairly. Each length keeps its own best.</p><div class="sect">Best for each length</div>${per}<div class="sect">Every run</div>${list||'<p>No finished runs yet.</p>'}`,
+    (back?[{l:'Back',fn:back}]:[]).concat([{l:'Close',fn:()=>{}}]));
+}
+window.bestScoresModal=bestScoresModal;
+{const es=endScreen;endScreen=function(h1,sub,lost){
+  if(!lifeLong()){const sc=Math.round(scoreOf());es(h1,sub,lost);lifeRecord(sc,lost);lifeEndExtras();return}
+  achCheck({end:true,lost});const achNew=(S.achGame||[]).map(id=>ACH.find(a=>a.id===id)).filter(Boolean);
+  const sc=lifeScore(),g=lost?['F','Cut Short','A life that ends early is graded F, but every month still counts.']:gradeOf(sc);
+  saveGame();
+  const BK=KEY('best.'+S.length);let best=null,newBest=false;
+  try{const b=Number(localStorage.getItem(BK)||'NaN');best=isNaN(b)?null:b;if(!lost&&(best==null||sc>best)){localStorage.setItem(BK,String(sc));newBest=true}}catch(e){}
+  lifeRecord(sc,lost);
+  const L0=LIFE_LEN[S.length],kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
+  app.innerHTML=withName(`<div class="end"><div style="display:flex;justify-content:space-between;align-items:center"><div class="small-note" style="color:var(--mute)">${lost?'GAME OVER':'COMPLETE'} · {{name}} · ${L0.ic} ${L0.n}</div><button class="gear" style="background:var(--surface);color:var(--ink)" onclick="openSettings()" aria-label="Settings">⚙️</button></div><h1>${h1}</h1><p>${sub}</p>
+  <div style="display:flex;gap:16px;align-items:center;margin:16px 0"><div class="grade">${g[0]}</div><div><b style="font-family:var(--serif);font-size:20px">${g[1]}</b><div style="color:var(--mute);font-size:14px">${g[2]}</div></div></div>
+  ${kv('Score (per month played)',`${grp(sc)}${newBest?' 🏆 new best':''}`)}${best!=null?kv(`Previous best, ${L0.n}`,grp(best)):''}
+  ${kv('Length',`${L0.ic} ${L0.n}${S.lengthLog.length?` (switched ${S.lengthLog.length}×)`:''}`)}${kv('Starting age',`${S.startAge} → ${S.age}`)}${kv('Months played',lifeMonths())}${kv('Key weeks played',`${S.kwi+1} of ${S.keyWeeks.length}`)}
+  ${kv('Difficulty',`${DF().ic} ${DF().n}`)}${kv('🏆 Achievements this game',achNew.length?achNew.map(a=>a.ic+' '+a.n).join(', '):'none new')}
+  ${lifeSummaryHTML()}
+  <button class="big" style="width:100%;margin-top:22px" onclick="lifeAgain()">Play again: ${L0.n}, age ${S.startAge}</button>
+  <button class="act" style="margin-top:10px;justify-content:center" onclick="bestScoresModal()"><span class="tx" style="text-align:center"><b>🏅 Best scores</b></span></button>
+  <button class="act" style="margin-top:10px;justify-content:center" onclick="titleScreen()"><span class="tx" style="text-align:center"><b>Back to title</b></span></button></div>`);
+  window.scrollTo(0,0);
+}}
+function lifeEndExtras(){const e=document.querySelector('.end');if(!e||e.querySelector('#bestBtn'))return;const b=[...e.querySelectorAll('button')].pop();
+  if(b)b.insertAdjacentHTML('beforebegin','<button id="bestBtn" class="act" style="margin-top:10px;justify-content:center" onclick="bestScoresModal()"><span class="tx" style="text-align:center"><b>🏅 Best scores</b></span></button>')}
+window.lifeAgain=()=>{const p={length:S.length,startAge:S.startAge,birthday:lifeRandBirthday()};lifeStartWith(p)};
+
+// ---- the start screen: pick a length and a starting age ----
+let LP={length:'6m',startAge:18,birthday:null};
+function lifePlanText(p){
+  const o={startDate:LIFE_START[p.startAge],startAge:p.startAge,birthday:p.birthday},w=lifeBuild(p.length,o),e=w[w.length-1].end;
+  const endAge=p.startAge+[...Array(90)].findIndex((_,j)=>lifeBday(o,p.startAge+j+1)>e);
+  return {weeks:w.length,end:`${dAt(o.startDate,e).label}, ${dAt(o.startDate,e).y}`,start:`${dAt(o.startDate,0).label}, ${dAt(o.startDate,0).y}`,endAge};
+}
+function lifeStartModal(){
+  if(!LP.birthday)LP.birthday=lifeRandBirthday();
+  const t=lifePlanText(LP),setup={12:'Growing Up: your family just moved to Hilltop, a week before seventh grade at Summit View Middle School.',15:'Growing Up: a high school sophomore at Hilltop High. Curfew 10 PM.',18:'Your own apartment on Hilltop, a job to pick and rent to make.'}[LP.startAge];
+  const chip=(k,v,lab,on)=>`<button class="lchip${on?' on':''}" aria-pressed="${on}" onclick="lifePick('${k}','${v}')">${lab}</button>`;
+  const body=`<div class="sect">How long?</div><div class="lchips">${LIFE_ORDER.map(k=>chip('length',k,`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LP.length===k)).join('')}</div>
+    <p class="lnote">${LIFE_LEN[LP.length].d}</p>
+    <div class="sect">Starting age</div><div class="lchips">${LIFE_AGES.map(a=>chip('startAge',a,`${a}`,LP.startAge===a)).join('')}</div>
+    <p class="lnote">${setup}</p>
+    <div class="lplan"><div class="kv"><span>🎂 Your birthday</span><b>${LP.birthday.label} <button class="lchip sm" onclick="lifePick('birthday','')" aria-label="Pick another birthday">🎲</button></b></div>
+    <div class="kv"><span>📅 Starts</span><b>${t.start}</b></div><div class="kv"><span>🏁 Ends</span><b>${t.end}${LP.length==='quick'?'':` (age ${t.endAge})`}</b></div>
+    <div class="kv"><span>⭐ Key weeks</span><b>${t.weeks}${LP.length==='quick'?' (one long stretch)':', with a summary between them'}</b></div></div>`;
+  const btns=[{l:'▶️ Start this life',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP))},{l:'Cancel',fn:()=>{}}];
+  const el=document.getElementById('mbg');
+  if(el&&el.dataset.life){SWAPOK=true;try{modalSwap('🌱 Start a new life',body,btns)}finally{SWAPOK=false}el.dataset.life='1';return}
+  modal('🌱 Start a new life',body,btns);const m=document.getElementById('mbg');if(m)m.dataset.life='1';
+}
+window.lifeStartModal=lifeStartModal;
+window.lifePick=(k,v)=>{if(k==='birthday')LP.birthday=lifeRandBirthday();else LP[k]=k==='startAge'?+v:v;lifeStartModal()};
+function lifeStartWith(p){
+  const run=k=>{setMode(p.startAge<18?'grow':'adult');LIFE_PICK=p;newGame(k);render()};
+  const pd=()=>{setMode(p.startAge<18?'grow':'adult');diffModal(run)};
+  if(!profileName())nameModal({first:true,then:pd});else pd();
+}
+window.lifeStartWith=lifeStartWith;
+// the start page row (31-grow-story.js calls this after it adds the Growing Up row)
+function lifeTitleRow(after){
+  const b=document.createElement('div');b.className='t-main t-liferow';
+  b.innerHTML='<button id="lifeBtn" class="t-btn t-life" onclick="lifeStartModal()"><span class="t-ic" aria-hidden="true">🌱</span><span class="t-tx"><b>New life (new)</b><span>Pick a length, 6 months to a lifetime, and a starting age: 12, 15 or 18</span></span></button>';
+  after.before(b);
+  const g=document.querySelector('.title .tgrid');if(g&&!g.querySelector('#bestTBtn')){g.insertAdjacentHTML('beforeend','<button id="bestTBtn" class="ghost" onclick="bestScoresModal()">🏅 Best scores</button>');
+    const c=[...g.children];c.forEach(x=>x.classList.remove('wide'));if(c.length%2)c[c.length-1].classList.add('wide')}
+}
+
+// ---- ⚙️ Settings → 🎮 Game options (08-settings.js shows the button during a game) ----
+const DIFF_ORDER=['easy','normal','hard'];
+const lifeWeekNo=()=>Math.floor(day()/7);
+function lifeKwLeft(ws,from){return ws.filter(k=>k.start>from).length}
+function gameOptionsModal(){
+  if(!S||S.over)return;
+  const L0=LIFE_LEN[S.length]||LIFE_LEN.quick,end=lifeEndDay(S),left=lifeKwLeft(S.keyWeeks,lifeKw().start);
+  const dLock=S.life.diffWk===lifeWeekNo();
+  modal('🎮 Game options',`<p>${L0.ic} <b>${L0.n}</b> · started at ${S.startAge} · now ${S.age}. Key week ${S.kwi+1} of ${S.keyWeeks.length}, ending ${fullDate(end)}.</p>`,[
+    {l:`📏 Game length: ${L0.n}`,s:`Ends ${fullDate(end)}. ${left} key week${left===1?'':'s'} left after this one. Tap to lengthen, shorten or finish here.`,fn:()=>lengthModal()},
+    {l:`🎂 Starting age: ${S.startAge}`,s:'Set when this life began. Start a new game to pick another age.',dis:true,fn:()=>{}},
+    {l:`🎒 Mode: ${isGrow()?'Growing Up':'Adult'}`,s:isGrow()?'Set by your age: Growing Up turns into the adult game at 18, in this same save.':'Set by your age: from 18 on, it’s the adult game.',dis:true,fn:()=>{}},
+    {l:`🎚️ Difficulty: ${DF().ic} ${DF().n}`,s:dLock?'Changed this week already. One step at a time, at most once a week.':'One step easier or harder, at most once a week.',dis:dLock,fn:()=>diffStepModal()},
+    {l:`🔔 Event pop-ups: ${popupsOn()?'On':'Off'}`,s:'An OK window for each event during the day, or just tiles.',fn:()=>{try{localStorage.setItem(POPUP_KEY,popupsOn()?'off':'on')}catch(e){}gameOptionsModal()}},
+    {l:`💡 Tips: ${prefs().tips?'On':'Off'}`,s:'One short tip at a time.',fn:()=>{setPref('tips',!prefs().tips);gameOptionsModal()}},
+    {l:`📅 Week play: ${S.life.weekPlay==='highlights'?'Highlights':'Full week'}`,s:!lifeLong()?'Quick play always plays every day.':S.life.weekPlay==='highlights'?'You play 3 days of each key week. Tap for the full week (from the next key week).':'You play all 7 days of each key week. Tap for highlights: 3 days each (from the next key week).',dis:!lifeLong(),fn:()=>{S.life.weekPlay=S.life.weekPlay==='highlights'?'full':'highlights';lifeSync();saveGame();gameOptionsModal()}},
+    {l:'✏️ Rename your character',s:`Now: ${esc(currentName())}.`,fn:()=>nameModal({back:gameOptionsModal})},
+    {l:'Back to settings',fn:()=>openSettings()},{l:'Close',fn:()=>{}}]);
+}
+window.gameOptionsModal=gameOptionsModal;
+function diffStepModal(){
+  const i=DIFF_ORDER.indexOf(S.diff),opt=[i-1,i+1].filter(j=>j>=0&&j<DIFF_ORDER.length).map(j=>DIFF_ORDER[j]);
+  modal('🎚️ Difficulty',`<p>Now: ${DF().ic} <b>${DF().n}</b>. One step at a time, once a week. It changes prices, luck and strain from here on; it never changes the score.</p>`,
+    opt.map(k=>({l:`${DIFF_ORDER.indexOf(k)<i?'Easier':'Harder'}: ${DIFFS[k].ic} ${DIFFS[k].n}`,s:DIFFS[k].d,np:true,fn:()=>{S.diff=k;S.life.diffWk=lifeWeekNo();setPref('diff',k);say(`🎚️ Difficulty is now ${DIFFS[k].ic} ${DIFFS[k].n}.`);gameOptionsModal()}})).concat([{l:'Back',fn:()=>gameOptionsModal()}]));
+}
+// the schedule a switch to `len` would give: past key weeks stay, the future is rebuilt
+function lifePlan(len){
+  const cur=lifeKw(),r=lifeRange(cur);
+  if(len==='quick'){const q=lifeBuild('quick',S)[0];if(S.kwi>0||q.end<day())return null;return [Object.assign({},q,{from:0,to:q.end})]}
+  const all=lifeBuild(len,S),end=all[all.length-1].end;
+  if(end<Math.max(day(),r.to))return null;
+  return S.keyWeeks.slice(0,S.kwi+1).concat(all.filter(k=>k.start>cur.end));
+}
+function lengthModal(){
+  const cur=LIFE_ORDER.indexOf(S.length);
+  const btns=LIFE_ORDER.filter(k=>k!==S.length).map(k=>{const p=lifePlan(k),longer=LIFE_ORDER.indexOf(k)>cur;
+    if(!p){const all=lifeBuild(k,S);return {l:`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,s:`Too short now: it ends ${fullDate(all[all.length-1].end)}, and you’re past that. Finish here instead.`,dis:true,fn:()=>{}}}
+    const e=lifeRange(p[p.length-1],S).to,left=lifeKwLeft(p,lifeKw().start);
+    return {l:`${longer?'➕ Lengthen':'➖ Shorten'} to ${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,s:`Ends ${fullDate(e)} · ${left} key week${left===1?'':'s'} left.`,np:true,fn:()=>confirmLength(k,p)}});
+  modal('📏 Game length',`<p>Now: ${LIFE_LEN[S.length].ic} <b>${LIFE_LEN[S.length].n}</b>. Lengthen any time. Shorten only to a length that still ends ahead of today; otherwise, finish here.</p>`,
+    btns.concat([{l:'🏁 Finish here',s:'End this game now and get your score (per month played).',np:true,fn:()=>modal('🏁 Finish here?',`<p>End now, on ${fullDate(day())}, and see your score?</p>`,[{l:'Finish here',fn:()=>lifeFinish('here')},{l:'Back',fn:()=>lengthModal()}])},{l:'Back',fn:()=>gameOptionsModal()}]));
+}
+function confirmLength(k,p){
+  const e=lifeRange(p[p.length-1],S).to,left=lifeKwLeft(p,lifeKw().start);
+  modal(`📏 Switch to ${LIFE_LEN[k].n}?`,`<div class="kv"><span>New end</span><b>${fullDate(e)}</b></div><div class="kv"><span>Key weeks left</span><b>${left} after this one</b></div>
+    <p style="font-size:13px;color:var(--mute)">${p.slice(S.kwi+1,S.kwi+6).map(w=>`${kwName(w)} (${monthDay(w.start)})`).join(' · ')}${left>5?' …':''}</p>`,
+    [{l:`Switch to ${LIFE_LEN[k].n}`,fn:()=>lifeSetLength(k,p)},{l:'Back',fn:()=>lengthModal()}]);
+}
+function lifeSetLength(k,p){
+  p=p||lifePlan(k);if(!p)return false;
+  S.lengthLog.push({d:day(),from:S.length,to:k});S.length=k;S.keyWeeks=p;
+  if(k==='quick'&&!isGrow()&&!S.rent.paid)S.rent.due=p[0].to;
+  lifeSync();say(`📏 Game length: ${LIFE_LEN[k].n}, ending ${fullDate(lifeEndDay(S))}.`);saveGame();return true;
+}
+window.lifeSetLength=lifeSetLength;
+// tests and debugging: play through `n` key weeks fast (stats kept safe), answering every pop-up with its first button
+window.lifeFF=(n=1e9,safe=true)=>{
+  let k=0,guard=0,last=S&&S.kwi;
+  while(S&&!S.over&&guard++<20000){
+    if(S.kwi!==last){k++;last=S.kwi}
+    if(k>=n&&!document.getElementById('mbg'))break;
+    const m=document.getElementById('mbg');
+    if(m){const bs=[...m.querySelectorAll('.modal > button.act')],i=bs.findIndex(b=>!b.disabled);if(i>=0)MBTN(i);else m.remove();continue}
+    if(safe){if(isGrow()){S.family=Math.max(S.family,50);S.mood=Math.max(S.mood,50)}else{S.money=Math.max(S.money,2500);S.standing=Math.max(S.standing,60);S.stress=Math.min(S.stress,40);S.food=Math.max(S.food,2);if(!S.rent.paid&&S.money>=S.rent.amt){money(-S.rent.amt);S.rent.paid=true;S.rent.paidDay=day()}}}
+    S.loc='home';endDay('home');
+  }
+  return {kwi:S&&S.kwi,over:!S||S.over,cur:S&&S.cur};
+};
+// ============================================================
 //  TACOMPTON, part 1: the world.
 //  Two weeks (Mon Aug 3 – Sun Aug 16, 2026) living on Hilltop in Tacoma, WA: a new apartment, a new job,
 //  rent due on the last day, a fridge that keeps emptying and a neighborhood that's glad to meet you if you show up.
@@ -1287,11 +1832,16 @@ function calm(v){S.calm=S.calm||{};const d=day();adj('stress',-calmAmt(v));S.cal
 const cap=t=>t[0].toUpperCase()+t.slice(1);
 const calmTxt=v=>`stress −${calmAmt(v)}${calmN()>=CALM_FULL?' (you’ve already unwound a lot today)':''}`;
 function spend(c){money(-c);S.stats.spent+=c}
-const augDate=d=>`${dayName(d).slice(0,3)} Aug ${3+d}`;   // day index → "Mon Aug 3"
-const FAIR_DAY=5;                                          // Sat Aug 8: the Hilltop Street Fair
+const augDate=d=>dateOf(d).label;                          // day index → "Mon Aug 3" (any date: 10-life.js dateOf)
+const FAIR_DAY=5;                                          // Quick play's fair day, Sat Aug 8 (tools/sim.js). In the game: isFairDay(d), the second Saturday of August
+// when rent is due (S.rent.due is a day index: day 13 in Quick play, the end of a key week that crosses the 1st in longer games)
+const rentBy=()=>`${dayName(S.rent.due)} night, ${monthDay(S.rent.due)}`;      // "Sunday night, Aug 16"
+const rentEarly=d=>d<=S.rent.due-7;                        // paid a week or more ahead
 const FAIR_HOURS=[600,1080];                               // 10 AM – 6 PM
 // Sunset over the Olympics: about 8:20 PM on Mon Aug 3, about 8:00 PM by Sun Aug 16 (a minute and a half earlier each day).
-const sunsetOn=d=>Math.round(1220-(clamp(d,0,13))*20/13);
+// In the longer games the sunset follows the calendar (about 4:20 PM in late December, 9:10 PM in late June).
+const sunsetOn=d=>{if(typeof lifeLong!=='function'||!lifeLong())return Math.round(1220-(clamp(d,0,13))*20/13);
+  const o=dateOf(d),doy=dayIndexOf(o.y,o.m,o.d)-dayIndexOf(o.y,1,1);return Math.round(1125+146*Math.sin(2*Math.PI*(doy-80)/365))};
 const SUNSET=1220;                                         // day one's sunset (the Help guide's timeline uses it)
 const sunsetNow=()=>sunsetOn(typeof S!=='undefined'&&S?day():0);
 // How work, sleep and the night treat you (the Help guide reads these).
@@ -1323,9 +1873,9 @@ const JOBS={
     blurb:'Evenings, 2:00 to 10:00 PM, Wednesday to Sunday. Hot, loud and fast, with a staff meal every shift. Your mornings are your own.'},
 };
 const job=()=>JOBS[(typeof S!=='undefined'&&S&&S.job)]||JOBS.cafe;
-const isShiftDay=(d=day())=>job().days.includes(((d%7)+7)%7);
-const shiftsTotal=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay).length;
-const shiftDays=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay);
+const isShiftDay=(d=day())=>!(typeof S!=='undefined'&&S&&S.life&&S.life.retired)&&job().days.includes(((d%7)+7)%7);
+const shiftsTotal=()=>lifeWeekDays().filter(isShiftDay).length;   // the days played this key week (Quick play: all of them)
+const shiftDays=()=>lifeWeekDays().filter(isShiftDay);
 
 // ---- the neighbors you can meet (21-story.js lists them on the Neighbors tab) ----
 // at: the places you're likely to meet them
@@ -1359,7 +1909,7 @@ const metCount=()=>Object.keys(S.met||{}).length;
 
 // ---- HUD ----
 let STATS=[
-  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=10,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by Sunday night, Aug 16.`)}},
+  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=S.rent.due-3,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by ${rentBy()}.`)}},
   {l:'Energy',v:()=>S.energy,m:()=>S.energy,warn:()=>S.energy<20},
   {l:'Stress',v:()=>S.stress,m:()=>S.stress,good:false,warn:()=>S.stress>=75,title:'Stress. High is bad: at 100 you burn out.'},
   {l:'Food',  v:()=>S.food,m:()=>Math.min(100,S.food*20),warn:()=>S.food<1,title:'Meals in the fridge. You eat one every night.'},
@@ -1534,8 +2084,8 @@ function actionsHere(){
     if(S.unpacked<BOXES&&!S.unpack[d]) a.push({ic:'📦',l:`Unpack a box (${S.unpacked} of ${BOXES} done)`,s:'45 min. Energy −4, stress −3. The place feels more like yours. Once a day.',cat:'here',
       fn:()=>{pass(45);S.unpack[d]=true;S.unpacked++;adj('energy',-4);adj('stress',-3);say(S.unpacked>=BOXES?'📦 The last box. Your books are on a shelf, your photos are on the wall, and the apartment finally looks like somebody lives here. You do.':pick(['📦 Kitchen stuff. You find the good knife and the mug you thought you’d lost.','📦 Books. You line them up on the windowsill, spines toward the mountain.','📦 Winter clothes in August. You put the box in the closet, still mostly packed. Progress.','📦 Photos. You hang two and lean the rest against the wall “for now.”']))}});
     if(!S.rent.paid){const r=S.rent.amt;
-      a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by Sunday night, Aug 16. ${d<=6?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by Sunday night, Aug 16 (${GAME.days-1-d} day${GAME.days-1-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=10?'primary':'',dis:!canAfford(r),
-        fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',d<=6?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${d<=6?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
+      a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by ${rentBy()}. ${rentEarly(d)?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by ${rentBy()} (${S.rent.due-d} day${S.rent.due-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=S.rent.due-3?'primary':'',dis:!canAfford(r),
+        fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',rentEarly(d)?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${rentEarly(d)?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
   }
   if(S.loc==='mlk'){
     const mk=at(420,1320),g=rp(42),sn=rp(5),pl=rp(14),cut=rp(25);
@@ -1550,7 +2100,7 @@ function actionsHere(){
       fn:()=>{pass(30);S.chat[d]=true;const x=meetHere();if(x)say(`👋 You meet <b>${x.n}</b>. ${x.d}`);else{adj('community',1);say(pick(['👋 Ms. Lorraine’s grandson waves from his car. Grace waves from the market door. You wave at everybody. Everybody waves back.','👋 You stand on the corner long enough to be part of it.']))}}});
     a.push({ic:'🎨',l:'Walk MLK and look at the murals',s:`30 min. ${cap(calmTxt(6))}.`,cat:'here',
       fn:()=>{pass(30);S.stats.walks++;calm(6);say(pick(['🎨 Faces three stories tall: elders, kids, a saxophone, a fist full of flowers. Hilltop’s history, painted where everybody can see it.','🎨 A mural of a grandmother in a church hat looks down at the bus stop like she’s keeping an eye on things. She is.','🎨 You find a mural you hadn’t noticed, tucked behind the laundromat: the old neighborhood, every porch with someone on it.']))}});
-    if(d===FAIR_DAY&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
+    if(isFairDay(d)&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
       a.push({ic:'🎪',l:`The Hilltop Street Fair — ${$(f)}`,s:'2 hours. Food, music, booths, half the hill out on MLK. Stress −20, community +8. Today only.',cat:'people',cls:'primary',dis:!canAfford(f),
         fn:()=>{spend(f);S.fair=true;pass(120);adj('stress',-20);adj('community',8);const x=meetHere();say(`🎪 The Hilltop Street Fair: a band on the stage playing old soul like they mean it, kids with painted faces, lemonade, a line for barbecue that goes around the block and is worth it. Somebody hands you a flyer for a block club. ${x?`You meet <b>${x.n}</b> in the barbecue line.`:'You know half the people here now. Wild.'}`)}});}
   }
@@ -1602,7 +2152,7 @@ function work(late){
   const d=day(),J=job(),m=tod();
   if(m<J.start){pass(J.start-m)}   // early: you wait for the shift to start
   const start=Math.max(J.start,tod()),frac=Math.max(0,(J.end-start)/(J.end-J.start));
-  let pay=Math.round(J.pay*frac),tip=0;
+  let pay=Math.round(J.pay*frac*lifePayF()),tip=0;   // lifePayF: part-time while in college or a trade program, a raise after
   if(J.tips){tip=Math.round((J.tips[0]+Math.random()*(J.tips[1]-J.tips[0]))*(.6+S.standing/250)*frac);S.stats.tips+=tip}
   S.worked[d]=late;S.stats.shifts++;pass(J.end-tod());money(pay+tip);S.stats.earned+=pay+tip;
   adj('energy',-J.energy);adj('stress',shiftStress(J));
@@ -1628,10 +2178,10 @@ function statusTags(){
   const t=[],d=day(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)) t.push(`<span class="tag">${J.ic} work ${fmt(J.start)}–${fmt(J.end)}</span>`);
   t.push(`<span class="tag ${S.food<1?'bad':''}">🍽️ ${S.food} meal${S.food===1?'':'s'} in the fridge</span>`);
-  t.push(S.rent.paid?'<span class="tag">🧾 rent paid</span>':`<span class="tag ${d>=10&&!canAfford(S.rent.amt)?'bad':''}">🧾 rent ${$(S.rent.amt)} due Sun Aug 16</span>`);
+  t.push(S.rent.paid?'<span class="tag">🧾 rent paid</span>':`<span class="tag ${d>=S.rent.due-3&&!canAfford(S.rent.amt)?'bad':''}">🧾 rent ${$(S.rent.amt)} due ${augDate(S.rent.due)}</span>`);
   if(S.energy<25) t.push('<span class="tag bad">🥱 running on empty</span>');
   if(S.stress>=70) t.push('<span class="tag bad">😣 stressed</span>');
-  if(d===FAIR_DAY&&!S.fair&&tod()<FAIR_HOURS[1]) t.push('<span class="tag">🎪 street fair on MLK today</span>');
+  if(isFairDay(d)&&!S.fair&&tod()<FAIR_HOURS[1]) t.push('<span class="tag">🎪 street fair on MLK today</span>');
   return t;
 }
 function alertBar(){
@@ -1639,8 +2189,8 @@ function alertBar(){
   const d=day(),m=tod(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)&&m>J.start&&m<J.end-60) return {t:`⏰ You’re late for work at ${J.place} (your shift started at ${fmt(J.start)}).`};
   if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${cap(J.place)} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
-  if(d===FAIR_DAY&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
-  if(!S.rent.paid&&d>=11) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by Sunday night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
+  if(isFairDay(d)&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
+  if(!S.rent.paid&&d>=S.rent.due-2) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by ${dayName(S.rent.due)} night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
   if(S.food<1&&m>=960) return {t:'🍽️ The fridge is empty and dinner is coming. The corner market on MLK is open until 10 PM.',kind:'info'};
   return null;
 }
@@ -1653,13 +2203,13 @@ let EXTRA_TABS=[
 ];
 function weekView(){
   const J=job(),d0=day();
-  return `<div class="sect">Your two weeks · ${J.ic} ${J.n}</div>`+Array.from({length:GAME.days},(_,i)=>{
+  return `<div class="sect">${lifeLong()?`This week · ${kwName(lifeKw())}`:'Your two weeks'} · ${J.ic} ${J.n}</div>`+lifeWeekDays().map(i=>{
     const sd=isShiftDay(i),w=S.worked[i];
     let s=sd?(i in S.worked?(w?`worked, ${w} min late`:'worked, on time'):i<d0?'missed work':`work ${fmt(J.start)}–${fmt(J.end)}`):(S.extra[i]?'day off (picked up extra hours)':'day off');
-    if(i===FAIR_DAY) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
+    if(isFairDay(i)) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
     if(i===S.rent.due) s+=` · 🧾 rent due${S.rent.paid?' (paid)':''}`;
     return `<div class="todo"><span class="ck">${i<d0?'✔️':i===d0?'👉':'·'}</span><div><b>${augDate(i)}</b><span>${s}</span></div></div>`}).join('')
-    +`<div class="rules">Rent: ${S.rent.paid?`paid on ${augDate(S.rent.paidDay)} ✔️`:`${$(S.rent.amt)}, due by the end of Sunday, Aug 16. Pay it at home.`}</div>`;
+    +`<div class="rules">Rent: ${S.rent.paid?`paid on ${augDate(S.rent.paidDay)} ✔️`:`${$(S.rent.amt)}, due by the end of ${longDate(S.rent.due)}. Pay it at home.`}</div>`+lifeWeekList();
 }
 function hoodView(){
   const met=NEIGHBORS.filter(x=>S.met[x.id]);
@@ -1687,7 +2237,7 @@ function hoodView(){
 // ============================================================
 
 // ---- dates and small helpers ----
-function stLong(d){return `${dayName(d)}, Aug ${3+d}`}
+function stLong(d){return longDate(d)}
 function stMet(id){if(S.met[id])return false;S.met[id]=day()+1;S.stats.neighbors=metCount();adj('community',MEET_COMMUNITY);return true}
 const stNb=id=>NEIGHBORS.find(x=>x.id===id);
 
@@ -1717,6 +2267,7 @@ function jobModal(){
 }
 function pickJob(k){
   const j=JOBS[k];S.job=k;S.jobPicked=true;S.alarm=j.alarm;
+  if(S.life&&!S.life.jobs.length)S.life.jobs.push({job:k,age:S.age,path:'job'});   // 10-life.js: the life summary's Work
   say(`${j.ic} You’re the new ${j.role} at ${j.place}. ${isShiftDay(0)?`First shift today at ${fmt(j.start)}.`:`Your first shift is Wednesday at ${fmt(j.start)}. Today and tomorrow are yours.`}`);
   stWelcome();
 }
@@ -1724,27 +2275,32 @@ function stWelcome(){
   const j=job();
   modal('📦 Welcome to Hilltop',`<p>The moving truck left last night. You have a bed, ${BOXES} boxes, a fridge with <b>${S.food} meals</b> in it and <b>${$(Math.round(S.money))}</b> in the bank.</p>
     <p>${j.ic} Work: <b>${fmt(j.start)} to ${fmt(j.end)}</b>, ${j.days[0]===0?'Monday to Friday':'Wednesday to Sunday'}, at ${j.place}. It’s ${travelMins('home','work')} minutes from your door.</p>
-    <p>🧾 Rent is <b>${$(S.rent.amt)}</b>, due by the end of <b>Sunday, Aug 16</b>. Pay it from home whenever you have it.</p>
+    <p>🧾 Rent is <b>${$(S.rent.amt)}</b>, due by the end of <b>${longDate(S.rent.due)}</b>. Pay it from home whenever you have it.</p>
     <p>🛒 The corner market on <b>MLK</b> sells groceries. You eat a meal from the fridge every night.</p>
     <p>🤝 Hilltop is a neighborhood that notices who shows up. Say hi.</p>`,[{l:'Open the blinds',fn:()=>{}}]);
 }
 
 // ---- lifecycle hooks (04-loop.js) ----
 function onNewGame(){
+  lifeNew();   // 10-life.js: the length, the starting age, the calendar and the key weeks
   if(isGrow()) return GROW.onNewGame();
   say(`${stLong(0)}, 2026, ${fmt(S.t)}. Your first morning on Hilltop. Boxes everywhere, the window open, the Link bell ringing down on MLK.`);
   jobModal();
 }
 const ST_MORNING=['☀️ Clear and warm already. August on the hill.','🌫️ A marine layer over the bay. It’ll burn off by ten.','🐦 The crows on the power line are holding a meeting. Loudly.','🎶 Somebody down the block is playing old Motown with the windows open.','🚋 The first Link of the day dings past on MLK.','☕ The neighbor’s coffee smells better than yours. You’ll ask what it is.','🌤️ Haze from a wildfire somewhere over the Cascades. The sun comes up orange.'];
 function onMorning(d){
-  if(isGrow()) return GROW.onMorning(d);
+  if(isGrow()){GROW.onMorning(d);lifeMorning(d);return}
+  adultMorning(d);lifeMorning(d);   // 10-life.js: birthdays, and the school day in the longer games
+}
+function adultMorning(d){
   if(d===0) return;
   const J=job();
   say(`${stLong(d)}, ${fmt(S.t)}. ${pick(ST_MORNING)}`);
   if(isShiftDay(d)) say(`${J.ic} Work today at ${fmt(J.start)}, ${J.place}.`); else say('🛋️ A day off. The hill is yours.');
-  if(d===FAIR_DAY) say('🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.');
+  if(isFairDay(d)) say('🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.');
   if(dayName(d)==='Sunday'&&d<GAME.days-1) say('⛪ Sunday. Church bells, then church choirs, all up and down the hill.');
-  if(d===GAME.days-1) say(S.rent.paid?'🏁 Last day of your first two weeks. Rent is paid. Tonight you take stock.':`🏁 Last day. Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);
+  if(lifeLong()){if(!S.rent.paid&&d===S.rent.due)say(`🏁 Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);else if(!S.rent.paid&&d>=S.rent.due-3)say(`🧾 Rent is due ${rentBy()}: ${$(S.rent.amt)}. You have ${$(Math.round(S.money))}.`)}
+  else if(d===GAME.days-1) say(S.rent.paid?'🏁 Last day of your first two weeks. Rent is paid. Tonight you take stock.':`🏁 Last day. Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);
   else if(!S.rent.paid&&d>=10) say(`🧾 Rent is due Sunday night: ${$(S.rent.amt)}. You have ${$(Math.round(S.money))}.`);
 }
 function onNight(where,notes,d){
@@ -1774,7 +2330,7 @@ function onArrive(dest,from){if(isGrow())return GROW.onArrive(dest,from);S.visit
   if(f){spend(f);S.stats.fares=(S.stats.fares||0)+f;say(`🚌 Bus fare: ${$(f)}.`)}
   const h=typeof hoodOf==='function'?hoodOf(dest):null;if(h&&typeof hoodOf==='function'&&hoodOf(from)!==h){S.hoods=S.hoods||{};if(!S.hoods[h]){S.hoods[h]=day()+1;say(`${HOODS[h].ic} <b>${HOODS[h].name}</b>. ${HOODS[h].blurb}`)}}}
 function daySummary(d){if(isGrow())return GROW.daySummary(d);const sd=isShiftDay(d);return [`⚡ ${S.energy}`,`😣 ${S.stress}`,`🤝 ${S.community}`,sd?(d in S.worked?(S.worked[d]?`💼 ${S.worked[d]} min late`:'💼 on time'):'💼 missed'):'']}
-function hudDay(d){if(isGrow())return GROW.hudDay(d);return `${augDate(d)} · Day ${d+1} of ${GAME.days}`}
+function hudDay(d){if(lifeLong()&&!(isGrow()&&d===gSchoolDay()))return lifeHud(d);if(isGrow())return GROW.hudDay(d);return `${augDate(d)} · Day ${d+1} of ${GAME.days}`}
 
 // ---- losing ----
 let LOSSES={
@@ -1790,7 +2346,7 @@ defEvent({id:'mountain_out',hook:'wake',tile:['🏔️','The mountain is out','g
   run:()=>{S.ev.flags.mtn=day();adj('stress',-5);say('🏔️ The mountain is out. Rainier fills the whole southeast sky, pink with the first light, so big it looks fake. Everybody on the block stops on their porch to look. It’s the thing Tacoma does.')}});
 defEvent({id:'heat_wave',hook:'wake',tile:['🥵','A hot one','bad'],chance:0.12,bad:true,max:2,cooldown:4,cond:()=>day()>0,
   run:()=>{adj('energy',-6);adj('stress',4);say('🥵 Ninety-two by afternoon, they say. Tacoma treats that like weather from another planet. The pool at People’s will be packed, and every box fan on the hill is sold out.')}});
-defEvent({id:'fair_morning',hook:'wake',tile:['🎪','Street fair day','good'],chance:1,max:1,cond:()=>day()===FAIR_DAY,
+defEvent({id:'fair_morning',hook:'wake',tile:['🎪','Street fair day','good'],chance:1,max:1,cond:()=>isFairDay(day())&&lifeWeekDays().includes(day()),
   run:()=>{say('🎪 You can hear it from bed: sound checks, folding tables, somebody testing a microphone “one two, one two, Hilltop!” The Hilltop Street Fair goes up on MLK from 10 to 6.')}});
 defEvent({id:'internet_bill',hook:'wake',tile:['🧾','Internet hookup','bad'],chance:1,max:1,cond:()=>day()===1,
   run:()=>{const c=rp(60);spend(c);say(`🧾 The internet tech comes at 8 and leaves at 8:15. ${$(c)} for the setup and the first month. The Wi-Fi is named after your landlord’s dog.`)}});
@@ -1874,7 +2430,7 @@ let TIPS=[
   {id:'work',when:()=>S.loc==='work'&&isShiftDay(day())&&!(day() in S.worked),t:'💼 Tap <b>Work your shift</b>. The clock jumps to the end of the shift and you get paid. Late costs pay and job standing.'},
   {id:'tiles',when:()=>S.ev.history.length>0,t:'🔔 Things that happen around you show up as small <b>tiles at the top</b>, just under the bar. Tap ✓ to put one away; they also go in the 📜 <b>Log</b>.'},
   {id:'food',when:()=>S.food<=1,t:'🧺 The fridge is nearly empty. The corner market on <b>MLK</b> sells 4 meals of groceries, 7 AM to 10 PM.'},
-  {id:'rent',when:()=>day()>=2&&!S.rent.paid,t:'🧾 Rent is due by Sunday night, Aug 16. Pay it from <b>home</b> as soon as you have it: early takes a weight off.'},
+  {id:'rent',when:()=>day()>=2&&!S.rent.paid,get t(){return `🧾 Rent is due by ${rentBy()}. Pay it from <b>home</b> as soon as you have it: early takes a weight off.`}},
   {id:'stress',when:()=>S.stress>=60,t:'😣 Stress is high. Swim at <b>People’s</b>, sit at the <b>overlook</b>, call home or ride the Link. At 100 you burn out.'},
   {id:'energy',when:()=>S.energy<30,t:'🥱 Low energy. Rest at home, eat a real meal, and get to bed before midnight.'},
   {id:'hood',when:()=>day()>=1,t:'🤝 The <b>Neighbors</b> tab lists who you’ve met. Community counts toward your score, and Hilltop rewards people who show up.'},
@@ -1888,13 +2444,14 @@ function todoItems(){
   if(isGrow()) return GROW.todoItems();
   const d=day(),m=tod(),J=job(),it=[];
   if(isShiftDay(d)) it.push({l:`${J.ic} Work today`,s:d in S.worked?(S.worked[d]?`Done, ${S.worked[d]} min late`:'Done, on time'):`${fmt(J.start)}–${fmt(J.end)}, ${J.place}`,ok:d in S.worked,fail:!(d in S.worked)&&m>=J.end-60,urgent:!(d in S.worked)&&m>=J.start-60&&m<J.end-60});
-  it.push({l:'Pay rent',s:S.rent.paid?`Paid on ${augDate(S.rent.paidDay)}.`:`${$(S.rent.amt)} by Sunday night, Aug 16. You have ${$(Math.round(S.money))}.`,ok:S.rent.paid,urgent:!S.rent.paid&&d>=11});
+  it.push({l:'Pay rent',s:S.rent.paid?`Paid on ${augDate(S.rent.paidDay)}.`:`${$(S.rent.amt)} by ${rentBy()}. You have ${$(Math.round(S.money))}.`,ok:S.rent.paid,urgent:!S.rent.paid&&d>=S.rent.due-2});
   it.push({l:'Keep food in the fridge',s:`${S.food} meal${S.food===1?'':'s'}. You eat 1 every night.`,ok:S.food>=2,urgent:S.food<1});
   it.push({l:'Keep stress under 70',s:`Stress ${S.stress}/100. At 100 you burn out.`,ok:S.stress<70,urgent:S.stress>=85});
   it.push({l:'Keep your job in good standing',s:`Job ${S.standing}/100. At 0 you’re let go.`,ok:S.standing>=50,urgent:S.standing<25});
   it.push({l:'Meet your neighbors',s:`${metCount()} of ${NEIGHBORS.length} · community ${S.community}/100`,ok:metCount()>=6});
   it.push({l:`Unpack your boxes`,s:`${S.unpacked} of ${BOXES}. One a day, at home.`,ok:S.unpacked>=BOXES});
-  it.push({l:'Optional: the Hilltop Street Fair',s:'Sat Aug 8 on MLK, 10 AM–6 PM.',ok:S.fair,fail:!S.fair&&(d>FAIR_DAY||(d===FAIR_DAY&&m>=FAIR_HOURS[1]))});
+  const fd=lifeWeekDays().find(isFairDay);
+  if(fd!=null) it.push({l:'Optional: the Hilltop Street Fair',s:`${augDate(fd)} on MLK, 10 AM–6 PM.`,ok:S.fair,fail:!S.fair&&(d>fd||(d===fd&&m>=FAIR_HOURS[1]))});
   return it;
 }
 const SCORE_W={cash:0.5,community:20,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};   // cash counts half, so the better-paid job doesn't decide the grade
@@ -1907,7 +2464,7 @@ const ACH=[
   {id:'moved_in',ic:'🌙',n:'Moved In',d:'Make it through your first night on Hilltop.',test:c=>c.night},
   {id:'first_shift',ic:'💼',n:'Clocked In',d:'Work your first shift.',test:()=>S.stats.shifts>0},
   {id:'punctual',ic:'⏰',n:'Always On Time',d:'Work every shift of the two weeks, none of them late.',test:c=>c.end&&!c.lost&&shiftDays().every(i=>S.worked[i]===0)},
-  {id:'rent_early',ic:'🧾',n:'Ahead of It',d:'Pay rent in the first week.',test:()=>S.rent.paid&&S.rent.paidDay<=6},
+  {id:'rent_early',ic:'🧾',n:'Ahead of It',d:'Pay rent in the first week.',test:()=>S.rent.paid&&rentEarly(S.rent.paidDay)},
   {id:'fair',ic:'🎪',n:'Street Fair',d:'Go to the Hilltop Street Fair.',test:()=>S.fair},
   {id:'neighborly',ic:'🤝',n:'Good Neighbor',d:'Meet 6 neighbors.',test:()=>metCount()>=6},
   {id:'everybody',ic:'🏘️',n:'Everybody Knows Your Name',d:'Meet every neighbor.',test:()=>metCount()>=NEIGHBORS.length},
@@ -1927,7 +2484,7 @@ const ACH=[
 let FINISH_TEXT={h1:'{{name}}, you made it through your first two weeks',sub:()=>`Mon Aug 3 to Sun Aug 16, 2026. ${S.rent.paid?'Rent is paid, ':''}${metCount()} neighbor${metCount()===1?'':'s'} know your name, and the Link is still dinging down on MLK.`};
 function scoreParts(){
   if(isGrow()) return GROW.scoreParts();
-  const w=SCORE_W,s=S.stats,early=S.rent.paid&&S.rent.paidDay<=6;
+  const w=SCORE_W,s=S.stats,early=S.rent.paid&&rentEarly(S.rent.paidDay);
   return [['Cash',S.money*w.cash,`${$(Math.round(S.money))} in the bank × ½`],['Community',S.community*w.community,`${S.community} × ${w.community}`],['Job',S.standing*w.standing,`${S.standing} × ${w.standing}`],
     ['Stress',-S.stress*w.stress,`${S.stress} × −${w.stress}`],['Shifts',s.shifts*w.shift,`${s.shifts} × ${w.shift}`],
     ['Street fair',S.fair?w.fair:0,S.fair?'went':'missed'],['Rent paid early',early?w.early:0,early?'in the first week':'—'],
@@ -1954,7 +2511,10 @@ function endRows(){
 
 // ---- save migrations ----
 // Bump GAME.schema and add an entry when the shape of S changes in a way fillDefaults can't handle.
-const MIGRATIONS=[];
+const MIGRATIONS=[
+  // 0.4.0: lengths and ages (10-life.js). Every older save is Quick play: the adult game at 18, Growing Up at 12.
+  {to:2,run:x=>lifeMigrateQuick(x)},
+];
 // ============================================================
 //  TACOMPTON: neighborhood pack, Downtown & the Dome District.
 //  Ride the T Line down from Hilltop: Pacific Avenue's old brick warehouses and Union Station, the Tacoma Dome, and the
@@ -2919,7 +3479,16 @@ function helpChapters(){
     <li><b>Five kids</b> to meet: Marcus on the courts, Ana on MLK, Tavita across the street, Linh at the Reading Room and Zay at the overlook. Any of them can become your best friend.</li>
     <li><b>Saturday:</b> a free back-to-school giveaway at People’s (10 AM–2 PM) and a barbecue across the street in the evening.</li>
     <li><b>Monday, Aug 31:</b> walk to school by the 8:15 AM bell, and Chapter 1 ends with your grade. There’s no game over in Growing Up: every week gets to Monday.</li></ul>
-    ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}`],
+    ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}
+    <h3>🌱 New life: lengths and ages</h3>
+    <p>Tap <b>🌱 New life</b> on the title screen to pick how long to play and how old to start. <b>Quick play</b> is the classic game: two weeks at 18, or Growing Up’s first week at 12. The longer games play the <b>key weeks</b> and skip the time between them:</p>
+    <ul><li><b>6 months:</b> one key week a month. <b>1 year:</b> one about every six weeks, plus your birthday. <b>2 years:</b> one a season, plus two birthdays. <b>Lifetime:</b> one or two a year at the milestones, to old age.</li>
+    <li><b>Starting age:</b> 12 (seventh grade at Summit View), 15 (a sophomore at Hilltop High, curfew 10 PM) or 18 (your own apartment, a job and rent).</li>
+    <li><b>Between key weeks</b> a summary shows what changed (money, stats, age, school or work, friends and family) after one choice about how you spend the time.</li>
+    <li><b>Birthdays</b> come every year. At 14 you start high school, at 16 you can work a part-time job, and at 18 you graduate, choose work, college or a trade program, and move into your own place: the same save carries on as the adult game.</li>
+    <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The street fair comes back every August.</li>
+    <li><b>⚙️ Settings → 🎮 Game options</b> lengthens or shortens the game, changes the difficulty a step at a time, and switches between full weeks and highlights (3 days of each key week).</li>
+    <li><b>The score</b> is per month played, so every length compares fairly. Each length keeps its own best score.</li></ul>`],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>
@@ -3072,6 +3641,7 @@ const CHANGELOG={
   '0.1.0':['🏘️ First release: your first two weeks living on Hilltop in Tacoma, Aug 3–16, 2026. Pick a job (CNA at Tacoma General, barista or line cook), make rent, keep the fridge full, ride the Link, go to the street fair and meet your neighbors.'],
   '0.1.1':['🏠 A new start page: ❓ Help and 📲 Install app sit right under the Start button.','📖 Help is now a full player’s guide in 16 chapters, from your first day to the score and an FAQ, with a table of contents and a 📄 Print / save as PDF button.'],
   '0.3.0':['🗺️ New: <b>the rest of Tacoma</b>. Six neighborhoods beyond Hilltop: Stadium, Downtown & the Dome, Proctor, the Eastside & the Port, the South End & Lincoln, and Ruston & Point Defiance.','🚌 Walk, ride the free Link or take the bus across town. <b>Go somewhere</b> now groups places by neighborhood.'],
+  '0.4.0':['🌱 New: <b>New life</b> on the title screen. Pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age: 12, 15 or 18.','⭐ The longer games play the key weeks, with a summary of what changed between them, and one choice about how you spend the time.','🎂 A birthday every year. High school at 14, a part-time job at 16, and at 18 graduation, then work, college or a trade program, and your own apartment, all in the same save.','🎮 ⚙️ Settings → Game options: game length, difficulty, highlights, pop-ups, tips and your name.','🏅 Scores per month played, a best score for each length, and Quick play is the game you know, with your saves.'],
   '0.2.0':['💬 <b>Send feedback</b> sits right under Help on the start page.','🎒 New: <b>Growing Up</b>, a second way to play from the start page. You’re 12, your family just moved to Hilltop, and you have one week (Aug 24–30, 2026) before the first day of middle school.','🤝 Chapter 1: meet five kids who could become your best friend, help out at home, get ready for school (supplies, the route, a haircut, the forms, an outfit) and be home by 8:30 PM.','🏫 New places for Growing Up: your family’s apartment, the Reading Room and Summit View Middle School. The first day of school is the finale.','🏘️ The two-week adult game is unchanged, and your saved games keep working.','⚖️ A real challenge now: shifts are more stressful and sleep helps less, so swims, sunsets, calls home and Link rides matter. New grade cutoffs: a steady player gets a B, an A takes care and showing up for the neighborhood.','🏔️ Rainier redrawn as the big glaciated mountain Tacoma actually sees, with the port cranes on the bay.','🤝 New neighbors: a bookstore owner, a phở shop, the Santos family, a transit organizer, a college student, a newcomer from Seattle, and more to the ones you knew.','🔔 Event tiles wait while a pop-up is open, and stay below the top bar.','🧭 Day one: a Go to work button at home, and the sunset time on the overlook.'],
 };
 const CHANGELOG_GENERIC='Fixes and small improvements throughout.';
@@ -3182,6 +3752,7 @@ function setMode(m){
   L=M.L;STATS=M.STATS;SCENE=M.SCENE;EXTRA_TABS=M.EXTRA_TABS;ACT_CATS=M.ACT_CATS;TIPS=M.TIPS;LOSSES=M.LOSSES;FINISH_TEXT=M.FINISH_TEXT;RULES_HTML=M.RULES_HTML;
   GAME.days=M.days;GAME.wake=M.wake;GAME.startLoc=M.startLoc;
   for(const k in M.diffs) Object.assign(DIFFS[k],M.diffs[k]);
+  lifeSync();   // 10-life.js: a longer game keeps its own GAME.days
 }
 // run fn in another mode for a moment (a save being read, the Help guide), then put the current mode back
 function withMode(m,fn){const prev=MODE;if(m===prev)return fn();setMode(m);try{return fn()}finally{setMode(prev)}}
@@ -3205,6 +3776,7 @@ GROW.newState=()=>({
   ready:{supplies:false,route:false,haircut:false,signed:false,turnedIn:false,outfit:false},
   boxes:0,                   // boxes unpacked in your room, out of G_BOXES
   // per-day trackers (day index → true)
+  hw:{},pt:{},grades:null,
   chore:{},unpack:{},dinner:{},nia:{},grandma:{},rest:{},murals:{},swim:{},hoops:{},program:{},read:{},think:{},sunset:{},hang:{},walk:{},
   curfew:{},                 // day → missed curfew (Family −)
   bbq:false,giveaway:false,card:false,mural:false,shortcut:false,
@@ -3216,14 +3788,25 @@ GROW.newState=()=>({
 
 // ---- small shared helpers ----
 const G_BOXES=3;                                            // your room's boxes
-const G_CURFEW=1230;                                        // 8:30 PM: home by then
+const G_CURFEW=1230;                                        // 8:30 PM: home by then (middle school)
+const gCurfew=()=>typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?1320:G_CURFEW;   // 10 PM from 14 (high school)
 const G_SUNSET=1205;                                        // about 8:05 PM at the end of August
-const G_SCHOOL_DAY=7;                                       // Mon Aug 31, the finale
-const G_SAT=5;                                              // Sat Aug 29: the giveaway, the barbecue, allowance day
+// the first day of school (the finale of the first week): the first isSchoolDay() of the run, Mon Aug 31, 2026 (day 7) from an Aug 24 start
+const gSchoolDay=()=>{const sd=lifeStartDate();for(let i=0;i<40;i++)if(schoolOn(dAt(sd,i)))return i;return 7};
+const gSat=()=>gSchoolDay()-2;                                // the Saturday before: the giveaway, the barbecue, allowance day
+const gCh1=(d=day())=>d<=gSchoolDay();                       // still in the first week (Chapter 1): getting Ready for school
+// the school, by stage: Summit View Middle School (12–13), Hilltop High (14–17, a fictional high school)
+const gHigh=()=>typeof S!=='undefined'&&!!S&&stage(S.age||12)!=='middle';
+const gSchool=()=>gHigh()?'Hilltop High':'Summit View Middle School';
+const gSchoolShort=()=>gHigh()?'Hilltop High':'Summit View';
+const gLevel=()=>gHigh()?'high school':'middle school';
+const gGradeWord=()=>({12:'seventh',13:'eighth',14:'ninth',15:'tenth',16:'eleventh',17:'twelfth'})[(typeof S!=='undefined'&&S&&S.age)||12]||'seventh';
+const G_NUM=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+const gAgeWord=(n=(typeof S!=='undefined'&&S&&S.age)||12)=>G_NUM[n]||String(n);
 const G_BELL=495;                                           // 8:15 AM: the first bell
 const G_GIVE=[600,840];                                     // the giveaway: 10 AM – 2 PM
-const gDate=d=>`${dayName(d).slice(0,3)} Aug ${24+d}`;      // day index → "Mon Aug 24"
-const gLong=d=>`${dayName(d)}, Aug ${24+d}`;
+const gDate=d=>dateOf(d).label;                              // day index → "Mon Aug 24" (any day of the year: 10-life.js)
+const gLong=d=>longDate(d);
 const gRp=c=>Math.round(c*(DF().cost||1));
 const gSpend=c=>{money(-c);S.stats.spent+=c};
 const gEarn=c=>{money(c);S.stats.earned+=c};
@@ -3256,6 +3839,9 @@ const KIDS=[
     d:'Twelve, short for Isaiah. Skates every hill on Hilltop and knows every shortcut, including the one to school that skips the steepest block.',
     hang:['🛹 Zay lets you try his board. You make it three feet. He makes it look like walking.','🛹 You and Zay count container ships in the bay. He has names for all the cranes.','🛹 Zay shows you the stairs nobody uses and the alley with the best blackberries. You come back purple.']},
 ];
+// the kids grow up with you: "Twelve" in a description follows your age, and so does the school
+KIDS.forEach(k=>{const d0=k.d;Object.defineProperty(k,'d',{enumerable:true,get(){const a=(typeof S!=='undefined'&&S&&S.age)||12;
+  return d0.replace(/^Twelve/,cap(gAgeWord(a))).replace(/\. Twelve\./,`. ${cap(gAgeWord(a))}.`).replace('Turns thirteen',`Turns ${gAgeWord(a+1)}`).replace('Summit View too',`${gSchoolShort()} too`)}})});
 const gKid=id=>KIDS.find(k=>k.id===id);
 const gMet=id=>!!(S.kids[id]&&S.kids[id].met);
 const gMetCount=()=>KIDS.filter(k=>gMet(k.id)).length;
@@ -3277,6 +3863,7 @@ const G_READY=[
   {k:'outfit',ic:'👕',l:'Pick a first-day outfit',w:15,how:'In your room at home.'},
 ];
 const gReady=()=>G_READY.reduce((a,r)=>a+(S.ready[r.k]?r.w:0),0);
+const gGrades=()=>S.grades==null?gReady():S.grades;          // after the first week: school grades (10-life.js)
 function gGetReady(k){if(S.ready[k])return;S.ready[k]=true}
 
 // ---- HUD ----
@@ -3286,7 +3873,7 @@ const G_STATS=[
   {l:'Mood',v:()=>S.mood,m:()=>S.mood,warn:()=>S.mood<25,title:'How you feel. Fun, friends and rest bring it up; nerves and a bad night bring it down.'},
   {l:'Family',v:()=>S.family,m:()=>S.family,warn:()=>S.family<30,title:'How things are at home. Chores, dinner and being home by 8:30 PM help.'},
   {l:'Friends',v:()=>gFriends(),m:()=>gFriends(),get title(){return `You know ${gMetCount()} of ${KIDS.length} kids on the hill.`}},
-  {l:'Ready',v:()=>gReady(),m:()=>gReady(),get title(){return `Ready for the first day of school: ${G_READY.filter(r=>S.ready[r.k]).length} of ${G_READY.length} things done.`}},
+  {get l(){return gCh1()?'Ready':'Grades'},v:()=>gCh1()?gReady():gGrades(),m:()=>gCh1()?gReady():gGrades(),warn:()=>!gCh1()&&gGrades()<40,get title(){return gCh1()?`Ready for the first day of school: ${G_READY.filter(r=>S.ready[r.k]).length} of ${G_READY.length} things done.`:`Your grades at ${gSchoolShort()}. School days, homework and studying raise them.`}},
 ];
 
 // ---- scenery: the end of August (sunrise about 6:25 AM, sunset about 8:05 PM) ----
@@ -3316,11 +3903,11 @@ const G_ART={
     ${[102,130,158,182].map(x=>[66,98].map(y=>`<rect x="${x}" y="${y}" width="16" height="20" fill="${win(n,(x+y)%3===0)}"/><rect x="${x}" y="${y+9}" width="16" height="2" fill="${n?'#3e2a26':'#a8553f'}"/>`).join('')).join('')}
     ${[288,314,340,364].map(x=>[66,98].map(y=>`<rect x="${x}" y="${y}" width="16" height="20" fill="${win(n,(x+y)%4===0)}"/><rect x="${x}" y="${y+9}" width="16" height="2" fill="${n?'#3e2a26':'#a8553f'}"/>`).join('')).join('')}
     <rect x="204" y="38" width="72" height="102" fill="${n?'#352320':'#93462f'}"/><polygon points="198,40 240,16 282,40" fill="${n?'#4a403a':'#e9dcc4'}"/><circle cx="240" cy="31" r="6.5" fill="${n?'#d8d2b0':'#fff'}" stroke="${n?'#4a403a':'#5a4a3a'}"/><path d="M240 31 v-4 M240 31 h3" stroke="#333" stroke-width="1.2"/>
-    <rect x="210" y="48" width="60" height="22" rx="2" fill="${n?'#2a2a30':'#f3ecdc'}"/><text x="240" y="58" text-anchor="middle" font-size="8.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">SUMMIT VIEW</text><text x="240" y="66.5" text-anchor="middle" font-size="5.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">MIDDLE SCHOOL</text>
+    <rect x="210" y="48" width="60" height="22" rx="2" fill="${n?'#2a2a30':'#f3ecdc'}"/><text x="240" y="58" text-anchor="middle" font-size="8.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">${gHigh()?'HILLTOP':'SUMMIT VIEW'}</text><text x="240" y="66.5" text-anchor="middle" font-size="5.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">${gHigh()?'HIGH SCHOOL':'MIDDLE SCHOOL'}</text>
     <rect x="216" y="80" width="48" height="20" fill="${win(n,false)}"/><rect x="222" y="106" width="36" height="34" fill="${n?'#1e2a36':'#2a5a7a'}"/><path d="M240 106 v34" stroke="#ddd" stroke-width="1.5"/>
     <rect x="212" y="136" width="56" height="4" fill="${n?'#5a5450':'#d8cfc0'}"/>
     <rect x="54" y="20" width="64" height="30" rx="3" fill="${n?'#1a2430':'#16324d'}"/><rect x="64" y="50" width="3" height="94" fill="#555"/><rect x="105" y="50" width="3" height="94" fill="#555"/>
-    <text x="86" y="32" text-anchor="middle" font-size="7" ${SVGF} fill="#f4d27a">WELCOME, OWLS</text><text x="86" y="43" text-anchor="middle" font-size="6.5" ${SVGF} fill="#7fe0a0">1ST DAY · MON 8/31</text>
+    <text x="86" y="32" text-anchor="middle" font-size="7" ${SVGF} fill="#f4d27a">${gHigh()?'WELCOME BACK':'WELCOME, OWLS'}</text><text x="86" y="43" text-anchor="middle" font-size="6.5" ${SVGF} fill="#7fe0a0">1ST DAY · MON 8/31</text>
     ${[96,112,128].map(x=>`<path d="M${x} 140 v-9 a5 5 0 0 1 10 0 v9" stroke="${n?'#555':'#6a7076'}" stroke-width="2" fill="none"/>`).join('')}
     ${person(300,n,'#f2b630',146,.8)}${lamp(398,n,146)}${gRainArt()}`,
   // the Reading Room: a little community library in an old storefront
@@ -3349,7 +3936,7 @@ const G_L={
     art:o=>L_ADULT.peoples.art(o)+gRainArt()},
   library:{name:'The Reading Room',ic:'📚',desc:'A little community library in an old storefront: shelves to the ceiling, beanbags and Ms. Okafor, who knows everything',
     hours:d=>d%7===6?[720,1020]:[600,1080],art:o=>G_ART.library(o)},
-  school:{name:'Summit View Middle School',ic:'🏫',desc:'Your new school up the hill, home of the Owls. The office is open weekdays this week; classes start Mon Aug 31',
+  school:{get name(){return gSchool()},ic:'🏫',get desc(){return gHigh()?'Hilltop High, up the hill: the gym, the commons, the bus loop and a mural of the mountain in the front hall':'Your new school up the hill, home of the Owls. The office is open weekdays this week; classes start Mon Aug 31'},
     art:o=>G_ART.school(o)},
   view:{name:'The overlook',ic:'🌄',desc:'The bench at the edge of the hill: Commencement Bay, the port cranes, Vashon off to the right, and Rainier when the mountain is out',
     art:o=>L_ADULT.view.art(o)+gRainArt()},
@@ -3364,7 +3951,7 @@ GROW.travelMins=(a,b)=>{let m=G_TRAVEL[a+'|'+b]??G_TRAVEL[b+'|'+a]??10;if(S&&S.s
 // ---- actions ----
 const G_CATS={family:'🏠 Family',school:'🎒 Getting ready',kids:'🤝 Kids',fun:'🎈 Fun',money:'🛒 Spend',rest:'🛋️ Rest',here:'📍 Around here'};
 GROW.actionsHere=()=>{
-  const d=day(),m=tod(),a=[],rain=gRain(),school=d===G_SCHOOL_DAY;
+  const d=day(),m=tod(),a=[],rain=gRain(),school=d===gSchoolDay();
   // the finale: the first day of school
   if(school&&!S.firstDay){
     if(S.loc==='school') a.push({ic:'🔔',l:'Go in: the first day of middle school',s:m<=G_BELL?`The bell rings at ${fmt(G_BELL)}. You’re on time.`:`The bell rang at ${fmt(G_BELL)}. You’re late, but you’re here.`,cat:'school',cls:'primary',fn:()=>GROW.firstDayStart()});
@@ -3379,8 +3966,8 @@ GROW.actionsHere=()=>{
   }
   if(S.loc==='home'){
     const late=m>=1290;
-    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. ${m>=1350?'It’s late: you’ll be tired tomorrow.':'Bed by 10:30 PM keeps your energy up.'} Wake-up: ${fmt(S.alarm)}.${d===G_SCHOOL_DAY-1?' Tomorrow is the first day of school.':''}`,cat:'rest',cls:m>=1260?'primary':'',fn:()=>endDay('home')});
-    if(d<G_SCHOOL_DAY-1) a.push({ic:'⏰',l:`Wake up at ${fmt(S.alarm)}`,s:'Tap to change: 7:00 → 7:30 → 8:00 → 8:30 → 9:00.',cat:'rest',fn:()=>{const o=[420,450,480,510,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Your alarm is set for ${fmt(S.alarm)}.`)}});
+    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. ${m>=1350?'It’s late: you’ll be tired tomorrow.':'Bed by 10:30 PM keeps your energy up.'} Wake-up: ${fmt(S.alarm)}.${d===gSchoolDay()-1?' Tomorrow is the first day of school.':''}`,cat:'rest',cls:m>=1260?'primary':'',fn:()=>endDay('home')});
+    if(d<gSchoolDay()-1) a.push({ic:'⏰',l:`Wake up at ${fmt(S.alarm)}`,s:'Tap to change: 7:00 → 7:30 → 8:00 → 8:30 → 9:00.',cat:'rest',fn:()=>{const o=[420,450,480,510,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Your alarm is set for ${fmt(S.alarm)}.`)}});
     if(!S.rest[d]||S.energy<40) a.push({ic:'😴',l:'Rest in your room',s:'An hour with comics and the fan on. Energy +10, mood +3.',cat:'rest',dis:S.energy>=100,fn:()=>{pass(60);S.rest[d]=true;adj('energy',10);adj('mood',3);
       say(pick(['😴 You lie on your bed with a comic over your face and listen to the street: a bus, a dog, somebody laughing on a porch.','😴 Nap. Not on purpose. Nia puts a sticker on your forehead while you sleep. It says GREAT JOB.','😴 The fan turns back and forth. The ceiling has a crack shaped like Florida. You will know it well.']))}});
     if(!S.chore[d]&&!late){const c=GROW.chores[d%GROW.chores.length];
@@ -3393,21 +3980,25 @@ GROW.actionsHere=()=>{
       say(pick(['📞 Grandma asks if the new place has a yard. You say it has a view of a volcano. She says, “Well, la-di-da.”','📞 Grandma tells you she was nervous her first day of seventh grade too, in 1971, and she turned out fine. Mostly.','📞 Grandma puts you on speaker so the whole kitchen back home can say hi. It’s loud. It’s great.']))}});
     if(S.boxes<G_BOXES) a.push({ic:'📦',l:`Unpack a box in your room (${S.boxes} of ${G_BOXES})`,s:S.unpack[d]?'One a day. The rest can wait until tomorrow.':'30 min. Mood +4, energy −3. Your room starts to feel like yours.',cat:'here',dis:!!S.unpack[d],fn:()=>{pass(30);S.unpack[d]=true;S.boxes++;adj('mood',4);adj('energy',-3);
       say(S.boxes>=G_BOXES?'📦 The last box: your posters, your trophy from second-grade soccer, the lamp shaped like a moon. It’s your room now.':pick(['📦 Clothes, mostly. You find a hoodie you forgot you had. It still fits. Barely.','📦 Books and a jar of rocks from the old house. You put the rocks on the windowsill, facing the mountain.']))}});
-    if(!S.ready.signed){const ok=gParentsHome();
+    if(lifeLong()&&!gCh1()&&isSchoolDay(d)&&!S.hw[d]) a.push({ic:'📚',l:'Do your homework',s:'45 min at the kitchen table. Grades +3, mood −1. Once a school day.',cat:'school',cls:m<1080?'primary':'',fn:()=>{pass(45);S.hw[d]=true;S.grades=clamp(gGrades()+3,0,100);adj('mood',-1);adj('energy',-3);
+      say(pick(['📚 Math, then a reading log, then a worksheet that was due yesterday. Done. Nia “helps.”','📚 You actually understand the science homework. You check it twice anyway.','📚 An essay outline, three sentences at a time. Mom reads it and says it’s good. It is, mostly.']))}});
+    if(gCh1()&&!S.ready.signed){const ok=gParentsHome();
       a.push({ic:'📝',l:'Ask Mom and Dad to sign the school forms',s:ok?(S.family>=45?'15 min. The emergency card, the lunch form, the bus form.':'They’re home, but it’s been a week. Help out first (Family 45+).'):'They’re at work. Weekday evenings after 5:30 PM, or the weekend.',cat:'school',dis:!ok,
         fn:()=>{pass(15);if(S.family>=45){gGetReady('signed');adj('family',2);say('📝 Mom signs the emergency card, Dad signs the lunch form, and they both sign the bus form “just in case.” Mom writes your name on the folder in marker, very neatly, like it’s a big deal. It kind of is.')}
           else{adj('family',-2);say('📝 Dad is buried in boxes and Mom is on the phone with the internet company. “Tomorrow, okay? Help me with these first.” Do a chore or two, then ask again.')}}});}
-    if(!S.ready.outfit) a.push({ic:'👕',l:'Pick a first-day outfit',s:'20 min. Lay it out on the chair, shoes and all.',cat:'school',fn:()=>{pass(20);gGetReady('outfit');adj('mood',3);
+    if(gCh1()&&!S.ready.outfit) a.push({ic:'👕',l:'Pick a first-day outfit',s:'20 min. Lay it out on the chair, shoes and all.',cat:'school',fn:()=>{pass(20);gGetReady('outfit');adj('mood',3);
       say('👕 You try on four outfits and pick the first one. It’s laid out on your chair, shoes underneath, like a person who is ready. Nia gives it a thumbs-up.')}});
-    if(d===G_SAT&&!S.bbq&&gAt(960,1230)) a.push({ic:'🍖',l:'Go to the barbecue across the street',s:'Tavita’s family is grilling and the whole block is invited. 90 min.',cat:'fun',cls:'primary',fn:()=>GROW.bbq()});
+    if(d===gSat()&&!S.bbq&&gAt(960,1230)) a.push({ic:'🍖',l:'Go to the barbecue across the street',s:'Tavita’s family is grilling and the whole block is invited. 90 min.',cat:'fun',cls:'primary',fn:()=>GROW.bbq()});
   }
   if(S.loc==='mlk'){
     const mk=gAt(420,1320),sn=gRp(2),sup=gRp(18),cut=gRp(15),shop=gWeekday()?d%7!==0:d%7===5;   // barbershop: Tue–Sat
     a.push({ic:'🍬',l:`A snack from the corner market — ${$(sn)}`,s:mk?'A cold drink and a bag of hot chips. Energy +6, mood +2.':'The market is open 7 AM to 10 PM.',cat:'money',dis:!mk||S.money<sn,fn:()=>{gSpend(sn);S.stats.snacks++;pass(10);adj('energy',6);adj('mood',2);
       say(pick(['🍬 Grace Kim rings you up and asks if you’re the new family on the side street. She says the good tortillas come in on Thursdays, and the good hot sauce is the one with the hand-drawn label.','🍬 A cold can from the back of the cooler and hot chips on the curb. Summer, perfected.','🍬 You count out quarters on the counter. Grace Kim waits like she has all day. She does, kind of.']))}});
-    if(!S.ready.supplies) a.push({ic:'🎒',l:`School supplies at the corner market — ${$(sup)}`,s:mk?`Binder, pencils, a calculator, a pack of paper. You have ${$(Math.round(S.money))}. (Or free at the giveaway at People’s, Sat 10–2.)`:'The market is open 7 AM to 10 PM.',cat:'school',dis:!mk||S.money<sup,
+    if(gCh1()&&!S.ready.supplies) a.push({ic:'🎒',l:`School supplies at the corner market — ${$(sup)}`,s:mk?`Binder, pencils, a calculator, a pack of paper. You have ${$(Math.round(S.money))}. (Or free at the giveaway at People’s, Sat 10–2.)`:'The market is open 7 AM to 10 PM.',cat:'school',dis:!mk||S.money<sup,
       fn:()=>{gSpend(sup);pass(20);gGetReady('supplies');say('🎒 A binder, a pack of pencils, a calculator with your initials scratched on the back, and paper that is going to be so organized for about one week. Mr. Kim throws in a free eraser shaped like a taco.')}});
-    if(!S.ready.haircut) a.push({ic:'💈',l:`A back-to-school cut at the barbershop or the salon — ${$(cut)}`,s:shop&&gAt(540,1080)?'45 min. Dre at the barbershop, or the braider at the salon next door. Ready, mood +5.':'Open Tuesday to Saturday, 9 AM to 6 PM.',cat:'school',dis:!(shop&&gAt(540,1080))||S.money<cut,
+    if(S.age>=16&&!S.pt[d]){const ok=gAt(600,1080)&&!(isSchoolDay(d)&&tod()<925);a.push({ic:'🧾',l:'Work a shift at the corner market',s:ok?'4 hours stocking shelves and ringing up. About $56, energy −14. Once a day.':'Shifts start between 10 AM and 6 PM (after school on school days).',cat:'money',dis:!ok,
+      fn:()=>{pass(240);S.pt[d]=true;gEarn(56);adj('energy',-14);adj('mood',-1);say('🧾 Four hours at the corner market: stocking the hot-sauce shelf, ringing up neighbors, learning which regulars want a bag and which ones would be insulted. Grace Kim pays you in cash and a cold drink. $56.')}})}
+    if(gCh1()&&!S.ready.haircut) a.push({ic:'💈',l:`A back-to-school cut at the barbershop or the salon — ${$(cut)}`,s:shop&&gAt(540,1080)?'45 min. Dre at the barbershop, or the braider at the salon next door. Ready, mood +5.':'Open Tuesday to Saturday, 9 AM to 6 PM.',cat:'school',dis:!(shop&&gAt(540,1080))||S.money<cut,
       fn:()=>{gSpend(cut);pass(45);gGetReady('haircut');adj('mood',5);say('💈 Dre, in the chair by the window, has opinions about the Seahawks, the weather and your old haircut. He fixes two of the three. You walk out feeling taller. The whole shop says “Looking sharp, new kid.”')}});
     if(!S.murals[d]) a.push({ic:'🖼️',l:'Look at the murals',s:'30 min. Mood +5. Once a day.',cat:'fun',fn:()=>{pass(30);S.murals[d]=true;adj('mood',5);
       say(pick(['🖼️ Three stories of faces on a brick wall: grandmothers, ballplayers, a kid on a bike who looks a little like you. HILLTOP PROUD, it says, in letters taller than your dad.','🖼️ A mural of the mountain, the bay and the Link, all in colors louder than the real ones. You stare until a bus honks hello.','🖼️ You find a small painted owl in the corner of one mural. Owls are the mascot at Summit View. You decide it’s a sign.']))}});
@@ -3419,10 +4010,10 @@ GROW.actionsHere=()=>{
       say(pick(['🏊 Cannonball contest. You lose to a nine-year-old with no fear. The lifeguard gives you both a seven.','🏊 Laps, then floating, then floating some more. The water is the one place nobody is new.','🏊 Somebody’s dad runs a game of sharks and minnows with twenty kids. You are a minnow. You survive. Barely.']))}});
     if(!S.hoops[d]) a.push({ic:'🏀',l:'Shoot around on the courts',s:rain?'The courts are puddles today.':'45 min. Energy −8, mood +5. Once a day.',cat:'fun',dis:rain||!gAt(480,1230),fn:()=>{pass(45);S.hoops[d]=true;S.stats.hoops++;adj('energy',-8);adj('mood',5);
       say(pick(['🏀 You shoot around alone until your arms are noodles. Three in a row from the free-throw line. Nobody saw. It counts.','🏀 An older kid rebounds for you for ten minutes and says, “Bend your knees.” You do. It works.']))}});
-    if(!S.program[d]&&gWeekday()) a.push({ic:'🎨',l:'The summer rec program',s:gAt(600,840)?'2 hours of games and crafts with other kids, 10 AM–2 PM weekdays. Mood +5, and you might meet someone.':'Weekdays, 10 AM to 2 PM.',cat:'kids',dis:!gAt(600,840),fn:()=>{pass(120);S.program[d]=true;adj('mood',5);adj('energy',-6);
+    if(!S.program[d]&&gWeekday()&&!isSchoolDay(d)) a.push({ic:'🎨',l:'The summer rec program',s:gAt(600,840)?'2 hours of games and crafts with other kids, 10 AM–2 PM weekdays. Mood +5, and you might meet someone.':'Weekdays, 10 AM to 2 PM.',cat:'kids',dis:!gAt(600,840),fn:()=>{pass(120);S.program[d]=true;adj('mood',5);adj('energy',-6);
       const k=pick(KIDS.filter(x=>!gMet(x.id)).concat(KIDS.filter(x=>gMet(x.id))));const first=gFriend(k.id,3);
       say(`🎨 ${pick(['Capture the flag in the park, then friendship bracelets in the gym.','A water-balloon relay that turns into a water-balloon free-for-all.','Kickball, popsicles, and a counselor with a whistle she never uses.'])} ${first?`You end up on a team with <b>${k.n}</b>. ${k.d}`:`You end up next to ${k.n} again. Friendship +3.`}`)}});
-    if(d===G_SAT&&!S.giveaway) a.push({ic:'🎒',l:'The back-to-school giveaway',s:gAt(G_GIVE[0],G_GIVE[1])?'Free backpacks and supplies, on tables in the gym. 30 min.':'Saturday, 10 AM to 2 PM, in the gym.',cat:'school',cls:gAt(G_GIVE[0],G_GIVE[1])?'primary':'',dis:!gAt(G_GIVE[0],G_GIVE[1]),fn:()=>GROW.giveaway()});
+    if(d===gSat()&&!S.giveaway) a.push({ic:'🎒',l:'The back-to-school giveaway',s:gAt(G_GIVE[0],G_GIVE[1])?'Free backpacks and supplies, on tables in the gym. 30 min.':'Saturday, 10 AM to 2 PM, in the gym.',cat:'school',cls:gAt(G_GIVE[0],G_GIVE[1])?'primary':'',dis:!gAt(G_GIVE[0],G_GIVE[1]),fn:()=>GROW.giveaway()});
   }
   if(S.loc==='library'){
     const op=isOpen('library');
@@ -3430,14 +4021,14 @@ GROW.actionsHere=()=>{
       say(pick(['📖 A graphic novel about a kid who moves to a new town and turns out to be a dragon. Relatable, mostly.','📖 You read a whole mystery in one sitting. The librarian, Ms. Okafor, asks who did it. You tell her. She says, “Called it.”','📖 A book of facts about volcanoes. Rainier is one. You read that part twice.']))}});
     if(!S.ev.flags.card) a.push({ic:'🪪',l:'Get a library card',s:op?'10 min. Ms. Okafor needs your name and your new address.':hoursTxt('library'),cat:'here',dis:!op,fn:()=>{pass(10);S.ev.flags.card=day()+1;adj('mood',4);
       say('🪪 Ms. Okafor types in your new address and hands you a card that is still warm from the printer. “Welcome to the neighborhood. Ten books at a time, and I want to hear about every one.”')}});
-    if(!S.ev.flags.map) a.push({ic:'💻',l:'Look up Summit View on the computer',s:op?'20 min. The school map, the bell schedule, which door is which.':hoursTxt('library'),cat:'school',dis:!op,fn:()=>{pass(20);S.ev.flags.map=day()+1;adj('mood',3);
+    if(gCh1()&&!S.ev.flags.map) a.push({ic:'💻',l:'Look up Summit View on the computer',s:op?'20 min. The school map, the bell schedule, which door is which.':hoursTxt('library'),cat:'school',dis:!op,fn:()=>{pass(20);S.ev.flags.map=day()+1;adj('mood',3);
       say(`💻 Summit View’s website: a map with the gym, the cafeteria and the 200 hall, and the bell schedule. First bell ${fmt(G_BELL)}. You print the map. It goes in your back pocket and stays there all week.`)}});
   }
   if(S.loc==='school'){
     const office=gWeekday()&&gAt(540,900)&&!school;
     if(!S.walk[d]&&!school) a.push({ic:'🗺️',l:'Walk around the building',s:'30 min. The front doors, the gym, the bike rack, the side door the eighth graders use. Mood +3.',cat:'school',fn:()=>{pass(30);S.walk[d]=true;adj('mood',3);
       say(pick(['🗺️ You walk all the way around Summit View. It is enormous. Your old school would fit in the gym. Through a window you can see a hallway of lockers, waiting.','🗺️ A custodian mopping the front steps tells you the trick: “The 200 hall is upstairs. Everybody gets that wrong. Not you, now.”','🗺️ You peek in the cafeteria window. Long tables, a stage, a banner that says WELCOME OWLS. Your stomach does a small flip.']))}});
-    if(!S.ready.turnedIn&&!school) a.push({ic:'📬',l:'Turn in your forms at the office',s:!S.ready.signed?'Get them signed at home first.':office?'15 min. You’ll get your schedule and a locker number.':'The office is open weekdays, 9 AM to 3 PM, this week.',cat:'school',cls:S.ready.signed&&office?'primary':'',dis:!S.ready.signed||!office,
+    if(gCh1()&&!S.ready.turnedIn&&!school) a.push({ic:'📬',l:'Turn in your forms at the office',s:!S.ready.signed?'Get them signed at home first.':office?'15 min. You’ll get your schedule and a locker number.':'The office is open weekdays, 9 AM to 3 PM, this week.',cat:'school',cls:S.ready.signed&&office?'primary':'',dis:!S.ready.signed||!office,
       fn:()=>{pass(15);gGetReady('turnedIn');adj('mood',4);say('📬 The office secretary checks every form, stamps them, and slides a schedule across the counter: homeroom in room 214, science, math, PE, lunch, social studies, band. Locker 1142. “Try the combination now, everybody forgets.” You try it four times. It opens.')}});
   }
   if(S.loc==='view'){
@@ -3462,21 +4053,21 @@ GROW.dinners=['🍽️ Spaghetti night. Dad asks everybody for one good thing ab
 
 GROW.statusTags=()=>{
   const t=[],d=day(),m=tod();
-  t.push(`<span class="tag">🎒 ready ${gReady()}%</span>`);
-  if(S.loc!=='home'&&m<G_CURFEW) t.push(`<span class="tag ${m>=G_CURFEW-45?'bad':''}">🏠 home by ${fmt(G_CURFEW)}</span>`);
+  t.push(gCh1()?`<span class="tag">🎒 ready ${gReady()}%</span>`:`<span class="tag">📚 grades ${gGrades()}</span>`);
+  if(S.loc!=='home'&&m<gCurfew()) t.push(`<span class="tag ${m>=gCurfew()-45?'bad':''}">🏠 home by ${fmt(gCurfew())}</span>`);
   if(gRain()) t.push('<span class="tag">🌧️ rainy day</span>');
   if(S.energy<25) t.push('<span class="tag bad">🥱 tired</span>');
   if(S.mood<30) t.push('<span class="tag bad">😕 low mood</span>');
-  if(d===G_SAT&&!S.giveaway&&m<G_GIVE[1]) t.push('<span class="tag">🎒 giveaway at People’s 10–2</span>');
-  if(d===G_SCHOOL_DAY&&!S.firstDay) t.push(`<span class="tag">🏫 first day · bell ${fmt(G_BELL)}</span>`);
+  if(d===gSat()&&!S.giveaway&&m<G_GIVE[1]) t.push('<span class="tag">🎒 giveaway at People’s 10–2</span>');
+  if(d===gSchoolDay()&&!S.firstDay) t.push(`<span class="tag">🏫 first day · bell ${fmt(G_BELL)}</span>`);
   return t;
 };
 GROW.alertBar=()=>{
   const d=day(),m=tod();
-  if(d===G_SCHOOL_DAY&&!S.firstDay) return {t:S.loc==='school'?'🔔 You made it. Tap Go in when you’re ready.':`🏫 First day of middle school! The bell rings at ${fmt(G_BELL)}. Summit View is ${travelMins(S.loc,'school')} min away.`,kind:m>G_BELL?'':'info'};
-  if(S.loc!=='home'&&m>=G_CURFEW-45&&m<G_CURFEW) return {t:`🏠 Home by ${fmt(G_CURFEW)}. You’re ${travelMins(S.loc,'home')} minutes away.`};
-  if(d===G_SAT&&m<G_GIVE[1]&&!S.giveaway) return {t:'🎒 The back-to-school giveaway is at People’s today, 10 AM to 2 PM: free backpacks and supplies.',kind:'info'};
-  if(d===G_SCHOOL_DAY-1&&gReady()<100) return {t:`🎒 School is tomorrow. Ready: ${gReady()}%. Check the To-do tab.`,kind:'info'};
+  if(d===gSchoolDay()&&!S.firstDay) return {t:S.loc==='school'?'🔔 You made it. Tap Go in when you’re ready.':`🏫 First day of middle school! The bell rings at ${fmt(G_BELL)}. Summit View is ${travelMins(S.loc,'school')} min away.`,kind:m>G_BELL?'':'info'};
+  if(S.loc!=='home'&&m>=gCurfew()-45&&m<gCurfew()) return {t:`🏠 Home by ${fmt(gCurfew())}. You’re ${travelMins(S.loc,'home')} minutes away.`};
+  if(d===gSat()&&m<G_GIVE[1]&&!S.giveaway) return {t:'🎒 The back-to-school giveaway is at People’s today, 10 AM to 2 PM: free backpacks and supplies.',kind:'info'};
+  if(d===gSchoolDay()-1&&gReady()<100) return {t:`🎒 School is tomorrow. Ready: ${gReady()}%. Check the To-do tab.`,kind:'info'};
   return null;
 };
 
@@ -3487,16 +4078,17 @@ const G_TABS=[
 ];
 GROW.weekView=()=>{
   const d0=day();
-  return `<div class="sect">Your first week on Hilltop</div>`+Array.from({length:GAME.days},(_,i)=>{
+  return `<div class="sect">${lifeLong()&&!gCh1(lifeWeekDays()[0])?`This week · ${kwName(lifeKw())}`:'Your first week on Hilltop'}</div>`+lifeWeekDays().map(i=>{
     const s=[];
     if(i===0) s.push('📦 moving-in day');
-    if(i<5) s.push('🎨 summer rec program 10–2 · 📬 school office 9–3');
-    if(i===G_SAT) s.push(`💵 allowance day · 🎒 giveaway 10–2${S.giveaway?' (went)':''} · 🍖 barbecue across the street${S.bbq?' (went)':''}`);
+    if(i<5&&gCh1(i)) s.push('🎨 summer rec program 10–2 · 📬 school office 9–3');
+    if(i===gSat()) s.push(`💵 allowance day · 🎒 giveaway 10–2${S.giveaway?' (went)':''} · 🍖 barbecue across the street${S.bbq?' (went)':''}`);
     if(i===6) s.push('☀️ the last day of summer');
-    if(i===G_SCHOOL_DAY) s.push(`🏫 first day of middle school, bell ${fmt(G_BELL)}`);
+    if(i>gSchoolDay()&&isSchoolDay(i)) s.push(`🏫 school at ${gSchoolShort()}`);
+    if(i===gSchoolDay()) s.push(`🏫 first day of middle school, bell ${fmt(G_BELL)}`);
     if(S.curfew[i]) s.push('⏰ missed curfew');
     return `<div class="todo"><span class="ck">${i<d0?'✔️':i===d0?'👉':'·'}</span><div><b>${gDate(i)}</b><span>${s.join(' · ')||'a summer day'}</span></div></div>`}).join('')
-    +`<div class="rules">Home by ${fmt(G_CURFEW)} every night, or Family drops.</div>`;
+    +`<div class="rules">Home by ${fmt(gCurfew())} every night, or Family drops.</div>`+lifeWeekList();
 };
 GROW.kidsView=()=>{
   const met=KIDS.filter(k=>gMet(k.id)),b=gBest();
@@ -3515,20 +4107,20 @@ GROW.kidsView=()=>{
 // ---- lifecycle (04-loop.js calls these through the adult game's functions, which hand off here) ----
 GROW.onNewGame=()=>{
   say(`${gLong(0)}, 2026, ${fmt(S.t)}. Your first morning on Hilltop. Boxes in the hall, your sister singing in the kitchen, and the Link bell ringing down on MLK.`);
-  modal('🎒 Growing Up · Chapter 1',`<p>You’re <b>12</b>. Your family just moved into an apartment on <b>Hilltop</b>, in Tacoma: Mom, Dad, your little sister <b>Nia</b> (she’s 7) and you.</p>
-    <p>🏫 In one week, on <b>Monday, Aug 31</b>, you start seventh grade at <b>Summit View Middle School</b>, where you don’t know a single person. Yet.</p>
+  modal('🎒 Growing Up · Chapter 1',`<p>You’re <b>${S.age||12}</b>. Your family just moved into an apartment on <b>Hilltop</b>, in Tacoma: Mom, Dad, your little sister <b>Nia</b> (she’s ${7+(S.age||12)-12}) and you.</p>
+    <p>🏫 In one week, on <b>${longDate(gSchoolDay())}</b>, you start ${gGradeWord()} grade at <b>${gSchool()}</b>, where you don’t know a single person. Yet.</p>
     <p>🎒 Get <b>Ready</b>: school supplies, the way to school, a haircut, your forms signed and turned in, and something to wear.</p>
     <p>🤝 Meet the kids on the hill. Any of them could become your best friend.</p>
-    <p>🏠 Keep things good at home, and be home by <b>${fmt(G_CURFEW)}</b> every night.</p>
+    <p>🏠 Keep things good at home, and be home by <b>${fmt(gCurfew())}</b> every night.</p>${lifeLong()?`<p>🌱 <b>${LIFE_LEN[S.length].n}</b>: ${S.keyWeeks.length} key weeks, with a summary between them. Your birthday is ${S.birthday.label}.</p>`:''}
     <p>💵 You have <b>${$(Math.round(S.money))}</b> of allowance. Chores earn a little more.</p>`,[{l:'Go look out the window',fn:()=>{}}]);
 };
 const G_MORNING=['☀️ Warm already. The last week of summer and it knows it.','🌫️ A marine layer over the bay. It’ll burn off by ten.','🐦 The crows on the power line are holding a meeting. Loudly.','🎶 Somebody down the block is playing old Motown with the windows open.','🚋 The first Link of the day dings past on MLK.','🥞 Dad is making pancakes and singing about it.','🌤️ Haze from a fire somewhere over the Cascades. The sun comes up orange.'];
 GROW.onMorning=d=>{
   if(d===0) return;
-  say(`${gLong(d)}, ${fmt(S.t)}. ${d===G_SCHOOL_DAY?'🎒 Today is the day.':pick(G_MORNING)}`);
-  if(d===G_SAT){gEarn(10);say('💵 Saturday: allowance day. Dad leaves $10 on the counter under the salt shaker. The back-to-school giveaway is at People’s, 10 AM to 2 PM, and Tavita’s family across the street is firing up the grill tonight.')}
+  say(`${gLong(d)}, ${fmt(S.t)}. ${d===gSchoolDay()?'🎒 Today is the day.':pick(G_MORNING)}`);
+  if(d===gSat()){gEarn(10);say('💵 Saturday: allowance day. Dad leaves $10 on the counter under the salt shaker. The back-to-school giveaway is at People’s, 10 AM to 2 PM, and Tavita’s family across the street is firing up the grill tonight.')}
   else if(d===6) say('☀️ Sunday. The last day of summer. Church bells all over the hill, then a long, slow afternoon.');
-  else if(d===G_SCHOOL_DAY) say(`🏫 The first day of seventh grade at Summit View Middle School. The bell rings at ${fmt(G_BELL)}, and it’s ${travelMins('home','school')} minutes up the hill.`);
+  else if(d===gSchoolDay()) say(`🏫 The first day of ${gGradeWord()} grade at ${gSchool()}. The bell rings at ${fmt(G_BELL)}, and it’s ${travelMins('home','school')} minutes up the hill.`);
   else if(gWeekday(d)) say('🏥 Mom and Dad are at work until 5:30. You’re in charge of you (and the house key on a shoelace).');
 };
 GROW.onNight=(where,notes,d)=>{
@@ -3540,12 +4132,12 @@ GROW.onNight=(where,notes,d)=>{
   if(S.mood>70)adj('mood',-3);else if(S.mood<40)adj('mood',4);   // a night’s sleep evens things out a little
   if(S.curfew[d]) notes.push('⏰ You missed curfew tonight. Mom and Dad are not thrilled.');
   if(S.energy<20){adj('mood',-4);notes.push('🥱 You’re running on fumes.')}
-  if(d===G_SCHOOL_DAY-1){S.alarm=405;notes.push(`⏰ Mom sets your alarm for ${fmt(405)}. “Big day.” ${gReady()>=100?'Your backpack is by the door, packed. You are ready.':`Ready: ${gReady()}%. It’ll have to do.`}`)}
-  if(d===G_SCHOOL_DAY&&!S.firstDay) GROW.firstDayMissed(notes);
+  if(d===gSchoolDay()-1){S.alarm=405;notes.push(`⏰ Mom sets your alarm for ${fmt(405)}. “Big day.” ${gReady()>=100?'Your backpack is by the door, packed. You are ready.':`Ready: ${gReady()}%. It’ll have to do.`}`)}
+  if(d===gSchoolDay()&&!S.firstDay) GROW.firstDayMissed(notes);
 };
 GROW.onTime=min=>{
   if(min>0) adj('energy',-min/55);
-  if(!S||S.over||S.loc==='home'||tod()<G_CURFEW) return;
+  if(!S||S.over||S.loc==='home'||tod()<gCurfew()) return;
   const d=day();
   if(!S.curfew[d]){S.curfew[d]=true;S.stats.curfew++;adj('family',-12);adj('mood',-3);
     say(`⏰ It’s ${fmt(S.t)} and you’re not home. Mom calls: “Where are you? Home. Now.” You run the whole way. Family −12.`)}
@@ -3553,12 +4145,12 @@ GROW.onTime=min=>{
 };
 GROW.onArrive=(dest)=>{
   S.visited[dest]=true;
-  if(tod()>=G_CURFEW&&dest!=='home'){S.loc='home';return}
+  if(tod()>=gCurfew()&&dest!=='home'){S.loc='home';return}
   if(dest==='school'&&!S.ready.route){gGetReady('route');adj('mood',3);
     say(`🗺️ You found the way: up the hill, past the church and the corner with the blue house, ${travelMins('home','school')} minutes from your door. You’ll be able to do it Monday without thinking.`)}
 };
 GROW.daySummary=d=>[`⚡ ${S.energy}`,`🙂 ${S.mood}`,`🏠 ${S.family}`,`🤝 ${gFriends()}`,`🎒 ${gReady()}%`];
-GROW.hudDay=d=>d===G_SCHOOL_DAY?`${gDate(d)} · First day of school`:`${gDate(d)} · Day ${d+1} of ${GAME.days}`;
+GROW.hudDay=d=>d===gSchoolDay()?`${gDate(d)} · First day of school`:`${gDate(d)} · Day ${d+1} of ${GAME.days}`;
 GROW.checkLoss=()=>null;   // no game over in Chapter 1: a rough week still gets to Monday
 const G_LOSSES={};
 
@@ -3571,7 +4163,7 @@ GROW.giveaway=()=>{
   pass(30);S.giveaway=true;adj('mood',4);
   const had=S.ready.supplies;gGetReady('supplies');if(had)adj('family',4);
   const k=KIDS.find(x=>!gMet(x.id)),first=k?gFriend(k.id,3):false;
-  say(`🎒 Long tables in the gym: backpacks in every color, binders, pencils, glue sticks, and volunteers who say “Take what you need, baby.” ${had?'You already have supplies, so you pick out a purple backpack for Nia’s second grade. She will not take it off. Family +4.':'You leave with a backpack full of everything on the seventh-grade list.'} ${first?`In line you meet <b>${k.n}</b>. ${k.d}`:''}`);
+  say(`🎒 Long tables in the gym: backpacks in every color, binders, pencils, glue sticks, and volunteers who say “Take what you need, baby.” ${had?'You already have supplies, so you pick out a purple backpack for Nia’s second grade. She will not take it off. Family +4.':'You leave with a backpack full of everything on the ${gGradeWord()}-grade list.'} ${first?`In line you meet <b>${k.n}</b>. ${k.d}`:''}`);
 };
 
 // ---- the finale: the first day of middle school ----
@@ -3592,7 +4184,7 @@ GROW.firstDayStart=()=>{
   ];
   if(late)adj('mood',-4);
   const show=i=>{const [h,body]=steps[i],last=i===steps.length-1;
-    modalSwap(`${h}`,`<p style="font-size:12px;color:var(--mute);margin:0 0 6px">The first day of middle school · ${i+1} of ${steps.length}</p>${body}`,
+    modalSwap(`${h}`,`<p style="font-size:12px;color:var(--mute);margin:0 0 6px">The first day of ${gLevel()} · ${i+1} of ${steps.length}</p>${body}`,
       [last?{l:'📖 Finish Chapter 1',fn:()=>GROW.firstDayEnd({late:late>0,with:b?b.id:null,walk:!!walk})}:{l:`Next: ${steps[i+1][0]}`,stay:true,fn:()=>show(i+1)}],true)};
   pass(10);show(0);
 };
@@ -3603,7 +4195,7 @@ GROW.firstDayEnd=r=>{
 };
 GROW.firstDayMissed=notes=>{
   S.firstDay={late:true,missed:true,with:null,walk:false};
-  notes.push('🏫 You never made it up the hill this morning, so Mom drove you to Summit View at 10:30 and walked you into the office. A late start, a long day, and you made it through anyway.');
+  notes.push(`🏫 You never made it up the hill this morning, so Mom drove you to ${gSchoolShort()} at 10:30 and walked you into the office. A late start, a long day, and you made it through anyway.`);
 };
 
 // ---- events (hooks: wake, arrive {at,from}, travel, night {where}, linkwatch) ----
@@ -3614,7 +4206,7 @@ gEvent({id:'g_hoops_invite',hook:'arrive',tile:['🏀','Want to shoot hoops?','g
       {l:'Sure',s:home?'Walk to People’s together and play for 45 minutes.':'Play for 45 minutes.',np:true,fn:()=>{pass(home?travelMins('home','peoples')+45:45);if(home){S.loc='peoples';S.visited.peoples=true}gFriend('marcus',6);adj('energy',-6);adj('mood',6);S.stats.hoops++;
         say(`🏀 This is <b>Marcus</b>. ${gKid('marcus').d} You lose 11 to 7 and he says you have “potential.” He means it. Mood +6.`)}},
       {l:'Maybe another time',s:'He shrugs: “We’re out here every day.”',np:true,fn:()=>say('🏀 “Cool. We’re out here every day,” he says, and dribbles off.')}])}});
-gEvent({id:'g_bbq_morning',hook:'wake',tile:['🍖','Grills across the street','good'],chance:1,max:1,cond:()=>day()===G_SAT,
+gEvent({id:'g_bbq_morning',hook:'wake',tile:['🍖','Grills across the street','good'],chance:1,max:1,cond:()=>day()===gSat(),
   run:()=>say('🍖 By ten the family across the street has two grills out, a canopy up and an uncle on a ladder hanging lights. “Tonight! Everybody!” somebody yells to the whole block. The barbecue is 4 to 8:30 PM.')});
 gEvent({id:'g_ice_cream',hook:'arrive',tile:['🍦','The ice cream truck','good'],chance:0.3,max:3,cooldown:2,cond:c=>['home','peoples','mlk'].includes(c.at)&&gAt(780,1170)&&!gRain(),
   run:c=>{const p=gRp(2),home=c.at==='home';
@@ -3638,17 +4230,17 @@ gEvent({id:'g_nia_pool',hook:'arrive',tile:['🧸','Nia has a request','info'],c
     {l:'Take her to the pool',s:'About 90 minutes. Family +8, mood +5, energy −8.',np:true,fn:()=>{pass(90);adj('family',8);adj('mood',5);adj('energy',-8);S.visited.peoples=true;
       say('🧸 Nia jumps in the shallow end forty times and makes you rate every one. Mostly tens. Mom gets a photo from the lifeguard’s mom, who turns out to live on your street. Family +8.')}},
     {l:'Not today',s:'She’ll survive. Family −2.',np:true,fn:()=>{adj('family',-2);say('🧸 Nia sighs the biggest sigh a seven-year-old can sigh and takes off her goggles very slowly.')}}])}});
-gEvent({id:'g_nia_card',hook:'night',tile:['💌','A card from Nia','good'],chance:1,max:1,cond:()=>day()===G_SCHOOL_DAY-1,
+gEvent({id:'g_nia_card',hook:'night',tile:['💌','A card from Nia','good'],chance:1,max:1,cond:()=>day()===gSchoolDay()-1,
   run:()=>{S.card=true;adj('mood',6);adj('family',3);say('💌 On your pillow: a card from Nia. GOOD LUCK AT BIG SCHOOL, with an owl that is either very wise or very surprised.')}});
-gEvent({id:'g_flyer',hook:'arrive',tile:['📄','A flyer on the door','info'],chance:0.5,max:1,cond:c=>['mlk','peoples','library'].includes(c.at)&&day()<G_SAT,
+gEvent({id:'g_flyer',hook:'arrive',tile:['📄','A flyer on the door','info'],chance:0.5,max:1,cond:c=>['mlk','peoples','library'].includes(c.at)&&day()<gSat(),
   run:()=>say(`📄 A bright flyer on the door: <b>BACK-TO-SCHOOL GIVEAWAY · Saturday, Aug 29 · 10 AM–2 PM · People’s Community Center</b>. Free backpacks and supplies, while they last.`)});
 gEvent({id:'g_rain',hook:'wake',tile:['🌧️','A rainy day','info'],chance:()=>day()>=4?1:0.3,max:1,cond:()=>day()>=1&&day()<=4,
   run:()=>{S.ev.flags.rain=day();adj('mood',-2);say('🌧️ Rain! The first in weeks. It drums on the roof and the whole hill smells like hot pavement and cut grass. The courts will be puddles, but the Reading Room has beanbags and the pool is indoors.')}});
 gEvent({id:'g_mountain',hook:'wake',tile:['🏔️','The mountain is out','good'],chance:0.3,max:2,cooldown:2,cond:()=>day()>0&&!gRain(),
   run:()=>{adj('mood',4);say('🏔️ The mountain is out. Rainier fills the whole south sky, pink with the first light, so big it looks fake. Dad calls everybody to the window. It’s the thing Tacoma does.')}});
 gEvent({id:'g_lorraine',hook:'arrive',tile:['🍅','The lady on the porch','good'],chance:0.35,max:1,cond:c=>c.at==='home'&&gDay(),
-  run:()=>{adj('mood',4);adj('family',2);say('🍅 The woman on the corner porch, <b>Ms. Lorraine</b>, waves you over. She has lived on this block since 1968 and already knows your mom’s name. She gives you two tomatoes and the inside scoop: “The science teacher at Summit View? Sweetheart. You’ll love her.”')}});
-gEvent({id:'g_nerves',hook:'night',tile:['💭','Butterflies','info'],chance:0.6,max:2,cooldown:1,cond:()=>day()>=4&&day()<G_SCHOOL_DAY,
+  run:()=>{adj('mood',4);adj('family',2);say('🍅 The woman on the corner porch, <b>Ms. Lorraine</b>, waves you over. She has lived on this block since 1968 and already knows your mom’s name. She gives you two tomatoes and the inside scoop: “The science teacher at Summit View? Sweetheart. You’ll love her.”'.replace('Summit View',gSchoolShort()))}});
+gEvent({id:'g_nerves',hook:'night',tile:['💭','Butterflies','info'],chance:0.6,max:2,cooldown:1,cond:()=>day()>=4&&day()<gSchoolDay(),
   run:()=>{if(gReady()>=60){adj('mood',2);say('💭 You lie awake thinking about Summit View. The good kind of nervous: you have a plan.')}else{adj('mood',-4);say('💭 You lie awake listing everything you haven’t done for school yet. The list is long. Check the To-do tab tomorrow.')}}});
 gEvent({id:'g_power_out',hook:'night',tile:['🔦','The power goes out','good'],chance:0.12,max:1,cond:c=>c.where==='home',
   run:()=>{adj('family',6);adj('mood',3);say('🔦 The power goes out at nine. Dad finds a flashlight, Mom finds the cards, and the four of you play Uno on the floor until it comes back. Nobody wants it to. Family +6.')}});
@@ -3660,12 +4252,12 @@ gEvent({id:'g_grandma_box',hook:'wake',tile:['📦','A package from Grandma','go
 // ---- tips: one a day, each once per game ----
 const G_TIPS=[
   {id:'g_welcome',when:()=>day()===0&&S.loc==='home',t:'👋 Welcome to Hilltop, {{name}}! School starts <b>Monday, Aug 31</b>. The <b>To-do</b> tab lists what you need to be <b>Ready</b>. Open <b>🧭 Go somewhere</b> below to explore the hill.'},
-  {id:'g_curfew',when:()=>S.loc!=='home'&&tod()>=1140,t:`🏠 Curfew is <b>${fmt(G_CURFEW)}</b>. Be home by then, or Family drops.`},
+  {id:'g_curfew',when:()=>S.loc!=='home'&&tod()>=1140,t:`🏠 Curfew is <b>${fmt(gCurfew())}</b>. Be home by then, or Family drops.`},
   {id:'g_ready',when:()=>day()>=1,t:'🎒 <b>Ready</b> on the top bar is how ready you are for school: supplies, the way there, a haircut, the forms (signed at home, turned in at the office) and an outfit.'},
   {id:'g_kids',when:()=>gMetCount()>=1,t:'🤝 Hang out with a kid once a day to grow the friendship. The <b>Friends</b> tab shows everyone you know.'},
   {id:'g_money',when:()=>S.money<10,t:'💵 Low on money? Do a chore at home: Dad pays $3. Saturday is allowance day, and the giveaway on Saturday has free supplies.'},
   {id:'g_forms',when:()=>day()>=2&&!S.ready.signed,t:'📝 Ask Mom and Dad to sign your forms at home in the evening (or on the weekend), then turn them in at the school office on a weekday.'},
-  {id:'g_family',when:()=>S.family<45,t:'🏠 Family is low. Do a chore, eat dinner together (5:30–7:30 PM), play with Nia, and be home by 8:30.'},
+  {id:'g_family',when:()=>S.family<45,get t(){return `🏠 Family is low. Do a chore, eat dinner together (5:30–7:30 PM), play with Nia, and be home by ${fmt(gCurfew()).replace(' PM','')}.`}},
   {id:'g_energy',when:()=>S.energy<30,t:'🥱 Low energy. Rest in your room, read at the Reading Room, eat dinner and get to bed by 10:30.'},
   {id:'g_bed',when:()=>S.loc==='home'&&tod()>=1260,t:'🛏️ Bed by 10:30 PM keeps you rested for tomorrow.'},
 ];
@@ -3673,13 +4265,17 @@ const G_TIPS=[
 // ---- To-do tab ----
 GROW.todoItems=()=>{
   const d=day(),m=tod(),it=[];
-  if(d===G_SCHOOL_DAY) it.push({l:'🏫 Go to the first day of school',s:`Summit View Middle School, bell at ${fmt(G_BELL)}.`,ok:!!S.firstDay,urgent:!S.firstDay});
-  G_READY.forEach(r=>it.push({l:`${r.ic} ${r.l}`,s:S.ready[r.k]?'Done.':r.how,ok:S.ready[r.k],urgent:!S.ready[r.k]&&d>=G_SCHOOL_DAY-1}));
-  it.push({l:`🏠 Home by ${fmt(G_CURFEW)}`,s:S.curfew[d]?'Missed tonight.':S.loc==='home'?'You’re home.':`You’re ${travelMins(S.loc,'home')} min away.`,ok:S.loc==='home'&&!S.curfew[d],fail:!!S.curfew[d],urgent:S.loc!=='home'&&m>=G_CURFEW-45});
+  if(d===gSchoolDay()) it.push({l:'🏫 Go to the first day of school',s:`${gSchool()}, bell at ${fmt(G_BELL)}.`,ok:!!S.firstDay,urgent:!S.firstDay});
+  if(!gCh1()){
+    if(isSchoolDay(d)) it.push({l:'📚 Do your homework',s:`At home after school. Grades ${gGrades()}.`,ok:!!S.hw[d],urgent:!S.hw[d]&&m>=1140});
+    it.push({l:'📚 Keep your grades up',s:`Grades ${gGrades()}/100 at ${gSchoolShort()}.`,ok:gGrades()>=60,urgent:gGrades()<40});
+  }
+  else G_READY.forEach(r=>it.push({l:`${r.ic} ${r.l}`,s:S.ready[r.k]?'Done.':r.how,ok:S.ready[r.k],urgent:!S.ready[r.k]&&d>=gSchoolDay()-1}));
+  it.push({l:`🏠 Home by ${fmt(gCurfew())}`,s:S.curfew[d]?'Missed tonight.':S.loc==='home'?'You’re home.':`You’re ${travelMins(S.loc,'home')} min away.`,ok:S.loc==='home'&&!S.curfew[d],fail:!!S.curfew[d],urgent:S.loc!=='home'&&m>=gCurfew()-45});
   it.push({l:'🍽️ Family dinner',s:'At home, 5:30–7:30 PM.',ok:!!S.dinner[d],fail:!S.dinner[d]&&m>=1170});
   it.push({l:'🤝 Make friends',s:`You know ${gMetCount()} of ${KIDS.length} kids · Friends ${gFriends()}/100`,ok:gMetCount()>=3});
   it.push({l:'📦 Unpack your room',s:`${S.boxes} of ${G_BOXES} boxes. One a day.`,ok:S.boxes>=G_BOXES});
-  if(d<=G_SAT) it.push({l:'Optional: the back-to-school giveaway',s:'Sat Aug 29 at People’s, 10 AM–2 PM.',ok:S.giveaway,fail:!S.giveaway&&(d>G_SAT||(d===G_SAT&&m>=G_GIVE[1]))});
+  if(d<=gSat()) it.push({l:'Optional: the back-to-school giveaway',s:'Sat Aug 29 at People’s, 10 AM–2 PM.',ok:S.giveaway,fail:!S.giveaway&&(d>gSat()||(d===gSat()&&m>=G_GIVE[1]))});
   return it;
 };
 
@@ -3704,7 +4300,7 @@ const G_CUTS=[3400,2800,2100,1300];   // A, B, C, D (the same on every difficult
 const G_RULES=`<p>Chapter 1 of Growing Up: your family’s first week on Hilltop, Mon Aug 24 to Sun Aug 30, 2026, and the first day of middle school on Mon Aug 31. There’s no game over: every week gets to Monday.</p><p>Score: Family × ${G_W.family} + Friends × ${G_W.friends} + Ready × ${G_W.ready} + Mood × ${G_W.mood} + money × ${G_W.money}, plus bonuses (a best friend, meeting all five kids, on time on the first day) and minus ${G_W.curfew} for each missed curfew. Grades: A ${grp(G_CUTS[0])}, B ${grp(G_CUTS[1])}, C ${grp(G_CUTS[2])}, D ${grp(G_CUTS[3])}.</p>`;
 GROW.scoreParts=()=>{
   const w=G_W,b=gBest(),fd=S.firstDay,onTime=fd&&!fd.late;
-  return [['Family',S.family*w.family,`${S.family} × ${w.family}`],['Friends',gFriends()*w.friends,`${gFriends()} × ${w.friends}`],['Ready',gReady()*w.ready,`${gReady()} × ${w.ready}`],
+  return [['Family',S.family*w.family,`${S.family} × ${w.family}`],['Friends',gFriends()*w.friends,`${gFriends()} × ${w.friends}`],[gCh1()?'Ready':'Grades',gGrades()*w.ready,`${gGrades()} × ${w.ready}`],
     ['Mood',S.mood*w.mood,`${S.mood} × ${w.mood}`],['Money',Math.max(0,S.money)*w.money,`${$(Math.round(S.money))} × ${w.money}`],
     ['Best friend',b?w.best:0,b?b.n:'not yet'],['Every kid',gMetCount()>=KIDS.length?w.allKids:0,`${gMetCount()} of ${KIDS.length}`],
     ['On time, first day',onTime?w.onTime:0,fd?(fd.late?'late':'on time'):'—'],['Curfew',-S.stats.curfew*w.curfew,`${S.stats.curfew} missed`]].map(([k,v,n])=>[k,Math.round(v)||0,n]);
@@ -3749,6 +4345,7 @@ TITLE.bullets.push('New: <b>🎒 Growing Up</b>. Start at 12, the week before mi
       const b=document.createElement('div');b.className='t-main t-growrow';
       b.innerHTML='<button id="growBtn" class="t-btn t-grow" onclick="startGrowUp()"><span class="t-ic" aria-hidden="true">🎒</span><span class="t-tx"><b>Growing Up (new)</b><span>Start at 12: your family’s first week on Hilltop, then middle school</span></span></button>';
       after.after(b);
+      lifeTitleRow(b);   // 10-life.js: 🌱 New life, just above
       const d=loadSave(),big=body.querySelector('button.big');
       if(d&&d.S.mode==='grow'&&big)big.textContent='🎒 '+big.textContent;
       fitTitle();
@@ -3757,7 +4354,7 @@ TITLE.bullets.push('New: <b>🎒 Growing Up</b>. Start at 12, the week before mi
 // ---- the end screen: Growing Up keeps its own best score, and teases the next chapter ----
 {const es=endScreen,GB=KEY('best.grow');
   endScreen=function(h1,sub,lost){
-    if(!isGrow())return es(h1,sub,lost);
+    if(!isGrow()||lifeLong())return es(h1,sub,lost);   // the longer games have their own end screen (10-life.js)
     const ls=store();let adultBest=null;
     try{if(ls){adultBest=ls.getItem(BEST_KEY);const g=ls.getItem(GB);if(g==null)ls.removeItem(BEST_KEY);else ls.setItem(BEST_KEY,g)}}catch(e){}
     try{es(h1,sub,lost)}finally{try{if(ls){const nb=ls.getItem(BEST_KEY);if(nb!=null)ls.setItem(GB,nb);if(adultBest==null)ls.removeItem(BEST_KEY);else ls.setItem(BEST_KEY,adultBest)}}catch(e){}}

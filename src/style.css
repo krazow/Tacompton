@@ -374,3 +374,14 @@ html.tut-open,html.tut-open body{overflow:hidden}
 .wn-older>summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
 .wn-more{font-size:13.5px;color:var(--mute)}
 .linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;background:none;border:0;font:inherit;font-weight:700;color:var(--brand);text-decoration:underline;cursor:pointer}
+/* 🌱 New life (10-life.js): the start sheet's length and age chips, the title row, the life summary */
+.lchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.lchip{min-height:44px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:700;font-size:14.5px}
+.lchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.lchip.sm{min-height:32px;padding:2px 8px;font-size:13px;margin-left:6px}
+.lnote{font-size:13px;color:var(--mute);margin:4px 0 8px}
+.lplan{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+.title .t-life{background:rgba(255,255,255,.16);color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.title .t-life .t-ic{background:rgba(255,255,255,.18)}
+.title .t-life .t-tx span{color:rgba(255,255,255,.8)}
+.life-sum h1{margin-bottom:6px}

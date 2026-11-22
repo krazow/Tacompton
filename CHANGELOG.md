@@ -10,6 +10,18 @@ are taken from it.
 - Getting around: walk to the Stadium District, ride the free Link downtown, or take the bus (a fare) to the rest. Trips across town take longer, so plan them around your shifts.
 - "Go somewhere" now groups places by neighborhood, and the guide has an "Around Tacoma" section.
 - 🗺️ A new achievement, All Over Tacoma: visit every neighborhood.
+- 🌱 New life: pick a length (Quick play, 6 months, 1 year, 2 years or Lifetime) and a starting age (12, 15 or 18) from the title screen. Your birthday is picked at random and shown before you start.
+- Key weeks: the longer games play the important weeks (one a month, about every six weeks plus your birthday, one a season plus birthdays, or one or two a year at the milestones) and show a summary between them: money, stats, age, school or work, friends and family, after one choice about how to spend the time (extra shifts, saving, friends; or studying, helping at home, friends, and shifts at 16).
+- A real calendar: every day has a date, rent is monthly (due on the 1st, or at the end of a key week that crosses it), the Hilltop Street Fair comes back on the second Saturday of every August, and the sunset follows the seasons.
+- Growing up: a birthday every year with a small family celebration; high school at 14 (Hilltop High, curfew 10 PM), a learner's permit and a part-time job at 16; school days, homework and grades after the first week.
+- Starting at 15: a sophomore at the fictional Hilltop High, with Growing Up's family, friends and places.
+- At 18, one save carries on: graduation, then work (one of the three jobs), college at UW Tacoma (tuition and a part-time job) or a trade program, then your own apartment on Hilltop. Family, friends and grades turn into rent help, community and job standing.
+- Lifetime ends at old age with a life summary: stages, work, people and moments.
+- ⚙️ Settings → 🎮 Game options: lengthen or shorten the game (or finish here), change the difficulty one step a week, event pop-ups, tips, full weeks or highlights (3 days of each key week), and rename your character. Starting age and mode show grayed out, with the reason.
+- 🏅 Best scores: scores are per month played, each length keeps its own best, and the list shows every run's length and starting age.
+
+### Changed
+- Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.
 
 ## 0.2.0 (2026-11-19)
 

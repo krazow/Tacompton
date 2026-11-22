@@ -27,6 +27,7 @@ function setMode(m){
   L=M.L;STATS=M.STATS;SCENE=M.SCENE;EXTRA_TABS=M.EXTRA_TABS;ACT_CATS=M.ACT_CATS;TIPS=M.TIPS;LOSSES=M.LOSSES;FINISH_TEXT=M.FINISH_TEXT;RULES_HTML=M.RULES_HTML;
   GAME.days=M.days;GAME.wake=M.wake;GAME.startLoc=M.startLoc;
   for(const k in M.diffs) Object.assign(DIFFS[k],M.diffs[k]);
+  lifeSync();   // 10-life.js: a longer game keeps its own GAME.days
 }
 // run fn in another mode for a moment (a save being read, the Help guide), then put the current mode back
 function withMode(m,fn){const prev=MODE;if(m===prev)return fn();setMode(m);try{return fn()}finally{setMode(prev)}}
@@ -50,6 +51,7 @@ GROW.newState=()=>({
   ready:{supplies:false,route:false,haircut:false,signed:false,turnedIn:false,outfit:false},
   boxes:0,                   // boxes unpacked in your room, out of G_BOXES
   // per-day trackers (day index → true)
+  hw:{},pt:{},grades:null,
   chore:{},unpack:{},dinner:{},nia:{},grandma:{},rest:{},murals:{},swim:{},hoops:{},program:{},read:{},think:{},sunset:{},hang:{},walk:{},
   curfew:{},                 // day → missed curfew (Family −)
   bbq:false,giveaway:false,card:false,mural:false,shortcut:false,
@@ -61,14 +63,25 @@ GROW.newState=()=>({
 
 // ---- small shared helpers ----
 const G_BOXES=3;                                            // your room's boxes
-const G_CURFEW=1230;                                        // 8:30 PM: home by then
+const G_CURFEW=1230;                                        // 8:30 PM: home by then (middle school)
+const gCurfew=()=>typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?1320:G_CURFEW;   // 10 PM from 14 (high school)
 const G_SUNSET=1205;                                        // about 8:05 PM at the end of August
-const G_SCHOOL_DAY=7;                                       // Mon Aug 31, the finale
-const G_SAT=5;                                              // Sat Aug 29: the giveaway, the barbecue, allowance day
+// the first day of school (the finale of the first week): the first isSchoolDay() of the run, Mon Aug 31, 2026 (day 7) from an Aug 24 start
+const gSchoolDay=()=>{const sd=lifeStartDate();for(let i=0;i<40;i++)if(schoolOn(dAt(sd,i)))return i;return 7};
+const gSat=()=>gSchoolDay()-2;                                // the Saturday before: the giveaway, the barbecue, allowance day
+const gCh1=(d=day())=>d<=gSchoolDay();                       // still in the first week (Chapter 1): getting Ready for school
+// the school, by stage: Summit View Middle School (12–13), Hilltop High (14–17, a fictional high school)
+const gHigh=()=>typeof S!=='undefined'&&!!S&&stage(S.age||12)!=='middle';
+const gSchool=()=>gHigh()?'Hilltop High':'Summit View Middle School';
+const gSchoolShort=()=>gHigh()?'Hilltop High':'Summit View';
+const gLevel=()=>gHigh()?'high school':'middle school';
+const gGradeWord=()=>({12:'seventh',13:'eighth',14:'ninth',15:'tenth',16:'eleventh',17:'twelfth'})[(typeof S!=='undefined'&&S&&S.age)||12]||'seventh';
+const G_NUM=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+const gAgeWord=(n=(typeof S!=='undefined'&&S&&S.age)||12)=>G_NUM[n]||String(n);
 const G_BELL=495;                                           // 8:15 AM: the first bell
 const G_GIVE=[600,840];                                     // the giveaway: 10 AM – 2 PM
-const gDate=d=>`${dayName(d).slice(0,3)} Aug ${24+d}`;      // day index → "Mon Aug 24"
-const gLong=d=>`${dayName(d)}, Aug ${24+d}`;
+const gDate=d=>dateOf(d).label;                              // day index → "Mon Aug 24" (any day of the year: 10-life.js)
+const gLong=d=>longDate(d);
 const gRp=c=>Math.round(c*(DF().cost||1));
 const gSpend=c=>{money(-c);S.stats.spent+=c};
 const gEarn=c=>{money(c);S.stats.earned+=c};
@@ -101,6 +114,9 @@ const KIDS=[
     d:'Twelve, short for Isaiah. Skates every hill on Hilltop and knows every shortcut, including the one to school that skips the steepest block.',
     hang:['🛹 Zay lets you try his board. You make it three feet. He makes it look like walking.','🛹 You and Zay count container ships in the bay. He has names for all the cranes.','🛹 Zay shows you the stairs nobody uses and the alley with the best blackberries. You come back purple.']},
 ];
+// the kids grow up with you: "Twelve" in a description follows your age, and so does the school
+KIDS.forEach(k=>{const d0=k.d;Object.defineProperty(k,'d',{enumerable:true,get(){const a=(typeof S!=='undefined'&&S&&S.age)||12;
+  return d0.replace(/^Twelve/,cap(gAgeWord(a))).replace(/\. Twelve\./,`. ${cap(gAgeWord(a))}.`).replace('Turns thirteen',`Turns ${gAgeWord(a+1)}`).replace('Summit View too',`${gSchoolShort()} too`)}})});
 const gKid=id=>KIDS.find(k=>k.id===id);
 const gMet=id=>!!(S.kids[id]&&S.kids[id].met);
 const gMetCount=()=>KIDS.filter(k=>gMet(k.id)).length;
@@ -122,6 +138,7 @@ const G_READY=[
   {k:'outfit',ic:'👕',l:'Pick a first-day outfit',w:15,how:'In your room at home.'},
 ];
 const gReady=()=>G_READY.reduce((a,r)=>a+(S.ready[r.k]?r.w:0),0);
+const gGrades=()=>S.grades==null?gReady():S.grades;          // after the first week: school grades (10-life.js)
 function gGetReady(k){if(S.ready[k])return;S.ready[k]=true}
 
 // ---- HUD ----
@@ -131,7 +148,7 @@ const G_STATS=[
   {l:'Mood',v:()=>S.mood,m:()=>S.mood,warn:()=>S.mood<25,title:'How you feel. Fun, friends and rest bring it up; nerves and a bad night bring it down.'},
   {l:'Family',v:()=>S.family,m:()=>S.family,warn:()=>S.family<30,title:'How things are at home. Chores, dinner and being home by 8:30 PM help.'},
   {l:'Friends',v:()=>gFriends(),m:()=>gFriends(),get title(){return `You know ${gMetCount()} of ${KIDS.length} kids on the hill.`}},
-  {l:'Ready',v:()=>gReady(),m:()=>gReady(),get title(){return `Ready for the first day of school: ${G_READY.filter(r=>S.ready[r.k]).length} of ${G_READY.length} things done.`}},
+  {get l(){return gCh1()?'Ready':'Grades'},v:()=>gCh1()?gReady():gGrades(),m:()=>gCh1()?gReady():gGrades(),warn:()=>!gCh1()&&gGrades()<40,get title(){return gCh1()?`Ready for the first day of school: ${G_READY.filter(r=>S.ready[r.k]).length} of ${G_READY.length} things done.`:`Your grades at ${gSchoolShort()}. School days, homework and studying raise them.`}},
 ];
 
 // ---- scenery: the end of August (sunrise about 6:25 AM, sunset about 8:05 PM) ----
@@ -161,11 +178,11 @@ const G_ART={
     ${[102,130,158,182].map(x=>[66,98].map(y=>`<rect x="${x}" y="${y}" width="16" height="20" fill="${win(n,(x+y)%3===0)}"/><rect x="${x}" y="${y+9}" width="16" height="2" fill="${n?'#3e2a26':'#a8553f'}"/>`).join('')).join('')}
     ${[288,314,340,364].map(x=>[66,98].map(y=>`<rect x="${x}" y="${y}" width="16" height="20" fill="${win(n,(x+y)%4===0)}"/><rect x="${x}" y="${y+9}" width="16" height="2" fill="${n?'#3e2a26':'#a8553f'}"/>`).join('')).join('')}
     <rect x="204" y="38" width="72" height="102" fill="${n?'#352320':'#93462f'}"/><polygon points="198,40 240,16 282,40" fill="${n?'#4a403a':'#e9dcc4'}"/><circle cx="240" cy="31" r="6.5" fill="${n?'#d8d2b0':'#fff'}" stroke="${n?'#4a403a':'#5a4a3a'}"/><path d="M240 31 v-4 M240 31 h3" stroke="#333" stroke-width="1.2"/>
-    <rect x="210" y="48" width="60" height="22" rx="2" fill="${n?'#2a2a30':'#f3ecdc'}"/><text x="240" y="58" text-anchor="middle" font-size="8.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">SUMMIT VIEW</text><text x="240" y="66.5" text-anchor="middle" font-size="5.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">MIDDLE SCHOOL</text>
+    <rect x="210" y="48" width="60" height="22" rx="2" fill="${n?'#2a2a30':'#f3ecdc'}"/><text x="240" y="58" text-anchor="middle" font-size="8.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">${gHigh()?'HILLTOP':'SUMMIT VIEW'}</text><text x="240" y="66.5" text-anchor="middle" font-size="5.5" ${SVGF} fill="${n?'#b9b2a6':'#7a2f1e'}">${gHigh()?'HIGH SCHOOL':'MIDDLE SCHOOL'}</text>
     <rect x="216" y="80" width="48" height="20" fill="${win(n,false)}"/><rect x="222" y="106" width="36" height="34" fill="${n?'#1e2a36':'#2a5a7a'}"/><path d="M240 106 v34" stroke="#ddd" stroke-width="1.5"/>
     <rect x="212" y="136" width="56" height="4" fill="${n?'#5a5450':'#d8cfc0'}"/>
     <rect x="54" y="20" width="64" height="30" rx="3" fill="${n?'#1a2430':'#16324d'}"/><rect x="64" y="50" width="3" height="94" fill="#555"/><rect x="105" y="50" width="3" height="94" fill="#555"/>
-    <text x="86" y="32" text-anchor="middle" font-size="7" ${SVGF} fill="#f4d27a">WELCOME, OWLS</text><text x="86" y="43" text-anchor="middle" font-size="6.5" ${SVGF} fill="#7fe0a0">1ST DAY · MON 8/31</text>
+    <text x="86" y="32" text-anchor="middle" font-size="7" ${SVGF} fill="#f4d27a">${gHigh()?'WELCOME BACK':'WELCOME, OWLS'}</text><text x="86" y="43" text-anchor="middle" font-size="6.5" ${SVGF} fill="#7fe0a0">1ST DAY · MON 8/31</text>
     ${[96,112,128].map(x=>`<path d="M${x} 140 v-9 a5 5 0 0 1 10 0 v9" stroke="${n?'#555':'#6a7076'}" stroke-width="2" fill="none"/>`).join('')}
     ${person(300,n,'#f2b630',146,.8)}${lamp(398,n,146)}${gRainArt()}`,
   // the Reading Room: a little community library in an old storefront
@@ -194,7 +211,7 @@ const G_L={
     art:o=>L_ADULT.peoples.art(o)+gRainArt()},
   library:{name:'The Reading Room',ic:'📚',desc:'A little community library in an old storefront: shelves to the ceiling, beanbags and Ms. Okafor, who knows everything',
     hours:d=>d%7===6?[720,1020]:[600,1080],art:o=>G_ART.library(o)},
-  school:{name:'Summit View Middle School',ic:'🏫',desc:'Your new school up the hill, home of the Owls. The office is open weekdays this week; classes start Mon Aug 31',
+  school:{get name(){return gSchool()},ic:'🏫',get desc(){return gHigh()?'Hilltop High, up the hill: the gym, the commons, the bus loop and a mural of the mountain in the front hall':'Your new school up the hill, home of the Owls. The office is open weekdays this week; classes start Mon Aug 31'},
     art:o=>G_ART.school(o)},
   view:{name:'The overlook',ic:'🌄',desc:'The bench at the edge of the hill: Commencement Bay, the port cranes, Vashon off to the right, and Rainier when the mountain is out',
     art:o=>L_ADULT.view.art(o)+gRainArt()},
@@ -209,7 +226,7 @@ GROW.travelMins=(a,b)=>{let m=G_TRAVEL[a+'|'+b]??G_TRAVEL[b+'|'+a]??10;if(S&&S.s
 // ---- actions ----
 const G_CATS={family:'🏠 Family',school:'🎒 Getting ready',kids:'🤝 Kids',fun:'🎈 Fun',money:'🛒 Spend',rest:'🛋️ Rest',here:'📍 Around here'};
 GROW.actionsHere=()=>{
-  const d=day(),m=tod(),a=[],rain=gRain(),school=d===G_SCHOOL_DAY;
+  const d=day(),m=tod(),a=[],rain=gRain(),school=d===gSchoolDay();
   // the finale: the first day of school
   if(school&&!S.firstDay){
     if(S.loc==='school') a.push({ic:'🔔',l:'Go in: the first day of middle school',s:m<=G_BELL?`The bell rings at ${fmt(G_BELL)}. You’re on time.`:`The bell rang at ${fmt(G_BELL)}. You’re late, but you’re here.`,cat:'school',cls:'primary',fn:()=>GROW.firstDayStart()});
@@ -224,8 +241,8 @@ GROW.actionsHere=()=>{
   }
   if(S.loc==='home'){
     const late=m>=1290;
-    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. ${m>=1350?'It’s late: you’ll be tired tomorrow.':'Bed by 10:30 PM keeps your energy up.'} Wake-up: ${fmt(S.alarm)}.${d===G_SCHOOL_DAY-1?' Tomorrow is the first day of school.':''}`,cat:'rest',cls:m>=1260?'primary':'',fn:()=>endDay('home')});
-    if(d<G_SCHOOL_DAY-1) a.push({ic:'⏰',l:`Wake up at ${fmt(S.alarm)}`,s:'Tap to change: 7:00 → 7:30 → 8:00 → 8:30 → 9:00.',cat:'rest',fn:()=>{const o=[420,450,480,510,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Your alarm is set for ${fmt(S.alarm)}.`)}});
+    a.push({ic:'🛏️',l:'Go to bed',s:`Ends the day. ${m>=1350?'It’s late: you’ll be tired tomorrow.':'Bed by 10:30 PM keeps your energy up.'} Wake-up: ${fmt(S.alarm)}.${d===gSchoolDay()-1?' Tomorrow is the first day of school.':''}`,cat:'rest',cls:m>=1260?'primary':'',fn:()=>endDay('home')});
+    if(d<gSchoolDay()-1) a.push({ic:'⏰',l:`Wake up at ${fmt(S.alarm)}`,s:'Tap to change: 7:00 → 7:30 → 8:00 → 8:30 → 9:00.',cat:'rest',fn:()=>{const o=[420,450,480,510,540];S.alarm=o[(o.indexOf(S.alarm)+1)%o.length];say(`⏰ Your alarm is set for ${fmt(S.alarm)}.`)}});
     if(!S.rest[d]||S.energy<40) a.push({ic:'😴',l:'Rest in your room',s:'An hour with comics and the fan on. Energy +10, mood +3.',cat:'rest',dis:S.energy>=100,fn:()=>{pass(60);S.rest[d]=true;adj('energy',10);adj('mood',3);
       say(pick(['😴 You lie on your bed with a comic over your face and listen to the street: a bus, a dog, somebody laughing on a porch.','😴 Nap. Not on purpose. Nia puts a sticker on your forehead while you sleep. It says GREAT JOB.','😴 The fan turns back and forth. The ceiling has a crack shaped like Florida. You will know it well.']))}});
     if(!S.chore[d]&&!late){const c=GROW.chores[d%GROW.chores.length];
@@ -238,21 +255,25 @@ GROW.actionsHere=()=>{
       say(pick(['📞 Grandma asks if the new place has a yard. You say it has a view of a volcano. She says, “Well, la-di-da.”','📞 Grandma tells you she was nervous her first day of seventh grade too, in 1971, and she turned out fine. Mostly.','📞 Grandma puts you on speaker so the whole kitchen back home can say hi. It’s loud. It’s great.']))}});
     if(S.boxes<G_BOXES) a.push({ic:'📦',l:`Unpack a box in your room (${S.boxes} of ${G_BOXES})`,s:S.unpack[d]?'One a day. The rest can wait until tomorrow.':'30 min. Mood +4, energy −3. Your room starts to feel like yours.',cat:'here',dis:!!S.unpack[d],fn:()=>{pass(30);S.unpack[d]=true;S.boxes++;adj('mood',4);adj('energy',-3);
       say(S.boxes>=G_BOXES?'📦 The last box: your posters, your trophy from second-grade soccer, the lamp shaped like a moon. It’s your room now.':pick(['📦 Clothes, mostly. You find a hoodie you forgot you had. It still fits. Barely.','📦 Books and a jar of rocks from the old house. You put the rocks on the windowsill, facing the mountain.']))}});
-    if(!S.ready.signed){const ok=gParentsHome();
+    if(lifeLong()&&!gCh1()&&isSchoolDay(d)&&!S.hw[d]) a.push({ic:'📚',l:'Do your homework',s:'45 min at the kitchen table. Grades +3, mood −1. Once a school day.',cat:'school',cls:m<1080?'primary':'',fn:()=>{pass(45);S.hw[d]=true;S.grades=clamp(gGrades()+3,0,100);adj('mood',-1);adj('energy',-3);
+      say(pick(['📚 Math, then a reading log, then a worksheet that was due yesterday. Done. Nia “helps.”','📚 You actually understand the science homework. You check it twice anyway.','📚 An essay outline, three sentences at a time. Mom reads it and says it’s good. It is, mostly.']))}});
+    if(gCh1()&&!S.ready.signed){const ok=gParentsHome();
       a.push({ic:'📝',l:'Ask Mom and Dad to sign the school forms',s:ok?(S.family>=45?'15 min. The emergency card, the lunch form, the bus form.':'They’re home, but it’s been a week. Help out first (Family 45+).'):'They’re at work. Weekday evenings after 5:30 PM, or the weekend.',cat:'school',dis:!ok,
         fn:()=>{pass(15);if(S.family>=45){gGetReady('signed');adj('family',2);say('📝 Mom signs the emergency card, Dad signs the lunch form, and they both sign the bus form “just in case.” Mom writes your name on the folder in marker, very neatly, like it’s a big deal. It kind of is.')}
           else{adj('family',-2);say('📝 Dad is buried in boxes and Mom is on the phone with the internet company. “Tomorrow, okay? Help me with these first.” Do a chore or two, then ask again.')}}});}
-    if(!S.ready.outfit) a.push({ic:'👕',l:'Pick a first-day outfit',s:'20 min. Lay it out on the chair, shoes and all.',cat:'school',fn:()=>{pass(20);gGetReady('outfit');adj('mood',3);
+    if(gCh1()&&!S.ready.outfit) a.push({ic:'👕',l:'Pick a first-day outfit',s:'20 min. Lay it out on the chair, shoes and all.',cat:'school',fn:()=>{pass(20);gGetReady('outfit');adj('mood',3);
       say('👕 You try on four outfits and pick the first one. It’s laid out on your chair, shoes underneath, like a person who is ready. Nia gives it a thumbs-up.')}});
-    if(d===G_SAT&&!S.bbq&&gAt(960,1230)) a.push({ic:'🍖',l:'Go to the barbecue across the street',s:'Tavita’s family is grilling and the whole block is invited. 90 min.',cat:'fun',cls:'primary',fn:()=>GROW.bbq()});
+    if(d===gSat()&&!S.bbq&&gAt(960,1230)) a.push({ic:'🍖',l:'Go to the barbecue across the street',s:'Tavita’s family is grilling and the whole block is invited. 90 min.',cat:'fun',cls:'primary',fn:()=>GROW.bbq()});
   }
   if(S.loc==='mlk'){
     const mk=gAt(420,1320),sn=gRp(2),sup=gRp(18),cut=gRp(15),shop=gWeekday()?d%7!==0:d%7===5;   // barbershop: Tue–Sat
     a.push({ic:'🍬',l:`A snack from the corner market — ${$(sn)}`,s:mk?'A cold drink and a bag of hot chips. Energy +6, mood +2.':'The market is open 7 AM to 10 PM.',cat:'money',dis:!mk||S.money<sn,fn:()=>{gSpend(sn);S.stats.snacks++;pass(10);adj('energy',6);adj('mood',2);
       say(pick(['🍬 Grace Kim rings you up and asks if you’re the new family on the side street. She says the good tortillas come in on Thursdays, and the good hot sauce is the one with the hand-drawn label.','🍬 A cold can from the back of the cooler and hot chips on the curb. Summer, perfected.','🍬 You count out quarters on the counter. Grace Kim waits like she has all day. She does, kind of.']))}});
-    if(!S.ready.supplies) a.push({ic:'🎒',l:`School supplies at the corner market — ${$(sup)}`,s:mk?`Binder, pencils, a calculator, a pack of paper. You have ${$(Math.round(S.money))}. (Or free at the giveaway at People’s, Sat 10–2.)`:'The market is open 7 AM to 10 PM.',cat:'school',dis:!mk||S.money<sup,
+    if(gCh1()&&!S.ready.supplies) a.push({ic:'🎒',l:`School supplies at the corner market — ${$(sup)}`,s:mk?`Binder, pencils, a calculator, a pack of paper. You have ${$(Math.round(S.money))}. (Or free at the giveaway at People’s, Sat 10–2.)`:'The market is open 7 AM to 10 PM.',cat:'school',dis:!mk||S.money<sup,
       fn:()=>{gSpend(sup);pass(20);gGetReady('supplies');say('🎒 A binder, a pack of pencils, a calculator with your initials scratched on the back, and paper that is going to be so organized for about one week. Mr. Kim throws in a free eraser shaped like a taco.')}});
-    if(!S.ready.haircut) a.push({ic:'💈',l:`A back-to-school cut at the barbershop or the salon — ${$(cut)}`,s:shop&&gAt(540,1080)?'45 min. Dre at the barbershop, or the braider at the salon next door. Ready, mood +5.':'Open Tuesday to Saturday, 9 AM to 6 PM.',cat:'school',dis:!(shop&&gAt(540,1080))||S.money<cut,
+    if(S.age>=16&&!S.pt[d]){const ok=gAt(600,1080)&&!(isSchoolDay(d)&&tod()<925);a.push({ic:'🧾',l:'Work a shift at the corner market',s:ok?'4 hours stocking shelves and ringing up. About $56, energy −14. Once a day.':'Shifts start between 10 AM and 6 PM (after school on school days).',cat:'money',dis:!ok,
+      fn:()=>{pass(240);S.pt[d]=true;gEarn(56);adj('energy',-14);adj('mood',-1);say('🧾 Four hours at the corner market: stocking the hot-sauce shelf, ringing up neighbors, learning which regulars want a bag and which ones would be insulted. Grace Kim pays you in cash and a cold drink. $56.')}})}
+    if(gCh1()&&!S.ready.haircut) a.push({ic:'💈',l:`A back-to-school cut at the barbershop or the salon — ${$(cut)}`,s:shop&&gAt(540,1080)?'45 min. Dre at the barbershop, or the braider at the salon next door. Ready, mood +5.':'Open Tuesday to Saturday, 9 AM to 6 PM.',cat:'school',dis:!(shop&&gAt(540,1080))||S.money<cut,
       fn:()=>{gSpend(cut);pass(45);gGetReady('haircut');adj('mood',5);say('💈 Dre, in the chair by the window, has opinions about the Seahawks, the weather and your old haircut. He fixes two of the three. You walk out feeling taller. The whole shop says “Looking sharp, new kid.”')}});
     if(!S.murals[d]) a.push({ic:'🖼️',l:'Look at the murals',s:'30 min. Mood +5. Once a day.',cat:'fun',fn:()=>{pass(30);S.murals[d]=true;adj('mood',5);
       say(pick(['🖼️ Three stories of faces on a brick wall: grandmothers, ballplayers, a kid on a bike who looks a little like you. HILLTOP PROUD, it says, in letters taller than your dad.','🖼️ A mural of the mountain, the bay and the Link, all in colors louder than the real ones. You stare until a bus honks hello.','🖼️ You find a small painted owl in the corner of one mural. Owls are the mascot at Summit View. You decide it’s a sign.']))}});
@@ -264,10 +285,10 @@ GROW.actionsHere=()=>{
       say(pick(['🏊 Cannonball contest. You lose to a nine-year-old with no fear. The lifeguard gives you both a seven.','🏊 Laps, then floating, then floating some more. The water is the one place nobody is new.','🏊 Somebody’s dad runs a game of sharks and minnows with twenty kids. You are a minnow. You survive. Barely.']))}});
     if(!S.hoops[d]) a.push({ic:'🏀',l:'Shoot around on the courts',s:rain?'The courts are puddles today.':'45 min. Energy −8, mood +5. Once a day.',cat:'fun',dis:rain||!gAt(480,1230),fn:()=>{pass(45);S.hoops[d]=true;S.stats.hoops++;adj('energy',-8);adj('mood',5);
       say(pick(['🏀 You shoot around alone until your arms are noodles. Three in a row from the free-throw line. Nobody saw. It counts.','🏀 An older kid rebounds for you for ten minutes and says, “Bend your knees.” You do. It works.']))}});
-    if(!S.program[d]&&gWeekday()) a.push({ic:'🎨',l:'The summer rec program',s:gAt(600,840)?'2 hours of games and crafts with other kids, 10 AM–2 PM weekdays. Mood +5, and you might meet someone.':'Weekdays, 10 AM to 2 PM.',cat:'kids',dis:!gAt(600,840),fn:()=>{pass(120);S.program[d]=true;adj('mood',5);adj('energy',-6);
+    if(!S.program[d]&&gWeekday()&&!isSchoolDay(d)) a.push({ic:'🎨',l:'The summer rec program',s:gAt(600,840)?'2 hours of games and crafts with other kids, 10 AM–2 PM weekdays. Mood +5, and you might meet someone.':'Weekdays, 10 AM to 2 PM.',cat:'kids',dis:!gAt(600,840),fn:()=>{pass(120);S.program[d]=true;adj('mood',5);adj('energy',-6);
       const k=pick(KIDS.filter(x=>!gMet(x.id)).concat(KIDS.filter(x=>gMet(x.id))));const first=gFriend(k.id,3);
       say(`🎨 ${pick(['Capture the flag in the park, then friendship bracelets in the gym.','A water-balloon relay that turns into a water-balloon free-for-all.','Kickball, popsicles, and a counselor with a whistle she never uses.'])} ${first?`You end up on a team with <b>${k.n}</b>. ${k.d}`:`You end up next to ${k.n} again. Friendship +3.`}`)}});
-    if(d===G_SAT&&!S.giveaway) a.push({ic:'🎒',l:'The back-to-school giveaway',s:gAt(G_GIVE[0],G_GIVE[1])?'Free backpacks and supplies, on tables in the gym. 30 min.':'Saturday, 10 AM to 2 PM, in the gym.',cat:'school',cls:gAt(G_GIVE[0],G_GIVE[1])?'primary':'',dis:!gAt(G_GIVE[0],G_GIVE[1]),fn:()=>GROW.giveaway()});
+    if(d===gSat()&&!S.giveaway) a.push({ic:'🎒',l:'The back-to-school giveaway',s:gAt(G_GIVE[0],G_GIVE[1])?'Free backpacks and supplies, on tables in the gym. 30 min.':'Saturday, 10 AM to 2 PM, in the gym.',cat:'school',cls:gAt(G_GIVE[0],G_GIVE[1])?'primary':'',dis:!gAt(G_GIVE[0],G_GIVE[1]),fn:()=>GROW.giveaway()});
   }
   if(S.loc==='library'){
     const op=isOpen('library');
@@ -275,14 +296,14 @@ GROW.actionsHere=()=>{
       say(pick(['📖 A graphic novel about a kid who moves to a new town and turns out to be a dragon. Relatable, mostly.','📖 You read a whole mystery in one sitting. The librarian, Ms. Okafor, asks who did it. You tell her. She says, “Called it.”','📖 A book of facts about volcanoes. Rainier is one. You read that part twice.']))}});
     if(!S.ev.flags.card) a.push({ic:'🪪',l:'Get a library card',s:op?'10 min. Ms. Okafor needs your name and your new address.':hoursTxt('library'),cat:'here',dis:!op,fn:()=>{pass(10);S.ev.flags.card=day()+1;adj('mood',4);
       say('🪪 Ms. Okafor types in your new address and hands you a card that is still warm from the printer. “Welcome to the neighborhood. Ten books at a time, and I want to hear about every one.”')}});
-    if(!S.ev.flags.map) a.push({ic:'💻',l:'Look up Summit View on the computer',s:op?'20 min. The school map, the bell schedule, which door is which.':hoursTxt('library'),cat:'school',dis:!op,fn:()=>{pass(20);S.ev.flags.map=day()+1;adj('mood',3);
+    if(gCh1()&&!S.ev.flags.map) a.push({ic:'💻',l:'Look up Summit View on the computer',s:op?'20 min. The school map, the bell schedule, which door is which.':hoursTxt('library'),cat:'school',dis:!op,fn:()=>{pass(20);S.ev.flags.map=day()+1;adj('mood',3);
       say(`💻 Summit View’s website: a map with the gym, the cafeteria and the 200 hall, and the bell schedule. First bell ${fmt(G_BELL)}. You print the map. It goes in your back pocket and stays there all week.`)}});
   }
   if(S.loc==='school'){
     const office=gWeekday()&&gAt(540,900)&&!school;
     if(!S.walk[d]&&!school) a.push({ic:'🗺️',l:'Walk around the building',s:'30 min. The front doors, the gym, the bike rack, the side door the eighth graders use. Mood +3.',cat:'school',fn:()=>{pass(30);S.walk[d]=true;adj('mood',3);
       say(pick(['🗺️ You walk all the way around Summit View. It is enormous. Your old school would fit in the gym. Through a window you can see a hallway of lockers, waiting.','🗺️ A custodian mopping the front steps tells you the trick: “The 200 hall is upstairs. Everybody gets that wrong. Not you, now.”','🗺️ You peek in the cafeteria window. Long tables, a stage, a banner that says WELCOME OWLS. Your stomach does a small flip.']))}});
-    if(!S.ready.turnedIn&&!school) a.push({ic:'📬',l:'Turn in your forms at the office',s:!S.ready.signed?'Get them signed at home first.':office?'15 min. You’ll get your schedule and a locker number.':'The office is open weekdays, 9 AM to 3 PM, this week.',cat:'school',cls:S.ready.signed&&office?'primary':'',dis:!S.ready.signed||!office,
+    if(gCh1()&&!S.ready.turnedIn&&!school) a.push({ic:'📬',l:'Turn in your forms at the office',s:!S.ready.signed?'Get them signed at home first.':office?'15 min. You’ll get your schedule and a locker number.':'The office is open weekdays, 9 AM to 3 PM, this week.',cat:'school',cls:S.ready.signed&&office?'primary':'',dis:!S.ready.signed||!office,
       fn:()=>{pass(15);gGetReady('turnedIn');adj('mood',4);say('📬 The office secretary checks every form, stamps them, and slides a schedule across the counter: homeroom in room 214, science, math, PE, lunch, social studies, band. Locker 1142. “Try the combination now, everybody forgets.” You try it four times. It opens.')}});
   }
   if(S.loc==='view'){
@@ -307,21 +328,21 @@ GROW.dinners=['🍽️ Spaghetti night. Dad asks everybody for one good thing ab
 
 GROW.statusTags=()=>{
   const t=[],d=day(),m=tod();
-  t.push(`<span class="tag">🎒 ready ${gReady()}%</span>`);
-  if(S.loc!=='home'&&m<G_CURFEW) t.push(`<span class="tag ${m>=G_CURFEW-45?'bad':''}">🏠 home by ${fmt(G_CURFEW)}</span>`);
+  t.push(gCh1()?`<span class="tag">🎒 ready ${gReady()}%</span>`:`<span class="tag">📚 grades ${gGrades()}</span>`);
+  if(S.loc!=='home'&&m<gCurfew()) t.push(`<span class="tag ${m>=gCurfew()-45?'bad':''}">🏠 home by ${fmt(gCurfew())}</span>`);
   if(gRain()) t.push('<span class="tag">🌧️ rainy day</span>');
   if(S.energy<25) t.push('<span class="tag bad">🥱 tired</span>');
   if(S.mood<30) t.push('<span class="tag bad">😕 low mood</span>');
-  if(d===G_SAT&&!S.giveaway&&m<G_GIVE[1]) t.push('<span class="tag">🎒 giveaway at People’s 10–2</span>');
-  if(d===G_SCHOOL_DAY&&!S.firstDay) t.push(`<span class="tag">🏫 first day · bell ${fmt(G_BELL)}</span>`);
+  if(d===gSat()&&!S.giveaway&&m<G_GIVE[1]) t.push('<span class="tag">🎒 giveaway at People’s 10–2</span>');
+  if(d===gSchoolDay()&&!S.firstDay) t.push(`<span class="tag">🏫 first day · bell ${fmt(G_BELL)}</span>`);
   return t;
 };
 GROW.alertBar=()=>{
   const d=day(),m=tod();
-  if(d===G_SCHOOL_DAY&&!S.firstDay) return {t:S.loc==='school'?'🔔 You made it. Tap Go in when you’re ready.':`🏫 First day of middle school! The bell rings at ${fmt(G_BELL)}. Summit View is ${travelMins(S.loc,'school')} min away.`,kind:m>G_BELL?'':'info'};
-  if(S.loc!=='home'&&m>=G_CURFEW-45&&m<G_CURFEW) return {t:`🏠 Home by ${fmt(G_CURFEW)}. You’re ${travelMins(S.loc,'home')} minutes away.`};
-  if(d===G_SAT&&m<G_GIVE[1]&&!S.giveaway) return {t:'🎒 The back-to-school giveaway is at People’s today, 10 AM to 2 PM: free backpacks and supplies.',kind:'info'};
-  if(d===G_SCHOOL_DAY-1&&gReady()<100) return {t:`🎒 School is tomorrow. Ready: ${gReady()}%. Check the To-do tab.`,kind:'info'};
+  if(d===gSchoolDay()&&!S.firstDay) return {t:S.loc==='school'?'🔔 You made it. Tap Go in when you’re ready.':`🏫 First day of middle school! The bell rings at ${fmt(G_BELL)}. Summit View is ${travelMins(S.loc,'school')} min away.`,kind:m>G_BELL?'':'info'};
+  if(S.loc!=='home'&&m>=gCurfew()-45&&m<gCurfew()) return {t:`🏠 Home by ${fmt(gCurfew())}. You’re ${travelMins(S.loc,'home')} minutes away.`};
+  if(d===gSat()&&m<G_GIVE[1]&&!S.giveaway) return {t:'🎒 The back-to-school giveaway is at People’s today, 10 AM to 2 PM: free backpacks and supplies.',kind:'info'};
+  if(d===gSchoolDay()-1&&gReady()<100) return {t:`🎒 School is tomorrow. Ready: ${gReady()}%. Check the To-do tab.`,kind:'info'};
   return null;
 };
 
@@ -332,16 +353,17 @@ const G_TABS=[
 ];
 GROW.weekView=()=>{
   const d0=day();
-  return `<div class="sect">Your first week on Hilltop</div>`+Array.from({length:GAME.days},(_,i)=>{
+  return `<div class="sect">${lifeLong()&&!gCh1(lifeWeekDays()[0])?`This week · ${kwName(lifeKw())}`:'Your first week on Hilltop'}</div>`+lifeWeekDays().map(i=>{
     const s=[];
     if(i===0) s.push('📦 moving-in day');
-    if(i<5) s.push('🎨 summer rec program 10–2 · 📬 school office 9–3');
-    if(i===G_SAT) s.push(`💵 allowance day · 🎒 giveaway 10–2${S.giveaway?' (went)':''} · 🍖 barbecue across the street${S.bbq?' (went)':''}`);
+    if(i<5&&gCh1(i)) s.push('🎨 summer rec program 10–2 · 📬 school office 9–3');
+    if(i===gSat()) s.push(`💵 allowance day · 🎒 giveaway 10–2${S.giveaway?' (went)':''} · 🍖 barbecue across the street${S.bbq?' (went)':''}`);
     if(i===6) s.push('☀️ the last day of summer');
-    if(i===G_SCHOOL_DAY) s.push(`🏫 first day of middle school, bell ${fmt(G_BELL)}`);
+    if(i>gSchoolDay()&&isSchoolDay(i)) s.push(`🏫 school at ${gSchoolShort()}`);
+    if(i===gSchoolDay()) s.push(`🏫 first day of middle school, bell ${fmt(G_BELL)}`);
     if(S.curfew[i]) s.push('⏰ missed curfew');
     return `<div class="todo"><span class="ck">${i<d0?'✔️':i===d0?'👉':'·'}</span><div><b>${gDate(i)}</b><span>${s.join(' · ')||'a summer day'}</span></div></div>`}).join('')
-    +`<div class="rules">Home by ${fmt(G_CURFEW)} every night, or Family drops.</div>`;
+    +`<div class="rules">Home by ${fmt(gCurfew())} every night, or Family drops.</div>`+lifeWeekList();
 };
 GROW.kidsView=()=>{
   const met=KIDS.filter(k=>gMet(k.id)),b=gBest();

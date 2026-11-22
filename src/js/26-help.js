@@ -257,7 +257,16 @@ function helpChapters(){
     <li><b>Five kids</b> to meet: Marcus on the courts, Ana on MLK, Tavita across the street, Linh at the Reading Room and Zay at the overlook. Any of them can become your best friend.</li>
     <li><b>Saturday:</b> a free back-to-school giveaway at People’s (10 AM–2 PM) and a barbecue across the street in the evening.</li>
     <li><b>Monday, Aug 31:</b> walk to school by the 8:15 AM bell, and Chapter 1 ends with your grade. There’s no game over in Growing Up: every week gets to Monday.</li></ul>
-    ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}`],
+    ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}
+    <h3>🌱 New life: lengths and ages</h3>
+    <p>Tap <b>🌱 New life</b> on the title screen to pick how long to play and how old to start. <b>Quick play</b> is the classic game: two weeks at 18, or Growing Up’s first week at 12. The longer games play the <b>key weeks</b> and skip the time between them:</p>
+    <ul><li><b>6 months:</b> one key week a month. <b>1 year:</b> one about every six weeks, plus your birthday. <b>2 years:</b> one a season, plus two birthdays. <b>Lifetime:</b> one or two a year at the milestones, to old age.</li>
+    <li><b>Starting age:</b> 12 (seventh grade at Summit View), 15 (a sophomore at Hilltop High, curfew 10 PM) or 18 (your own apartment, a job and rent).</li>
+    <li><b>Between key weeks</b> a summary shows what changed (money, stats, age, school or work, friends and family) after one choice about how you spend the time.</li>
+    <li><b>Birthdays</b> come every year. At 14 you start high school, at 16 you can work a part-time job, and at 18 you graduate, choose work, college or a trade program, and move into your own place: the same save carries on as the adult game.</li>
+    <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The street fair comes back every August.</li>
+    <li><b>⚙️ Settings → 🎮 Game options</b> lengthens or shortens the game, changes the difficulty a step at a time, and switches between full weeks and highlights (3 days of each key week).</li>
+    <li><b>The score</b> is per month played, so every length compares fairly. Each length keeps its own best score.</li></ul>`],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>

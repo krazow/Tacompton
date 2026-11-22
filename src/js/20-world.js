@@ -54,11 +54,16 @@ function calm(v){S.calm=S.calm||{};const d=day();adj('stress',-calmAmt(v));S.cal
 const cap=t=>t[0].toUpperCase()+t.slice(1);
 const calmTxt=v=>`stress −${calmAmt(v)}${calmN()>=CALM_FULL?' (you’ve already unwound a lot today)':''}`;
 function spend(c){money(-c);S.stats.spent+=c}
-const augDate=d=>`${dayName(d).slice(0,3)} Aug ${3+d}`;   // day index → "Mon Aug 3"
-const FAIR_DAY=5;                                          // Sat Aug 8: the Hilltop Street Fair
+const augDate=d=>dateOf(d).label;                          // day index → "Mon Aug 3" (any date: 10-life.js dateOf)
+const FAIR_DAY=5;                                          // Quick play's fair day, Sat Aug 8 (tools/sim.js). In the game: isFairDay(d), the second Saturday of August
+// when rent is due (S.rent.due is a day index: day 13 in Quick play, the end of a key week that crosses the 1st in longer games)
+const rentBy=()=>`${dayName(S.rent.due)} night, ${monthDay(S.rent.due)}`;      // "Sunday night, Aug 16"
+const rentEarly=d=>d<=S.rent.due-7;                        // paid a week or more ahead
 const FAIR_HOURS=[600,1080];                               // 10 AM – 6 PM
 // Sunset over the Olympics: about 8:20 PM on Mon Aug 3, about 8:00 PM by Sun Aug 16 (a minute and a half earlier each day).
-const sunsetOn=d=>Math.round(1220-(clamp(d,0,13))*20/13);
+// In the longer games the sunset follows the calendar (about 4:20 PM in late December, 9:10 PM in late June).
+const sunsetOn=d=>{if(typeof lifeLong!=='function'||!lifeLong())return Math.round(1220-(clamp(d,0,13))*20/13);
+  const o=dateOf(d),doy=dayIndexOf(o.y,o.m,o.d)-dayIndexOf(o.y,1,1);return Math.round(1125+146*Math.sin(2*Math.PI*(doy-80)/365))};
 const SUNSET=1220;                                         // day one's sunset (the Help guide's timeline uses it)
 const sunsetNow=()=>sunsetOn(typeof S!=='undefined'&&S?day():0);
 // How work, sleep and the night treat you (the Help guide reads these).
@@ -90,9 +95,9 @@ const JOBS={
     blurb:'Evenings, 2:00 to 10:00 PM, Wednesday to Sunday. Hot, loud and fast, with a staff meal every shift. Your mornings are your own.'},
 };
 const job=()=>JOBS[(typeof S!=='undefined'&&S&&S.job)]||JOBS.cafe;
-const isShiftDay=(d=day())=>job().days.includes(((d%7)+7)%7);
-const shiftsTotal=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay).length;
-const shiftDays=()=>Array.from({length:GAME.days},(_,i)=>i).filter(isShiftDay);
+const isShiftDay=(d=day())=>!(typeof S!=='undefined'&&S&&S.life&&S.life.retired)&&job().days.includes(((d%7)+7)%7);
+const shiftsTotal=()=>lifeWeekDays().filter(isShiftDay).length;   // the days played this key week (Quick play: all of them)
+const shiftDays=()=>lifeWeekDays().filter(isShiftDay);
 
 // ---- the neighbors you can meet (21-story.js lists them on the Neighbors tab) ----
 // at: the places you're likely to meet them
@@ -126,7 +131,7 @@ const metCount=()=>Object.keys(S.met||{}).length;
 
 // ---- HUD ----
 let STATS=[
-  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=10,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by Sunday night, Aug 16.`)}},
+  {l:'Cash',  v:()=>$k(Math.round(S.money)),warn:()=>S.money<(S.rent.paid?0:S.rent.amt)&&day()>=S.rent.due-3,get title(){return 'Cash: '+$(Math.round(S.money))+(S.rent.paid?'. Rent is paid.':`. Rent (${$(S.rent.amt)}) is due by ${rentBy()}.`)}},
   {l:'Energy',v:()=>S.energy,m:()=>S.energy,warn:()=>S.energy<20},
   {l:'Stress',v:()=>S.stress,m:()=>S.stress,good:false,warn:()=>S.stress>=75,title:'Stress. High is bad: at 100 you burn out.'},
   {l:'Food',  v:()=>S.food,m:()=>Math.min(100,S.food*20),warn:()=>S.food<1,title:'Meals in the fridge. You eat one every night.'},
@@ -301,8 +306,8 @@ function actionsHere(){
     if(S.unpacked<BOXES&&!S.unpack[d]) a.push({ic:'📦',l:`Unpack a box (${S.unpacked} of ${BOXES} done)`,s:'45 min. Energy −4, stress −3. The place feels more like yours. Once a day.',cat:'here',
       fn:()=>{pass(45);S.unpack[d]=true;S.unpacked++;adj('energy',-4);adj('stress',-3);say(S.unpacked>=BOXES?'📦 The last box. Your books are on a shelf, your photos are on the wall, and the apartment finally looks like somebody lives here. You do.':pick(['📦 Kitchen stuff. You find the good knife and the mug you thought you’d lost.','📦 Books. You line them up on the windowsill, spines toward the mountain.','📦 Winter clothes in August. You put the box in the closet, still mostly packed. Progress.','📦 Photos. You hang two and lean the rest against the wall “for now.”']))}});
     if(!S.rent.paid){const r=S.rent.amt;
-      a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by Sunday night, Aug 16. ${d<=6?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by Sunday night, Aug 16 (${GAME.days-1-d} day${GAME.days-1-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=10?'primary':'',dis:!canAfford(r),
-        fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',d<=6?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${d<=6?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
+      a.push({ic:'🧾',l:`Pay rent — ${$(r)}`,s:canAfford(r)?`Due by ${rentBy()}. ${rentEarly(d)?'Paying in the first week takes a weight off: stress −10.':'Pay it and it’s done.'}`:`You have ${$(Math.round(S.money))}. Due by ${rentBy()} (${S.rent.due-d} day${S.rent.due-d===1?'':'s'} left).`,cat:'money',cls:canAfford(r)&&d>=S.rent.due-3?'primary':'',dis:!canAfford(r),
+        fn:()=>{spend(r);S.rent.paid=true;S.rent.paidDay=d;pass(10);adj('stress',rentEarly(d)?-10:-4);say(`🧾 Rent paid through the landlord’s portal: ${$(r)}. ${rentEarly(d)?'A week early. You exhale for what feels like the first time since the moving truck.':'Done. The roof is yours another month.'}`)}});}
   }
   if(S.loc==='mlk'){
     const mk=at(420,1320),g=rp(42),sn=rp(5),pl=rp(14),cut=rp(25);
@@ -317,7 +322,7 @@ function actionsHere(){
       fn:()=>{pass(30);S.chat[d]=true;const x=meetHere();if(x)say(`👋 You meet <b>${x.n}</b>. ${x.d}`);else{adj('community',1);say(pick(['👋 Ms. Lorraine’s grandson waves from his car. Grace waves from the market door. You wave at everybody. Everybody waves back.','👋 You stand on the corner long enough to be part of it.']))}}});
     a.push({ic:'🎨',l:'Walk MLK and look at the murals',s:`30 min. ${cap(calmTxt(6))}.`,cat:'here',
       fn:()=>{pass(30);S.stats.walks++;calm(6);say(pick(['🎨 Faces three stories tall: elders, kids, a saxophone, a fist full of flowers. Hilltop’s history, painted where everybody can see it.','🎨 A mural of a grandmother in a church hat looks down at the bus stop like she’s keeping an eye on things. She is.','🎨 You find a mural you hadn’t noticed, tucked behind the laundromat: the old neighborhood, every porch with someone on it.']))}});
-    if(d===FAIR_DAY&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
+    if(isFairDay(d)&&at(FAIR_HOURS[0],FAIR_HOURS[1])&&!S.fair){const f=rp(20);
       a.push({ic:'🎪',l:`The Hilltop Street Fair — ${$(f)}`,s:'2 hours. Food, music, booths, half the hill out on MLK. Stress −20, community +8. Today only.',cat:'people',cls:'primary',dis:!canAfford(f),
         fn:()=>{spend(f);S.fair=true;pass(120);adj('stress',-20);adj('community',8);const x=meetHere();say(`🎪 The Hilltop Street Fair: a band on the stage playing old soul like they mean it, kids with painted faces, lemonade, a line for barbecue that goes around the block and is worth it. Somebody hands you a flyer for a block club. ${x?`You meet <b>${x.n}</b> in the barbecue line.`:'You know half the people here now. Wild.'}`)}});}
   }
@@ -369,7 +374,7 @@ function work(late){
   const d=day(),J=job(),m=tod();
   if(m<J.start){pass(J.start-m)}   // early: you wait for the shift to start
   const start=Math.max(J.start,tod()),frac=Math.max(0,(J.end-start)/(J.end-J.start));
-  let pay=Math.round(J.pay*frac),tip=0;
+  let pay=Math.round(J.pay*frac*lifePayF()),tip=0;   // lifePayF: part-time while in college or a trade program, a raise after
   if(J.tips){tip=Math.round((J.tips[0]+Math.random()*(J.tips[1]-J.tips[0]))*(.6+S.standing/250)*frac);S.stats.tips+=tip}
   S.worked[d]=late;S.stats.shifts++;pass(J.end-tod());money(pay+tip);S.stats.earned+=pay+tip;
   adj('energy',-J.energy);adj('stress',shiftStress(J));
@@ -395,10 +400,10 @@ function statusTags(){
   const t=[],d=day(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)) t.push(`<span class="tag">${J.ic} work ${fmt(J.start)}–${fmt(J.end)}</span>`);
   t.push(`<span class="tag ${S.food<1?'bad':''}">🍽️ ${S.food} meal${S.food===1?'':'s'} in the fridge</span>`);
-  t.push(S.rent.paid?'<span class="tag">🧾 rent paid</span>':`<span class="tag ${d>=10&&!canAfford(S.rent.amt)?'bad':''}">🧾 rent ${$(S.rent.amt)} due Sun Aug 16</span>`);
+  t.push(S.rent.paid?'<span class="tag">🧾 rent paid</span>':`<span class="tag ${d>=S.rent.due-3&&!canAfford(S.rent.amt)?'bad':''}">🧾 rent ${$(S.rent.amt)} due ${augDate(S.rent.due)}</span>`);
   if(S.energy<25) t.push('<span class="tag bad">🥱 running on empty</span>');
   if(S.stress>=70) t.push('<span class="tag bad">😣 stressed</span>');
-  if(d===FAIR_DAY&&!S.fair&&tod()<FAIR_HOURS[1]) t.push('<span class="tag">🎪 street fair on MLK today</span>');
+  if(isFairDay(d)&&!S.fair&&tod()<FAIR_HOURS[1]) t.push('<span class="tag">🎪 street fair on MLK today</span>');
   return t;
 }
 function alertBar(){
@@ -406,8 +411,8 @@ function alertBar(){
   const d=day(),m=tod(),J=job();
   if(isShiftDay(d)&&!(d in S.worked)&&m>J.start&&m<J.end-60) return {t:`⏰ You’re late for work at ${J.place} (your shift started at ${fmt(J.start)}).`};
   if(isShiftDay(d)&&!(d in S.worked)&&m>=J.start-60&&m<=J.start&&S.loc!=='work') return {t:`${J.ic} Work at ${fmt(J.start)}. ${cap(J.place)} is ${travelMins(S.loc,'work')} min away.`,kind:'info'};
-  if(d===FAIR_DAY&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
-  if(!S.rent.paid&&d>=11) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by Sunday night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
+  if(isFairDay(d)&&m<FAIR_HOURS[1]&&!S.fair) return {t:'🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.',kind:'info'};
+  if(!S.rent.paid&&d>=S.rent.due-2) return {t:`🧾 Rent (${$(S.rent.amt)}) is due by ${dayName(S.rent.due)} night. ${canAfford(S.rent.amt)?'You have it: pay it at home.':`You have ${$(Math.round(S.money))}.`}`};
   if(S.food<1&&m>=960) return {t:'🍽️ The fridge is empty and dinner is coming. The corner market on MLK is open until 10 PM.',kind:'info'};
   return null;
 }
@@ -420,13 +425,13 @@ let EXTRA_TABS=[
 ];
 function weekView(){
   const J=job(),d0=day();
-  return `<div class="sect">Your two weeks · ${J.ic} ${J.n}</div>`+Array.from({length:GAME.days},(_,i)=>{
+  return `<div class="sect">${lifeLong()?`This week · ${kwName(lifeKw())}`:'Your two weeks'} · ${J.ic} ${J.n}</div>`+lifeWeekDays().map(i=>{
     const sd=isShiftDay(i),w=S.worked[i];
     let s=sd?(i in S.worked?(w?`worked, ${w} min late`:'worked, on time'):i<d0?'missed work':`work ${fmt(J.start)}–${fmt(J.end)}`):(S.extra[i]?'day off (picked up extra hours)':'day off');
-    if(i===FAIR_DAY) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
+    if(isFairDay(i)) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
     if(i===S.rent.due) s+=` · 🧾 rent due${S.rent.paid?' (paid)':''}`;
     return `<div class="todo"><span class="ck">${i<d0?'✔️':i===d0?'👉':'·'}</span><div><b>${augDate(i)}</b><span>${s}</span></div></div>`}).join('')
-    +`<div class="rules">Rent: ${S.rent.paid?`paid on ${augDate(S.rent.paidDay)} ✔️`:`${$(S.rent.amt)}, due by the end of Sunday, Aug 16. Pay it at home.`}</div>`;
+    +`<div class="rules">Rent: ${S.rent.paid?`paid on ${augDate(S.rent.paidDay)} ✔️`:`${$(S.rent.amt)}, due by the end of ${longDate(S.rent.due)}. Pay it at home.`}</div>`+lifeWeekList();
 }
 function hoodView(){
   const met=NEIGHBORS.filter(x=>S.met[x.id]);

@@ -99,6 +99,7 @@ function accessModal(){
 window.openSettings=()=>{
   const inGame=S&&!S.over&&!document.querySelector('.title,.end');
   modal('⚙️ Settings',`<p>Playing as <b>{{name}}</b>${inGame?` · ${DF().ic} ${DF().n}`:''}.</p><p style="font-size:12px;color:var(--mute)">${esc(GAME.title)} version ${APP_VERSION}</p>`,[
+    ...(inGame&&typeof gameOptionsModal==='function'?[{l:'🎮 Game options',s:'Game length, difficulty, week play, pop-ups, tips and your name.',fn:()=>gameOptionsModal()}]:[]),
     {l:'👤 Change name',s:'Updates your name everywhere in the game.',fn:()=>nameModal({back:openSettings})},
     {l:`🔊 Sound: ${prefs().sound?'On':'Off'}`,s:'Alerts and chimes.',fn:()=>{setPref('sound',!prefs().sound);if(prefs().sound)sfx('good');openSettings()}},
     ...(ART.any()?[{l:`🖼️ Illustrations: ${artPref()?'On':'Off'}`,s:'Pictures on the Home tab and in events. Turn off to keep the drawn scenes only (and save data).',fn:()=>{setPref('art',!artPref());if(S&&!S.over&&!document.querySelector('.title,.end'))render();openSettings()}}]:[]),
