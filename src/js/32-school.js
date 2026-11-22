@@ -236,6 +236,7 @@ function schPlan(x){
     return;
   }
   if(id==='job'){
+    if(S.gh&&S.gh.job){say('💼 School’s out, and you already have a job downtown (34-grow-hoods.js): the summer is shifts, the pool on your days off and the overlook at night.'.replace(' (34-grow-hoods.js)',''));return}   // one job at a time
     const sy=dateOf(day()).y,pick1=k=>()=>{s.job[sy]=k;if(k!=='none'&&!s.firstJob){s.firstJob=true;lifeMoment('💼',`First summer job: ${SCH_JOBS[k].n}.`)}};
     modal('💼 A summer job',schP(`You’re ${S.age}, school is out, and three places on the hill are hiring for the summer.`),
       [schBtn({l:'🧾 The corner market on MLK',s:'Grace Kim needs help stocking and ringing up. Shifts start 10 AM–6 PM, about $56.',e:{},t:'🧾 Grace Kim hands you a name tag and the key to the stockroom. “Hot sauce shelf first. It’s a mess.”',then:pick1('market')}),

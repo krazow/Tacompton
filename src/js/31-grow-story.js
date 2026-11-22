@@ -153,7 +153,7 @@ gEvent({id:'g_grandma_box',hook:'wake',tile:['📦','A package from Grandma','go
 // ---- tips: one a day, each once per game ----
 const G_TIPS=[
   {id:'g_welcome',when:()=>day()===0&&S.loc==='home',t:'👋 Welcome to Hilltop, {{name}}! School starts <b>Monday, Aug 31</b>. The <b>To-do</b> tab lists what you need to be <b>Ready</b>. Open <b>🧭 Go somewhere</b> below to explore the hill.'},
-  {id:'g_curfew',when:()=>S.loc!=='home'&&tod()>=1140,t:`🏠 Curfew is <b>${fmt(gCurfew())}</b>. Be home by then, or Family drops.`},
+  {id:'g_curfew',when:()=>S.loc!=='home'&&tod()>=1140,get t(){return `🏠 Curfew is <b>${fmt(gCurfew())}</b>. Be home by then, or Family drops.`}},
   {id:'g_ready',when:()=>day()>=1,t:'🎒 <b>Ready</b> on the top bar is how ready you are for school: supplies, the way there, a haircut, the forms (signed at home, turned in at the office) and an outfit.'},
   {id:'g_kids',when:()=>gMetCount()>=1,t:'🤝 Hang out with a kid once a day to grow the friendship. The <b>Friends</b> tab shows everyone you know.'},
   {id:'g_money',when:()=>S.money<10,t:'💵 Low on money? Do a chore at home: Dad pays $3. Saturday is allowance day, and the giveaway on Saturday has free supplies.'},

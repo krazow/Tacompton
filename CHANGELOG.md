@@ -24,6 +24,9 @@ are taken from it.
 - Middle school at Summit View: the first day of eighth grade, the fall concert (band or choir, with the whole family in the third row), winter break, spring testing week (how you study moves your Grades) and the last day (yearbooks and summer plans).
 - High school at Hilltop High: orientation, finals in December and June, prom as a friends' night out at 16 and 17 (photos at Wright Park, then dancing), a summer job at 16 (the corner market, lifeguarding at the People's pool or the Sunbreak Café, paid through the summer's time skips) and graduation week.
 - Kids' key weeks now move onto those school dates when one is close, so a year at 12 plays the concert, winter break, testing week and the last day.
+- 🗺️ Growing Up: Tacoma opens up as you grow. At 14 a Youth ORCA card (riders 18 and under ride free) opens the Stadium District (a walk) and Downtown & the Dome District (the free Link); Proctor, Ruston & Point Defiance and the South End at 15; Old Town, the West End and the Eastside at 16; Fern Hill and Northeast Tacoma at 17. The neighborhoods' own places and drawings, with kid versions of what to do there, trips through the hubs, curfew (10 PM) and a Head home button with the time to leave.
+- 💼 A first job at 16: the Copper Kettle café on Pacific Ave (Tue/Thu after school, Saturdays) or the Museum of Glass gift shop (weekends), at Washington's minimum wage, paid into Money. Shifts keep paying between key weeks; miss three and they let you go.
+- Kid-friendly happenings around town (a frisbee game, a harbor seal, the glassblowers, a lost little kid), Running Start at TCC at 16, and two achievements: Youth ORCA and First Paycheck. Growing Up's Go somewhere groups places by neighborhood, like the adult game.
 
 ### Changed
 - Quick play is today's game, unchanged: Move in on Monday is the two weeks at 18 and Growing Up is the first week at 12. Saved games from earlier versions load as Quick play.
