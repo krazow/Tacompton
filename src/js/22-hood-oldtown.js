@@ -98,11 +98,25 @@ defHood({
 });
 
 defEvent({id:'oldtown_tour',hook:'arrive',tile:['📜','A historical walking tour','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_corner'&&tod()>=600&&tod()<1020,
-  run:()=>{pass(20);adj('stress',-5);adj('community',2);say('📜 A volunteer guide in a sun hat is leading a small group down the block, and waves you in. You learn which storefront was the first store, where the old streetcar turned around, and that the hill is steeper than it was in 1880. Probably.')}});
+  run:()=>{say('📜 A volunteer guide in a sun hat is leading a small group down the block, and waves you in.')},
+  choices:()=>[
+    {ic:'📜',l:'Join the whole tour',s:'40 min. Energy −4, stress −5, community +3',fn:()=>{pass(40);adj('energy',-4);adj('stress',-5);adj('community',3);say('📜 You learn which storefront was the first store, where the old streetcar turned around, and that the hill is steeper than it was in 1880. Probably.')}},
+    {ic:'👂',l:'Listen for a block or two',s:'10 min. Stress −2, community +1',fn:()=>{pass(10);adj('stress',-2);adj('community',1);say('👂 You learn about the streetcar and slip away with one good fact.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 The group moves on without you, still being told about 1880.')}}],
+  dflt:2});
 defEvent({id:'oldtown_dockevening',hook:'arrive',tile:['🌆','A summer evening on the dock','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_dock'&&tod()>=1020&&tod()<1260,
-  run:()=>{adj('stress',-6);adj('community',1);say('🌆 The whole dock is out tonight: couples on benches, kids racing along the planks, a guitarist playing quietly near the rail. The light is soft and gold. Somebody passes around a bag of popcorn, and the bag reaches you.')}});
+  run:()=>{say('🌆 The whole dock is out tonight: families on benches, kids racing along the planks, a guitarist playing quietly near the rail.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'🌆 The light is soft and gold. Somebody passes around a bag of popcorn, and the bag reaches you.'}),
+  dflt:1});
 defEvent({id:'oldtown_tomatoes',hook:'arrive',tile:['🍅','A neighbor’s garden tomatoes','good'],chance:0.35,max:1,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_hill'&&tod()>=540&&tod()<1140,
-  run:()=>{adj('stress',-4);adj('community',2);S.stats.meals=(S.stats.meals||0)+1;say('🍅 A hand-lettered sign leans on a fence: “Free tomatoes. Take two. Take three. They’re multiplying.” You take three. A curtain twitches in an upstairs window and then a thumbs-up appears. Dinner is going to be good.')}});
+  run:()=>{say('🍅 A hand-lettered sign leans on a fence: “Free tomatoes. Take two. Take three. They’re multiplying.”')},
+  choices:()=>[
+    {ic:'🍅',l:'Take three and go',s:'3 min. Food: one meal, stress −4, community +1',fn:()=>{pass(3);S.stats.meals=(S.stats.meals||0)+1;adj('stress',-4);adj('community',1);say('🍅 A curtain twitches in an upstairs window and then a thumbs-up appears. Dinner is going to be good.')}},
+    {ic:'🚪',l:'Knock and say thank you',s:'15 min. Food: one meal, stress −2, community +3',fn:()=>{pass(15);S.stats.meals=(S.stats.meals||0)+1;adj('stress',-2);adj('community',3);say('🚪 The gardener insists you take a cucumber too, and tells you which porch has the best view of the bay.')}},
+    {ic:'🚶',l:'Leave them for someone else',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You admire the tomatoes and leave them for the next walker.')}}],
+  dflt:2});
 defEvent({id:'oldtown_kayaks',hook:'arrive',tile:['🛶','Kayakers at sunset','good'],chance:0.4,max:2,cooldown:2,cond:c=>!isGrow()&&hoodOf(c.at)==='oldtown'&&c.at==='ot_dock'&&tod()>=sunsetOn(day())-60&&tod()<sunsetOn(day())+30,
-  run:()=>{pass(10);adj('stress',-6);adj('community',1);say('🛶 A line of kayaks glides home across the pink water, paddles dripping and flashing. One paddler lifts a hand to you as if you had been waiting for them. You wave back like you were.')}});
+  run:()=>{say('🛶 A line of kayaks glides home across the pink water, paddles dripping and flashing.')},
+  choices:()=>stopWatch({mins:10,calm:6,community:1,text:'🛶 One paddler lifts a hand to you as if you had been waiting for them. You wave back like you were.'}),
+  dflt:1});
 })();

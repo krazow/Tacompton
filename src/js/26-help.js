@@ -83,7 +83,7 @@ function helpLengths(){
     <ul><li><b>Quick play</b> is the classic game: every day of the two weeks at 18, or Growing Up’s first week at 12.</li>
     <li>The longer games play <b>key weeks</b> day by day: your first week, one a month or a season, every birthday, and in a Lifetime the milestones (half a year after each birthday until 22, then every five years), graduation and moving day at 18, retirement at 67 and the last week.</li>
     <li>Growing Up’s month and season weeks move onto the school calendar when one is close: the fall concert, winter break, testing week, finals, prom and the last day of school.</li>
-    <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
+    <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends, plus 🎓 a nursing program once it’s offered (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
     <li><b>📋 While you were away</b> shows each stat before and after, your school or work, your closest friends, and what happened along the way: birthdays, rent, school days, the weather, city news and the street fair.</li>
     <li><b>Rent</b> in the longer games is monthly: due on the 1st, or at the end of a key week that crosses it. The Hilltop Street Fair comes back on the second Saturday of every August.</li></ul>
     <h3>Changing the length later</h3>
@@ -121,7 +121,7 @@ function helpGrowing(){
   let wage=17.13;try{if(H&&typeof S!=='undefined'&&S)wage=H.wage()}catch(e){}
   const GJ=H?Object.values(H.JOBS):[],SJ=typeof SCH_JOBS!=='undefined'?SCH_JOBS:{};
   const dec=dayIndexOf(2026,12,21),jun=dayIndexOf(2027,6,21),sr=d=>typeof sunriseOn==='function'?fmt(sunriseOn(d)):'',ss=d=>typeof sunsetCal==='function'?fmt(sunsetCal(d)):'';
-  const rentCap=typeof CITY_RENT_CAP!=='undefined'?Math.round((CITY_RENT_CAP-1)*100):20,nCity=typeof CITY!=='undefined'?CITY.length:0;
+  const nCity=typeof CITY!=='undefined'?CITY.length:0;
   const snow=typeof WX_MONTH!=='undefined'?hRange([1,2,12].map(m=>WX_MONTH[m].snow||0)):'2–3';
   const help=f=>Math.round(f*3/10)*10;
   return `
@@ -157,8 +157,9 @@ function helpGrowing(){
     <h3>Graduation and the choice at 18</h3>
     <p>The key week you turn 18 is graduation week. After the ceremony you choose what comes next and move into your own apartment on Hilltop; the same save carries on as the adult game.</p>
     <ul><li><b>💼 Go to work:</b> one of the three jobs, full-time.</li>
-    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café.</li>
-    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK.</li></ul>
+    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café. Then a job as an IT support tech downtown.</li>
+    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK. Then an electrician apprenticeship, and journey-level after four years.</li></ul>
+    ${helpCareers()}
     ${hTable(['You bring','It becomes'],[['🏠 Family',`Rent help for a year (Family 60 is ${$(help(60))} a month), and ${$(4)} of graduation money per point`],['🤝 Friends','Community: 5 plus half your Friends'],['📚 Grades','Job standing: 50 plus 30% of your Grades']])}
     <h3>Seasons and weather</h3>
     <ul><li>The weather is rolled once a day from the month: Tacoma rain and drizzle from October through spring, June gloom, dry summers with the odd wildfire-smoke day, windstorms, sun breaks, and once a year the first sunny day of spring, when the whole block comes outside.</li>
@@ -166,7 +167,25 @@ function helpGrowing(){
     <li>Rain, wind and smoke put some outdoor plans off; sun gives them a small lift. Each morning the weather nudges your stats a little.</li>
     <li>Sunrise and sunset follow the year: about ${sr(dec)} and ${ss(dec)} in late December, ${sr(jun)} and ${ss(jun)} in late June.</li></ul>
     <h3>The changing city</h3>
-    <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up a few percent every August, about ${rentCap}% in all, until the city’s tenant protections hold them. Each birthday notes how much the block has changed.</p>`;
+    <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up 3–5% every August, with no cap, so your raises have to keep up (see <b>Raises and promotions</b>). Each birthday notes how much the block has changed.</p>`;
+}
+
+// raises and promotions in the longer adult games (35-careers.js)
+function helpCareers(){
+  if(typeof CAREER_LADDERS==='undefined')return '';
+  const C=CAREER,rows=[];
+  for(const k in CAREER_LADDERS){const J=JOBS[k],L0=CAREER_LADDERS[k];
+    L0.r.forEach((r,i)=>rows.push([`${i?'':J.ic+' '}${r.t}`,$(Math.round(J.pay*r.f)),i?`${r.yrs} year${r.yrs===1?'':'s'} as ${L0.r[i-1].t}, Job ${r.st}+, on time${r.prog?`, then ${r.prog.t} (${r.prog.mo} months, ${$(r.prog.fee)} a month)`:''}`:k==='elec'?'After the trade program':k==='tech'?'After college':'Day one']))}
+  return `<h3>Raises and promotions</h3>
+    <p>In the longer adult games your pay grows with you, and it has to: rents rise 3–5% every August. Quick play has none of this.</p>
+    <ul><li><b>📈 Every year</b> on your job anniversary: a cost-of-living raise (${C.cola[0]}–${C.cola[1]}%).</li>
+    <li><b>📋 Every six months</b>, a review: a merit raise (${C.merit[0]}–${C.merit[1]}%) with Job ${C.reviewSt} or more and at most one late or missed shift (or 15% of them). Below ${C.warnSt}, no raise and a written warning. Merit raises stop ${Math.round((C.meritMax-1)*100)}% over a title’s pay: a promotion is the way up.</li>
+    <li><b>Your habits count:</b> a review in a time skip judges you by the key weeks you played, the latest most.</li>
+    <li><b>🎉 Promotions</b> take time in your title, Job standing and the same good attendance. A promotion is always at least a ${Math.round((C.promoMin-1)*100)}% raise, and it shows on the 📅 Week tab, the Job stat and your life summary.</li>
+    <li><b>🎓 Nursing</b> takes school: when your manager offers it, choose the program in a time skip. You pay monthly and work ${Math.round(.75*100)}% of your shifts until you finish.</li>
+    <li><b>🎉 At 67</b> you retire with a pension of ${Math.round(C.pension*100)}% of your last pay, raised with the cost of living.</li></ul>
+    ${hTable(['Title','Pay a shift, to start','What it takes'],rows)}
+    <p class="tut-small">Pay before raises. Washington-plausible: an RN makes about twice a hospital CNA, an LPN about half again, a journey-level electrician about 1.7 times an apprentice.</p>`;
 }
 
 // ---- the chapters: [key, title, html] (numbered in this order) ----
@@ -234,7 +253,7 @@ function helpChapters(){
       ['🌄 The overlook',[['Sit on the bench†','free, 30 min','Stress −8'],['Watch the sunset*','free, 45 min','Stress −18'],['Walk the edge of the hill†','free, 45 min','Stress −8, energy −4']]]].map(([pl,rs])=>`<tbody><tr class="tut-grp"><th colspan="3" scope="colgroup">${pl}</th></tr>${rs.map(r=>`<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`).join('')}</table></div>
     <p class="tut-small">* Once a day. † Full effect twice a day, then about a third. Prices are for the ${D.normal.n} difficulty. ${D.easy.n} is ${Math.round((1-D.easy.cost)*100)}% cheaper and ${D.hard.n} is ${Math.round((D.hard.cost-1)*100)}% pricier. Everywhere, <b>Wait a while</b> skips ahead 30, 60 or 120 minutes.</p>`],
   ['job','Your job and shifts',`
-    <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks.</p>
+    <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks. (In the longer games the job grows with you: raises and promotions, in <b>Growing up</b>.)</p>
     ${hFig(HSVG_SHIFTS(),'When each shift runs, 5 AM to midnight.')}
     ${hTable(['Job','Shift','Pay','Each shift costs'],Object.values(J).map(j=>[`${j.ic} ${j.role==='certified nursing assistant'?'CNA':j.role[0].toUpperCase()+j.role.slice(1)}`,`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} (${hShifts(j)} shifts)`,`${$(j.pay)}${j.tips?` + ${$(j.tips[0])}–${$(j.tips[1])} tips`:''}`,`Energy −${j.energy}, stress +${j.stress}${DIFFS.hard.strain&&DIFFS.hard.strain!==1?` (+${Math.round(j.stress*DIFFS.hard.strain)} on ${DIFFS.hard.n})`:''}`]))}
     <ul><li><b>🏥 CNA:</b> the best pay and the hardest days. Your alarm is set to ${fmt(J.hospital.alarm)}.</li>
@@ -310,7 +329,7 @@ function helpChapters(){
       ['🚋 A car on the tracks','on the way','+10 minutes, stress +3'],
       ['💐 💵 🔥 At work','after a shift','A thank-you card, a big tip or a rush: usually Job up']])}
     <h3>🤔 Your call</h3>
-    <p>Many events ask what you do: help out or keep walking, pay now or wait, stop and watch or keep going. Their tile says <b>Tap to decide</b>, and the choice also waits in a <b>Decide</b> card at the top of the 🧭 Here tab and in the ☀️ morning report. Every option costs or gives something: time, money, energy, stress, your job or your neighbors. Not sure yet? Pick <b>Not now</b>. Anything you haven’t decided by bedtime goes the cautious way, and the 📜 Log says so. A few setbacks can’t wait, and ask you right away. At most two decisions wait at once.</p>
+    <p>Many events ask what you do: help out or keep walking, pay now or wait, stop and watch or keep going. Their tile says <b>Tap to decide</b>, and the choice also waits in a <b>Decide</b> card at the top of the 🧭 Here tab and in the ☀️ morning report. Every option costs or gives something: time, money, energy, stress, your job or your neighbors. Not sure yet? Pick <b>Not now</b>. Anything you haven’t decided by bedtime goes the cautious way, and the 📜 Log says so. A few setbacks can’t wait, and ask you right away (one that comes up overnight is first in the morning report, and asks as soon as you close it). At most three decisions wait at once. Small moments (the mountain coming out, a heron on the river) are a tile you can tap to <b>Stop and watch</b>; they don’t wait in the Decide card, and if you let the tile go you just keep going.</p>
     <p class="tut-small">Event pop-ups are off at first: each one shows as a tile and a log line. Turn on an OK window for each in ⚙️ Settings (decisions then open as soon as they happen).</p>`],
   ['tabs','The Week and Neighbors tabs',`
     <p>The tabs along the bottom: <b>🧭 Here</b> (what you can do where you are), <b>📅 Week</b>, <b>🤝 Neighbors</b>, <b>📋 To-do</b> and <b>📜 Log</b>.</p>

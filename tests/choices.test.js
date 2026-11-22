@@ -11,7 +11,7 @@ const DEF = () => {
       { ic: '🚶', l: 'Let it go', s: 'Stress +5', fn: () => { adj('stress', 5); say('🧪 let go ' + id); } },
       { ic: '🚫', l: 'Cannot', s: 'disabled', dis: true, fn: () => { money(-999); } }],
     dflt: 1 }, extra || {}));
-  mk('t_pick'); mk('t_two'); mk('t_three');
+  mk('t_pick'); mk('t_two'); mk('t_three'); mk('t_four');
   mk('t_urgent', { hook: 't_urgent', urgent: true, tile: ['⚠️', 'Test urgent', 'bad'] });
   defEvent({ id: 't_watch', hook: 't_watch', tile: ['🌅', 'Test moment', 'good'], chance: 1, max: 99, choices: () => stopWatch({ mins: 20, calm: 8, text: '🌅 watched' }), dflt: 1 });
 };
@@ -20,6 +20,7 @@ async function setup(ctx) {
   const { page, errors } = await open(ctx);
   await newGame(page);
   await page.evaluate(DEF);
+  await page.evaluate(() => EV.forEach(e => { if (e.choices && !/^t_/.test(e.id)) e.cond = () => false; }));   // content events with choices stay quiet here
   await page.evaluate(() => { closeModals(); clearTiles(); S.t = S.cur * 1440 + 600; S.money = 500; S.stress = 40; S.ev.pending = []; tab = 'act'; render(); });
   return { page, errors };
 }
@@ -27,10 +28,11 @@ async function setup(ctx) {
 module.exports = [
   { name: 'a choice event: pending, a tappable tile, a Decide card, a sheet with its default, and the option applies', fn: async ctx => {
     const { page, errors } = await setup(ctx);
-    await page.evaluate(() => fireHook('t_hook', {}));   // all three fire? no: two at most
-    let r = await page.evaluate(() => ({ pending: S.ev.pending.map(p => p.id), count: S.ev.count.t_three || 0 }));
-    assert.deepStrictEqual(r.pending, ['t_pick', 't_two'], 'two pending at most');
-    assert.strictEqual(r.count, 0, 'the third choice event does not fire while two wait');
+    await page.evaluate(() => fireHook('t_hook', {}));   // all four fire? no: three at most
+    let r = await page.evaluate(() => ({ pending: S.ev.pending.map(p => p.id), count: S.ev.count.t_four || 0 }));
+    assert.deepStrictEqual(r.pending, ['t_pick', 't_two', 't_three'], 'three pending at most');
+    await page.evaluate(() => { S.ev.pending = S.ev.pending.filter(p => p.id !== 't_three'); render(); });
+    assert.strictEqual(r.count, 0, 'the fourth choice event does not fire while three wait');
     // the tile is a button with an aria-label
     await page.waitForSelector('#tiles .tile.decide button.tdec');
     assert.match(await page.getAttribute('#tiles button.tdec', 'aria-label'), /tap to decide/i);
@@ -96,9 +98,9 @@ module.exports = [
   } },
   { name: 'a forced choice event past the limit takes its default at once', fn: async ctx => {
     const { page, errors } = await setup(ctx);
-    await page.evaluate(() => { fireHook('t_hook', {}); S.ev.force.push('t_three'); fireHook('t_hook', {}); });
-    const r = await page.evaluate(() => ({ pending: S.ev.pending.map(p => p.id), stress: S.stress, count: S.ev.count.t_three }));
-    assert.deepStrictEqual(r.pending, ['t_pick', 't_two']); assert.strictEqual(r.count, 1); assert.strictEqual(r.stress, 45);
+    await page.evaluate(() => { fireHook('t_hook', {}); S.ev.force.push('t_four'); fireHook('t_hook', {}); });
+    const r = await page.evaluate(() => ({ pending: S.ev.pending.map(p => p.id), stress: S.stress, count: S.ev.count.t_four }));
+    assert.deepStrictEqual(r.pending, ['t_pick', 't_two', 't_three']); assert.strictEqual(r.count, 1); assert.strictEqual(r.stress, 45);
     noErrors(errors);
   } },
   { name: 'saves keep pending decisions, and the options come back after a reload', fn: async ctx => {
@@ -120,8 +122,9 @@ module.exports = [
     await page.evaluate(() => { defEvent({ id: 't_wake', hook: 'wake', tile: ['🌄', 'Test morning choice', 'info'], chance: 0, max: 99, choices: () => stopWatch({ mins: 10, calm: 4 }), dflt: 1 });
       S.ev.force.push('t_wake'); clearTiles(); endDay('home'); });
     const rep = await page.textContent('#mbg');
-    assert.match(rep, /Morning report/); assert.match(rep, /A decision is waiting/); assert.match(rep, /Test morning choice/);
-    await page.click('#mbg button.act:has-text("Decide: Test morning choice")');
+    assert.match(rep, /Morning report/); assert.doesNotMatch(rep, /decision is waiting/, 'a moment is not a decision'); assert.match(rep, /Test morning choice/);
+    assert.deepStrictEqual(await page.evaluate(() => S.ev.pending.length), 0, 'a moment takes no pending slot');
+    await page.click('#mbg button.act:has-text("🌄 Test morning choice")');
     await page.waitForSelector('#mbg .choice-sheet', { state: 'attached' });
     const t0 = await page.evaluate(() => S.t);
     await page.click('#mbg button.act:has-text("Stop and watch")');
@@ -149,6 +152,47 @@ module.exports = [
     assert.strictEqual(await page.evaluate(() => choiceBtn()), 1);
     await page.evaluate(() => MBTN(1));
     assert.ok(await page.evaluate(() => !document.getElementById('mbg') && S.ev.pending.length === 0));
+    noErrors(errors);
+  } },
+  { name: 'ambient moments take no pending slot: a tappable tile while it shows, then Keep going on its own', fn: async ctx => {
+    const { page, errors } = await setup(ctx);
+    await page.evaluate(() => fireHook('t_hook', {}));   // three decisions wait
+    await page.evaluate(() => { clearTiles(); fireHook('t_watch', {}); });
+    let r = await page.evaluate(() => ({ pending: S.ev.pending.length, waiting: choicesWaiting(), count: S.ev.count.t_watch || 0 }));
+    assert.strictEqual(r.pending, 3); assert.strictEqual(r.count, 1, 'a moment fires even with three decisions waiting'); assert.ok(r.waiting.includes('t_watch'));
+    await page.waitForSelector('#tiles .tile.decide button.tdec');
+    assert.match(await page.getAttribute('#tiles button.tdec', 'aria-label'), /stop and watch/i);
+    const t0 = await page.evaluate(() => S.t);
+    await page.click('#tiles button.tdec');
+    await page.waitForSelector('#mbg .choice-sheet', { state: 'attached' });
+    const bs = await page.$$eval('#mbg .modal > button.act', b => b.map(x => x.textContent));
+    assert.strictEqual(bs.length, 2, 'Stop and watch / Keep going, no Not now');
+    await page.evaluate(() => MBTN(0));
+    r = await page.evaluate(() => ({ dt: S.t, waiting: choicesWaiting() }));
+    assert.strictEqual(r.dt - t0, 20); assert.ok(!r.waiting.includes('t_watch'));
+    // untapped: the tile goes and the moment passes (Keep going), with no log line
+    await page.evaluate(() => { S.ev.last = {}; clearTiles(); fireHook('t_watch', {}); });
+    const t1 = await page.evaluate(() => S.t);
+    await page.click('#tiles .tile.decide .ok');
+    await page.waitForTimeout(400);
+    r = await page.evaluate(() => ({ t: S.t, waiting: choicesWaiting(), log: S.log.map(l => l.s).join('\n') }));
+    assert.strictEqual(r.t, t1); assert.ok(!r.waiting.includes('t_watch')); assert.doesNotMatch(r.log, /Test moment/);
+    noErrors(errors);
+  } },
+  { name: 'an urgent decision overnight is first in the morning report, and its sheet opens when the report closes', fn: async ctx => {
+    const { page, errors } = await setup(ctx);
+    await page.evaluate(() => { defEvent({ id: 't_night_urgent', hook: 'night', urgent: true, tile: ['🚨', 'Test night urgent', 'bad'], chance: 0, max: 99,
+      run: () => say('🚨 Something at night'), choices: () => [{ ic: '💵', l: 'Pay', fn: () => money(-10) }, { ic: '🚶', l: 'Wait', fn: () => adj('stress', 5) }], dflt: 1 });
+      S.ev.force.push('t_night_urgent'); clearTiles(); endDay('home'); });
+    const rep = await page.textContent('#mbg .digest');
+    assert.match(rep, /^\s*🚨\s*Needs an answer now: Test night urgent/, 'at the top of the report');
+    assert.ok(await page.evaluate(() => !document.querySelector('#mbg .choice-sheet')));
+    await page.click('#mbg button.act:has-text("Wake up")');
+    await page.waitForSelector('#mbg .choice-sheet', { state: 'attached' });
+    assert.match(await page.textContent('#mbg'), /Test night urgent/);
+    const m0 = await page.evaluate(() => S.money);
+    await page.evaluate(() => MBTN(0));
+    assert.deepStrictEqual(await page.evaluate(() => [S.money, S.ev.pending.length]), [m0 - 10, 0]);
     noErrors(errors);
   } },
 ];

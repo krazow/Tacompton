@@ -98,11 +98,25 @@ defHood({
 
 const neAt=(c,k)=>!isGrow()&&hoodOf(c.at)==='netacoma'&&(!k||c.at===k);
 defEvent({id:'netacoma_openhouse',hook:'arrive',tile:['🏮','Lighthouse open house','good'],chance:0.35,max:1,cond:c=>neAt(c,'ne_point')&&tod()>=600&&tod()<960,
-  run:()=>{pass(25);adj('stress',-6);adj('community',3);say('🏮 The little lighthouse has its door propped open and a hand-lettered sign: “Open House, climb on up!” A volunteer hands you a paper cup of lemonade, a kid shows you the lantern room “for the third time,” and the view from up there makes the whole bay look like a model of itself. You sign the guest book and draw a very small lighthouse next to your name.')}});
+  run:()=>{say('🏮 The little lighthouse has its door propped open and a hand-lettered sign: “Open House, climb on up!”')},
+  choices:()=>[
+    {ic:'🪜',l:'Climb to the lantern room',s:'25 min. Energy −4, stress −7, community +2',fn:()=>{pass(25);adj('energy',-4);adj('stress',-7);adj('community',2);say('🪜 A kid shows you the lantern room “for the third time,” and the view makes the whole bay look like a model of itself. You draw a very small lighthouse in the guest book.')}},
+    {ic:'🍋',l:'Lemonade and the guest book',s:'10 min. Stress −3, community +2',fn:()=>{pass(10);adj('stress',-3);adj('community',2);say('🍋 A volunteer hands you a paper cup of lemonade. You sign the guest book and read the last forty names.')}},
+    {ic:'🚶',l:'Keep going',s:'No time. Nothing changes',fn:()=>{say('🚶 You promise yourself you will climb it another day.')}}],
+  dflt:2});
 defEvent({id:'netacoma_tidepools',hook:'arrive',tile:['🌊','Low tide','good'],chance:0.4,max:2,cooldown:2,cond:c=>neAt(c,'ne_point')&&daytime(),
-  run:()=>{pass(20);adj('stress',-6);adj('community',1);say('🌊 The tide is way out and the whole beach has turned into a puzzle of little pools. A naturalist with a bucket lens is crouched over one, calling every kid over: “Okay, who wants to see a hermit crab change houses?” Fifteen minutes later you are crouched next to her, completely invested in a crab.')}});
+  run:()=>{say('🌊 The tide is way out and the whole beach has turned into a puzzle of little pools.')},
+  choices:()=>stopWatch({mins:20,calm:6,community:1,text:'🌊 A naturalist with a bucket lens calls everyone over: “Okay, who wants to see a hermit crab change houses?” Fifteen minutes later you are crouched next to her, completely invested in a crab.'}),
+  dflt:1});
 defEvent({id:'netacoma_barbecue',hook:'arrive',tile:['🍔','Barbecue over the bay','good'],chance:0.35,max:1,cond:c=>neAt(c)&&tod()>=1020&&tod()<1230&&c.at!=='ne_trail',
-  run:()=>{pass(40);adj('energy',8);adj('stress',-7);adj('community',3);S.stats.meals++;say('🍔 A neighbor’s deck on the bluff is smoky and cheerful: burgers, corn on the cob, a speaker playing old soul records. “We always make too much,” says the host, handing you a plate with no further questions. Below the deck the bay turns copper and the port cranes light up one by one. You stay for dessert, which is a peach cobbler of unknown origin and exceptional quality.')}});
+  run:()=>{say('🍔 A neighbor’s deck on the bluff is smoky and cheerful: burgers, corn on the cob, a speaker playing old soul records.')},
+  choices:()=>[
+    {ic:'🍔',l:'Stay for a plate and dessert',s:'40 min. Energy +8, stress −7, community +3',fn:()=>{pass(40);adj('energy',8);adj('stress',-7);adj('community',3);S.stats.meals++;say('🍔 “We always make too much,” says the host. Below the deck the bay turns copper and the port cranes light up one by one. The peach cobbler is of unknown origin and exceptional quality.')}},
+    {ic:'🥡',l:'Take a plate to go',s:'10 min. Energy +5, stress −2, community +1',fn:()=>{pass(10);adj('energy',5);adj('stress',-2);adj('community',1);S.stats.meals++;say('🥡 The host wraps it in foil. “For later.” You do not argue.')}},
+    {ic:'🚶',l:'Thank them and keep going',s:'No time. Community +1',fn:()=>{adj('community',1);say('🚶 You wave from the street and breathe in the smoke as you pass.')}}],
+  dflt:2});
 defEvent({id:'netacoma_doe',hook:'arrive',tile:['🦌','A doe and her fawn','good'],chance:0.4,max:1,cond:c=>neAt(c,'ne_trail')&&(tod()<570||tod()>=1020),
-  run:()=>{pass(15);adj('stress',-8);adj('community',1);say('🦌 You round a bend and stop: a doe, big-eared and unbothered, is standing in the ferns and a spotted fawn is tucked against her side. They look at you. You look at them. Nobody moves for a full minute, then the doe flicks an ear and they melt back between the trunks without a sound. You walk the rest of the trail very slowly.')}});
+  run:()=>{say('🦌 You round a bend and stop: a doe, big-eared and unbothered, standing in the ferns with a spotted fawn tucked against her side.')},
+  choices:()=>stopWatch({mins:15,calm:8,community:1,text:'🦌 Nobody moves for a full minute, then the doe flicks an ear and they melt back between the trunks without a sound. You walk the rest of the trail very slowly.'}),
+  dflt:1});
 })();

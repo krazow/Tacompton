@@ -12,7 +12,29 @@ function simGame({ policy, job, diff, seed }) {
   Math.random = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const R = Math.random, ssNow = () => typeof sunsetNow === 'function' ? sunsetNow() : SUNSET;
   let peak = 0, sum = 0, n = 0;
-  const flush = () => { if (S && !S.over) { peak = Math.max(peak, S.stress); sum += S.stress; n++; } let k = 0; while (document.getElementById('mbg') && k++ < 30) MBTN(choiceBtn() >= 0 ? choiceBtn() : 0); const c = document.querySelector('.cross'); if (c) c.click(); clearTiles(); };
+  let deciding = false; const seen = new Set();
+  // Decisions (03-events.js) are answered as they come up, the way a player taps the tile: sensible takes the default (the
+  // cautious option), careful-social the first option (join in, help out) once the day's shift is done, and the default for setbacks, sloppy ignores most (they default at night) and picks any option now and then. Moments (Stop and watch):
+  // careful-social stops, sensible stops when stress is up, sloppy keeps going.
+  const decide = () => {
+    if (deciding || !alive() || typeof choicesWaiting !== 'function') return 0; deciding = true; let done = 0;
+    try {
+      for (const id of choicesWaiting()) {
+        if (!alive()) break;
+        const o = choiceOpts(id) || [], ok = o.map((x, i) => i).filter(i => !o[i].dis), d = choiceDflt(id), amb = !!AMB[id];
+        const busy = isShiftDay(day()) && tod() < JOBS[S.job].end;   // a shift still ahead today (or now): no time to spare
+        let i = d;
+        if (amb) i = !busy && (P === 'careful-social' || (P === 'sensible' && S.stress > 30)) ? 0 : d;
+        else if (P === 'careful-social') {   // decides after work (or it defaults tonight); setbacks the cautious way, neighbors and good news: join in
+          if (busy) continue; const e = EV.find(x => x.id === id), setback = e && e.tile && e.tile[2] === 'bad';
+          i = !setback && o[0] && !o[0].dis ? 0 : d; }
+        else if (P === 'sloppy') { if (seen.has(id)) continue; seen.add(id); if (R() >= 0.3) continue; i = ok[Math.floor(R() * ok.length)] ?? d; }   // mostly lets it slide to tonight
+        uiNarr = []; choiceApply(id, i, 'pick'); afterAction(); done++;
+      }
+    } finally { deciding = false; }
+    return done;
+  };
+  const flush = () => { if (S && !S.over) { peak = Math.max(peak, S.stress); sum += S.stress; n++; } let k = 0; while (document.getElementById('mbg') && k++ < 30) MBTN(choiceBtn() >= 0 ? choiceBtn() : 0); const c = document.querySelector('.cross'); if (c) c.click(); clearTiles(); if (!deciding && alive() && decide()) flush(); };
   const alive = () => S && !S.over;
   const act = re => { if (!alive()) return false; const x = actionsHere().find(y => re.test(y.l) && !y.dis); if (!x) return false; uiNarr = []; x.fn(); afterAction(); flush(); return true; };
   const goTo = k => { if (!alive() || S.loc === k) return; go(k); flush(); };

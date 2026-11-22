@@ -104,7 +104,7 @@ function tileBox(){let el=document.getElementById('tiles');if(!el){el=document.c
 // it stays a little longer, and a queued one is dropped once you've decided.
 function showTile(ic,title,sub,kind,when,opt){
   if(!S||S.over) return;
-  const dec=opt&&opt.decide;if(dec&&!isPending(dec)){tileFlush();return}
+  const dec=opt&&opt.decide;if(dec&&!choiceWaiting(dec)){tileFlush();return}
   if(DIGEST&&!DIGEST.open){DIGEST.items.push({ic,title,lines:sub?[sub]:[],kind,tile:true});return}   // a toast that would pop up while you wake: it goes in the morning report
   if(modalSays(title)) return;
   when=when||`${dayName(day()).slice(0,3)} ${fmt(S.t)}`;
@@ -115,12 +115,13 @@ function showTile(ic,title,sub,kind,when,opt){
   tileTop(box);
   const t=document.createElement('div');t.className='tile '+(kind||'info');
   title=withName(title);sub=withName(sub);sfx(kind==='good'?'good':kind==='bad'?'bad':'info');
-  const inner=`<span class="ti">${ic}</span><span class="tt"><small>${dec?'Your call':{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>`;
+  const inner=`<span class="ti">${ic}</span><span class="tt"><small>${dec?(AMB[dec]?'A moment':'Your call'):{good:'Good news',bad:'Event',warn:'Heads up'}[kind]||'Update'} · ${when}</small><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>`;
   if(dec)t.classList.add('decide');
-  t.innerHTML=dec?`<button class="tdec" aria-label="${esc(plain(title))}: tap to decide">${inner}</button><button class="ok" aria-label="Later">✓</button>`:`${inner}<button class="ok" aria-label="Got it">✓</button>`;
+  t.innerHTML=dec?`<button class="tdec" aria-label="${esc(plain(title))}: ${AMB[dec]?'tap to stop and watch':'tap to decide'}">${inner}</button><button class="ok" aria-label="Later">✓</button>`:`${inner}<button class="ok" aria-label="Got it">✓</button>`;
   let gone=false;const close=tap=>{if(gone)return;
     if(tap!==true&&tileBlocked()){setTimeout(close,800);return}   // hidden behind a pop-up: keep it until the pop-up is gone
-    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260)};
+    gone=true;t.classList.add('out');setTimeout(()=>{t.remove();tileFlush()},260);
+    if(dec&&AMB[dec])choiceDrop(dec)};   // an ambient moment's tile went away untapped: Keep going
   t.querySelector('.ok').onclick=()=>close(true);t.onclick=e=>{if(e.target===t)close(true)};
   if(dec)t.querySelector('.tdec').onclick=()=>{gone=true;t.remove();openChoice(dec)};
   setTimeout(close,dec?TILE_MS*2:tileQ.length>=2?TILE_MS-1200:TILE_MS);box.appendChild(t);
