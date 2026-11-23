@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- Pierce County: Gig Harbor across the Narrows (the harbor, Skansie Brothers Park and the netshed, Jerisich Dock, both Narrows Bridges and the toll from 2007; a start town), JBLM and DuPont (the Visitor Center, the Lewis Army Museum with a visitor pass, DuPont's old village, the Sequalitchew Creek trail, and the barracks as home base for a soldier), Sumner and Bonney Lake (rhubarb pie, a farm stand, the Sounder from 2000, Allan Yorke Park; a start town), Orting (the mountain at the end of the street, the lahar sirens and school walking drills, the Soldiers Home, the Foothills Trail; a start town) and Eatonville and the mountain (Northwest Trek, Ashford, the Nisqually Entrance's park fee, Paradise: a day trip by car, with the winter road rules). Places, night drawings, neighbors, events and guide sections for each.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed

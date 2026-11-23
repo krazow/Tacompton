@@ -6,7 +6,7 @@ module.exports = [
   { name: 'neighborhoods: ten Tacoma neighborhoods beyond Hilltop, each with places, a hub, neighbors and art', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await newGame(page);
-    const r = await page.evaluate(() => Object.values(HOODS).map(h => ({ key: h.key, hub: h.hub, places: Object.keys(h.places), hubOk: !!L[h.hub] && L[h.hub].hood === h.key,
+    const r = await page.evaluate(() => Object.values(HOODS).filter(h => !h.county).map(h => ({ key: h.key, hub: h.hub, places: Object.keys(h.places), hubOk: !!L[h.hub] && L[h.hub].hood === h.key,
       neighbors: (h.neighbors || []).length, art: Object.keys(h.places).every(k => typeof L[k].art === 'function' && /<(rect|path|circle|polygon)/.test(L[k].art({ night: false })) && /<(rect|path|circle|polygon)/.test(L[k].art({ night: true }))) })));
     const keys = r.map(x => x.key);
     for (const k of ['downtown', 'eastside', 'proctor', 'ruston', 'southend', 'stadium', 'oldtown', 'fernhill', 'netacoma', 'westend']) assert.ok(keys.includes(k), 'missing neighborhood ' + k);
@@ -24,11 +24,11 @@ module.exports = [
     const r = await page.evaluate(() => {
       closeModals(); S.t = 600; S.loc = 'home'; S.money = 1000;
       const out = {};
-      for (const h of Object.values(HOODS)) {
+      for (const h of Object.values(HOODS).filter(h => !h.county)) {
         const k = h.hub, m = travelMins('home', k), back = travelMins(k, 'home');
         out[h.key] = { m, back, fare: hoodFare('home', k) };
       }
-      const bus = Object.values(HOODS).find(h => h.ride.fare > 0);
+      const bus = Object.values(HOODS).find(h => !h.county && h.ride.fare > 0);
       window.__t = { before: S.money, hub: bus.hub, key: bus.key }; go(bus.hub);
       out.inner = travelMins(...Object.keys(bus.places).slice(0, 2));
       return out;
