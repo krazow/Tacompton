@@ -14,7 +14,7 @@
 //                          pack has one (in their real years), the car when you're driving
 //    START_PLACES        → [{key:'hilltop', name, ic, d}, …every pack with county:true and startable:true]
 //    lifeStartPlace()    → the key of the place this life started ('hilltop' unless you picked a county town)
-//    countyGuideAreas()  → the html of the Pierce County chapter's area sections (packs wrap it to add their own section:
+//    countyGuideAreas()  → html: a section per county pack (from its guide text), shown in the guide's places chapter. Packs may
 //                          {const g=countyGuideAreas;countyGuideAreas=function(){return g()+`<h3>…</h3>…`}})
 //  ---- what a pack can set (all optional except ride) ----
 //    ride:{via:'bus', mins, fare, drive}   mins/fare: the bus from Hilltop (or miles: the engine works the bus time out);
@@ -31,7 +31,9 @@
 function countyIs(k){return !!k&&typeof HOODS!=='undefined'&&!!HOODS[k]&&!!HOODS[k].county}
 function countyKeys(){return typeof HOODS==='undefined'?[]:Object.keys(HOODS).filter(countyIs)}
 Object.defineProperty(window,'COUNTY_KEYS',{configurable:true,get:countyKeys});
+var COUNTY_FORCE=false;
 function countyOn(){
+  if(COUNTY_FORCE)return true;
   if(typeof S==='undefined'||!S||typeof lifeLong!=='function'||!lifeLong())return false;
   if(typeof isGrow==='function'&&isGrow()){const a=S.age||12;return a>=16}   // a Youth ORCA card (14+) or the family car; the county opens at 16
   return true;
@@ -44,7 +46,9 @@ function countyStartPlaces(){
 }
 Object.defineProperty(window,'START_PLACES',{configurable:true,get:countyStartPlaces});
 function countyRide(k){return typeof COUNTY!=='undefined'&&COUNTY.ride?COUNTY.ride(k):null}
-function countyGuideAreas(){return ''}
+function countyGuideAreas(){if(typeof HOODS==='undefined')return '';const ks=countyKeys();if(!ks.length)return '';
+  return `<h3>Pierce County</h3><p>In the longer games, past Tacoma (the Pierce County chapter has buses, trains, tolls, starting there and jobs):</p>`+
+    ks.map(k=>{const H=HOODS[k];return `<p class="tut-place"><b>${H.ic} ${H.name}.</b> ${H.guide||H.blurb}${H.places?` Places: ${Object.values(H.places).map(p=>p.name).join(', ')}.`:''}</p>`}).join('')}
 window.countyOn=countyOn;window.countyIs=countyIs;window.countyRide=countyRide;window.lifeStartPlace=lifeStartPlace;
 
 // ============================================================
@@ -82,21 +86,28 @@ function setup(k,H){
   if(r.mins==null)r.mins=Math.round(12+(r.miles||10)*2.6);
   if(r.fare==null)r.fare=2;
   if(r.drive==null)r.drive=H.drive!=null?H.drive:Math.max(10,Math.round(r.mins*0.5));
+  const yr=(x,d)=>typeof x==='number'?Object.assign({mins:Math.round(r.mins*0.7),fare:d},T[x===r.sounder?'sounder':'express']||{},{from:x}):x;
+  if(typeof r.sounder==='number')r.sounder=yr(r.sounder,4);if(typeof r.express==='number')r.express=yr(r.express,3);
   if(!r.sounder&&T.sounder)r.sounder=T.sounder;if(!r.express&&T.express)r.express=T.express;
   if(r.ptOut==null&&T.ptOut)r.ptOut=T.ptOut;
   if(H.narrows==null&&T.narrows)H.narrows=true;
   if(H.rent==null)H.rent=T.rent||1;
   H.ride0=r;
   // the ride everyone else reads (05-ui.js, 38-car.js, 54-phone-travel.js): what you'd take right now
-  H.ride={get via(){return ride(k).label},get mins(){return ride(k).mins},get fare(){return ride(k).fare}};
+  H.ride={get via(){return ride(k).label},get mins(){return ride(k).mins},get fare(){return ride(k).fare},get drive(){return driveOf(k)},get mode(){return ride(k).via}};
   // the places: hidden until the county is open (your own home town is always open)
   for(const pk of Object.keys(H.places||{})){const p=LA()[pk];if(!p)continue;hideWrap(p,k)}
   // Growing Up's table: the same places, for 16 and up (and a home town)
   if(typeof G_L!=='undefined')for(const pk of Object.keys(H.places||{})){const p=LA()[pk]||H.places[pk];if(G_L[pk])continue;
-    G_L[pk]={hood:k,name:p.name,ic:p.ic,desc:p.desc,hours:p.hours,art:o=>p.art(o)+(typeof gRainArt==='function'?gRainArt():''),get hidden(){return !open(k)}}}
+    G_L[pk]={hood:k,get name(){return kidSafe(p.name)},ic:p.ic,get desc(){return kidSafe(p.desc)},hours:p.hours,art:o=>p.art(o)+(typeof gRainArt==='function'?gRainArt():''),get hidden(){return !open(k)}}}
 }
+// Growing Up sees the same places with kid words (no bars, beer or concerts: a show, a grill, drinks)
+const KID_SWAP=[[/\bconcerts\b/g,'shows'],[/\bconcert\b/g,'show'],[/\bConcert/g,'Show'],[/\b(beer|wine|cocktails?)\b/gi,'drinks'],[/\btaverns?\b/gi,'grill'],[/\bbars\b/gi,'grills'],[/\bbar\b/gi,'grill']];
+function kidSafe(t){if(typeof t!=='string')return t;for(const [re,to] of KID_SWAP)t=t.replace(re,to);return t}
 function hideWrap(p,k){const d=Object.getOwnPropertyDescriptor(p,'hidden');let v=d&&!d.get?d.value:undefined;const g=d&&d.get;
-  Object.defineProperty(p,'hidden',{configurable:true,enumerable:true,get(){return (g?!!g.call(p):!!v)||!open(k)},set(x){if(d&&d.set)d.set.call(p,x);else v=x}})}
+  // the pack's own gate asks countyOn(): your home town counts as open for it
+  const base=()=>{if(!g)return !!v;const f=COUNTY_FORCE;COUNTY_FORCE=!countyOn()&&typeof S!=='undefined'&&!!S&&S.startPlace===k;try{return !!g.call(p)}finally{COUNTY_FORCE=f}};
+  Object.defineProperty(p,'hidden',{configurable:true,enumerable:true,get(){return base()||!open(k)},set(x){if(d&&d.set)d.set.call(p,x);else v=x}})}
 const open=k=>countyOn()||(typeof S!=='undefined'&&!!S&&S.startPlace===k);
 
 // ---- the ride from Hilltop, right now ----
@@ -274,7 +285,7 @@ if(typeof GROW!=='undefined'&&GROW.actionsHere){const ah=GROW.actionsHere;GROW.a
 const COUNTY_JOBS={
   jblm:{get n0(){return `Civilian supply technician at ${yearNow()>=2010?'JBLM':'Fort Lewis'}`},short:'the base',ic:'🎖️',
     get place(){return yearNow()>=2010?'Joint Base Lewis-McChord':'Fort Lewis'},role0:'civilian supply technician',
-    start:420,end:930,pay:166,days:[0,1,2,3,4],stress:13,energy:24,alarm:330,open:()=>[300,1140],area:/Lakewood|DuPont|JBLM|Lewis|Spanaway|Steilacoom/i,commute:35,bg:true,
+    start:420,end:930,pay:166,days:[0,1,2,3,4],stress:13,energy:24,alarm:330,open:()=>[300,1140],area:[/Lakewood/i,/DuPont|JBLM|Lewis|Steilacoom/i,/Spanaway|Parkland/i],commute:35,bg:true,
     get blurb(){return `Seven to 3:30, Monday to Friday, in a supply warehouse on ${yearNow()>=2010?'Joint Base Lewis-McChord (Fort Lewis and McChord, one base since 2010)':'Fort Lewis'}, just south of Lakewood: a federal civilian job, with a badge at the gate and a background check first.`},
     ladder:{get at(){return yearNow()>=2010?'JBLM':'Fort Lewis'},r:[
       {role:'civilian supply technician',t:'Supply technician',f:1},
@@ -288,21 +299,21 @@ const COUNTY_JOBS={
       {role:'marine clerk',t:'Marine clerk',f:1.3,yrs:2,st:65},
       {role:'terminal supervisor',t:'Terminal supervisor',f:1.6,yrs:4,st:70}]}},
   farm:{n0:'Farmhand on a Puyallup valley farm',short:'the farm',ic:'🚜',place:'the farm in the valley',role0:'farmhand',
-    start:360,end:870,pay:140,days:[1,2,3,4,5],stress:10,energy:34,alarm:300,open:()=>[300,1200],area:/Puyallup|Sumner|Orting|Fife/i,commute:40,
+    start:360,end:870,pay:140,days:[1,2,3,4,5],stress:10,energy:34,alarm:300,open:()=>[300,1200],area:[/Puyallup/i,/Sumner|Orting/i,/Fife/i],commute:40,
     blurb:'Six to 2:30, Tuesday to Saturday, on a family farm on the valley floor (made up): berries and vegetables in summer, daffodil and tulip bulbs in spring, the farm stand in fall. Early, outdoors and muddy, with Mount Rainier at the end of every row.',
     ladder:{at:'a Puyallup valley farm',r:[
       {role:'farmhand',t:'Farmhand',f:1},
       {role:'crew lead',t:'Crew lead',f:1.15,yrs:1,st:60},
       {role:'farm manager',t:'Farm manager',f:1.45,yrs:4,st:70}]}},
   goodsam:{n0:'Patient transporter at Good Samaritan Hospital in Puyallup',short:'the hospital',ic:'🏨',place:'Good Samaritan Hospital',role0:'patient transporter',
-    start:420,end:930,pay:150,days:[0,1,2,3,4],stress:15,energy:28,alarm:330,open:()=>[0,1440],area:/Puyallup|Sumner|South Hill/i,commute:40,bg:true,
+    start:420,end:930,pay:150,days:[0,1,2,3,4],stress:15,energy:28,alarm:330,open:()=>[0,1440],area:[/Puyallup|South Hill/i],commute:40,bg:true,
     blurb:'Seven to 3:30, Monday to Friday, at the big hospital on the hill in Puyallup: wheelchairs, beds and patients from the emergency room to X-ray to their rooms, and a lot of hallway conversation.',
     ladder:{at:'Good Samaritan',r:[
       {role:'patient transporter',t:'Patient transporter',f:1},
       {role:'health unit coordinator',t:'Health unit coordinator',f:1.15,yrs:1,st:65},
       {role:'surgical technologist',t:'Surgical technologist',f:1.6,yrs:1,st:65,prog:{id:'surgtech',t:'the surgical technology program',n:'A surgical technology program at a technical college in the county',mo:12,fee:280,pt:0.75,end:'You finish the surgical technology program and pass the certification exam'}}]}},
   para:{n0:'Paraeducator at an elementary school in Lakewood',short:'the school',ic:'🍎',place:'the elementary school',role0:'paraeducator',
-    start:480,end:930,pay:142,days:[0,1,2,3,4],stress:14,energy:26,alarm:390,open:()=>[420,1080],area:/Lakewood|Steilacoom|University Place/i,commute:35,bg:true,
+    start:480,end:930,pay:142,days:[0,1,2,3,4],stress:14,energy:26,alarm:390,open:()=>[420,1080],area:[/Lakewood/i,/Steilacoom|University Place/i],commute:35,bg:true,
     blurb:'Eight to 3:30, Monday to Friday, in a public elementary school in Lakewood: reading groups, the lunchroom, recess duty and one kid who needs you more than the others. Fingerprints and a background check first.',
     ladder:{at:'a Lakewood school',r:[
       {role:'paraeducator',t:'Paraeducator',f:1},
@@ -356,7 +367,7 @@ for(const [k,J] of Object.entries(COUNTY_JOBS)){
 window.COUNTY_JOBS=COUNTY_JOBS;
 // where the job is: its county town when that pack is on the map (or the Port on the Eastside); otherwise a commute
 function countyJobHood(k){const J=COUNTY_JOBS[k];if(!J)return null;if(J.hood)return HOODS[J.hood]?J.hood:null;
-  COUNTY.prep();return COUNTY_KEYS.find(h=>J.area.test(HOODS[h].name))||null}
+  COUNTY.prep();const ks=COUNTY_KEYS;for(const re of J.area){const h=ks.find(x=>re.test(HOODS[x].name));if(h)return h}return null}
 const cjNow=()=>typeof S!=='undefined'&&S&&!isGrow()&&COUNTY_JOBS[S.job]?S.job:null;
 {const W=(typeof L_ADULT!=='undefined'?L_ADULT:L).work;if(W)Object.defineProperty(W,'hood',{configurable:true,enumerable:true,get(){const k=cjNow();return k?countyJobHood(k)||undefined:undefined}})}
 function countyCommute(a,b){const k=cjNow();if(!k||(a!=='work'&&b!=='work')||a===b)return 0;if(countyJobHood(k))return 0;return COUNTY_JOBS[k].commute||30}
@@ -428,7 +439,7 @@ function countyGuideHTML(){
     ${hT(['Job','Hours','Pay to start','Next steps'],Object.keys(J).map(k=>{const j=JOBS[k],L0=j.ladder;return [`${j.ic} ${j.n0}`,`${fmt(j.start)}–${fmt(j.end)}, ${dayRange(j.days)}`,`${$(j.pay0)} a shift`,L0.r.slice(1).map(r=>r.t+(r.prog?` (${r.prog.t})`:'')).join(' → ')]}))}
     <p>The base, the hospital and the school run a background check before they hire. The Port of Tacoma job is on the tideflats by the Eastside.</p>
     ${tip('A long commute is a real cost','An hour on the bus each way means leaving earlier, getting home later, and less time for everything else. A car, the express bus or the Sounder can win back half of it.')}
-    ${countyGuideAreas()}`;
+    <p>Each county area, its places and what to do there are in the places chapter, under <b>Pierce County</b>.</p>`;
 }
 {const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);try{const i=ch.findIndex(c=>c[0]==='faq');ch.splice(i<0?ch.length:i,0,['county','Pierce County',countyGuideHTML()])}catch(e){console.error(e)}return ch}}
 

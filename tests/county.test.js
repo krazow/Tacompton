@@ -1,14 +1,11 @@
 const { open, noErrors, assert } = require('./helpers');
 
 // Pierce County (src/js/72-county.js): the contract, travel across the county, starting elsewhere, county jobs and the guide.
-// No county pack is on main yet, so each test registers a small one (a town with Sounder, and one across the Narrows).
+// Uses the real packs (Puyallup, Lakewood, …) plus a small test pack across the Narrows (no Peninsula pack yet).
 async function packs(page) {
   await page.evaluate(() => {
-    if (HOODS.tpuy) return;
+    if (HOODS.tgig) return;
     const art = () => '<rect width="480" height="150" fill="#6f9a54"/>';
-    defHood({ key: 'tpuy', county: true, startable: true, name: 'Puyallup', ic: '🌷', blurb: 'A valley town under the mountain.', hub: 'tp_main',
-      ride: { via: 'bus', mins: 40, fare: 2, drive: 22 }, places: { tp_main: { name: 'Meridian', ic: '🏪', desc: 'The main street', art }, tp_fair: { name: 'The fairgrounds', ic: '🎡', desc: 'The fair', art } },
-      travel: { 'tp_main|tp_fair': 8 }, neighbors: [], actions: () => [] });
     defHood({ key: 'tgig', county: true, name: 'Gig Harbor', ic: '⛵', blurb: 'Across the Narrows.', hub: 'tg_main',
       ride: { via: 'bus', mins: 45, fare: 2, drive: 25 }, places: { tg_main: { name: 'Harborview Drive', ic: '⚓', desc: 'The waterfront street', art } },
       travel: {}, neighbors: [], actions: () => [] });
@@ -30,24 +27,28 @@ module.exports = [
     const { page, errors } = await open(ctx);
     await packs(page);
     await start(page, { length: 'quick' });
-    let r = await page.evaluate(() => ({ on: countyOn(), keys: COUNTY_KEYS, places: START_PLACES.map(p => p.key), sp: lifeStartPlace(), hidden: L.tp_main.hidden,
+    let r = await page.evaluate(() => ({ on: countyOn(), keys: COUNTY_KEYS, places: START_PLACES.map(p => p.key), sp: lifeStartPlace(), hidden: L.pu_pioneer.hidden,
       go: (actView().match(/Pierce County/g) || []).length, jobs: Object.keys(JOBS) }));
     assert.strictEqual(r.on, false, 'Quick play: no county');
-    assert.deepStrictEqual(r.keys, ['tpuy', 'tgig']);
-    assert.deepStrictEqual(r.places, ['hilltop', 'tpuy'], 'only startable packs, Hilltop first');
+    for (const k of ['fife', 'lakewood', 'parkland', 'puyallup', 'univplace', 'tgig']) assert.ok(r.keys.includes(k), 'county key ' + k);
+    assert.strictEqual(r.places[0], 'hilltop'); assert.ok(r.places.includes('puyallup') && r.places.includes('lakewood') && !r.places.includes('tgig'), 'only startable packs, Hilltop first');
     assert.strictEqual(r.sp, 'hilltop'); assert.strictEqual(r.hidden, true, 'county places hidden in Quick play');
     assert.strictEqual(r.go, 0, 'no Pierce County heading in Quick play');
     assert.deepStrictEqual(r.jobs, ['hospital', 'cafe', 'kitchen'], 'the three day-one jobs are unchanged');
     await start(page, { length: '1y' });
     await at(page, 720);
-    r = await page.evaluate(() => ({ on: countyOn(), hidden: L.tp_main.hidden, go: actView(), via: HOODS.tpuy.ride.via }));
+    r = await page.evaluate(() => ({ on: countyOn(), hidden: L.pu_pioneer.hidden, go: actView(), via: HOODS.puyallup.ride.via }));
     assert.strictEqual(r.on, true); assert.strictEqual(r.hidden, false);
     assert.ok(/🏙️ Tacoma/.test(r.go) && /🌲 Pierce County/.test(r.go), 'Go somewhere groups Tacoma and Pierce County');
     assert.ok(r.go.indexOf('🌲 Pierce County') > r.go.indexOf('Stadium District'), 'the county comes after Tacoma');
     assert.ok(/Bus/.test(r.via), 'the ride label: ' + r.via);
+    // reachable: Go somewhere lists Lakewood and Puyallup, and the trip gets you there
+    assert.ok(/Lakewood Towne Center/.test(r.go) && /aria-label="Go to [^"]*·/.test(r.go), 'a county place to go to');
+    r = await page.evaluate(() => { S.money = 500; go('lw_towne'); document.querySelectorAll('.cross').forEach(e => e.click()); closeModals(); return { loc: S.loc, seen: !!(S.county && S.county.seen && S.county.seen.lakewood), m: S.life.moments.some(x => /Pierce County/.test(x.t)) }; });
+    assert.deepStrictEqual(r, { loc: 'lw_towne', seen: true, m: true });
     // Growing Up: closed at 12, open at 16
     await start(page, { length: '2y', age: 12 });
-    r = await page.evaluate(() => { const a = countyOn(), h = L.tp_main && L.tp_main.hidden; S.age = 16; return { a, h, b: countyOn(), h2: L.tp_main.hidden }; });
+    r = await page.evaluate(() => { const a = countyOn(), h = L.pu_pioneer && L.pu_pioneer.hidden; S.age = 16; return { a, h, b: countyOn(), h2: L.pu_pioneer.hidden }; });
     assert.deepStrictEqual(r, { a: false, h: true, b: true, h2: false });
     noErrors(errors);
   } },
@@ -56,19 +57,23 @@ module.exports = [
     await packs(page);
     await start(page, { length: '1y', year: 2010 });
     await at(page, 600);
-    let r = await page.evaluate(() => ({ midday: countyRide('tpuy'), gig: countyRide('tgig'), t: travelMins('home', 'tp_main'), across: travelMins('tp_main', 'tg_main'), stadium: travelMins('tp_main', 'st_park') }));
-    assert.strictEqual(r.midday.via, 'bus'); assert.strictEqual(r.midday.mins, 40);
-    assert.ok(r.t >= 40, 'home to Puyallup by bus: ' + r.t);
+    let r = await page.evaluate(() => ({ midday: countyRide('puyallup'), gig: countyRide('tgig'), t: travelMins('home', 'pu_pioneer'), across: travelMins('pu_pioneer', 'tg_main'), stadium: travelMins('pu_pioneer', 'st_park') }));
+    assert.strictEqual(r.midday.via, 'bus'); assert.strictEqual(r.midday.mins, 50);
+    assert.ok(r.t >= 50, 'home to Puyallup by bus: ' + r.t);
     assert.ok(r.across > r.midday.mins + 20, 'Puyallup to Gig Harbor goes through town: ' + r.across);
-    assert.ok(r.stadium > 40 && r.stadium < r.across, 'Puyallup to the Stadium District: ' + r.stadium);
+    assert.ok(r.stadium > 50 && r.stadium < r.across, 'Puyallup to the Stadium District: ' + r.stadium);
     await at(page, 420);
-    r = await page.evaluate(() => ({ puy: countyRide('tpuy'), gig: countyRide('tgig') }));
-    assert.strictEqual(r.puy.via, 'sounder', 'Sounder at rush hour from 2000'); assert.ok(r.puy.mins < 40);
+    r = await page.evaluate(() => ({ puy: countyRide('puyallup'), gig: countyRide('tgig'), lw: countyRide('lakewood') }));
+    assert.strictEqual(r.puy.via, 'sounder', 'Sounder at rush hour from 2000'); assert.ok(r.puy.mins < 50);
+    assert.strictEqual(r.lw.via, 'express', 'Lakewood: no Sounder before 2012, the express bus');
     assert.strictEqual(r.gig.via, 'express', 'the express bus to Gig Harbor');
+    await start(page, { length: '1y', year: 2014 });
+    await at(page, 420);
+    assert.strictEqual(await page.evaluate(() => countyRide('lakewood').via), 'sounder', 'Lakewood Sounder from 2012');
     // 1990: no Sounder yet, one Narrows bridge (slower)
     await start(page, { length: '1y', year: 1990 });
     await at(page, 420);
-    r = await page.evaluate(() => ({ puy: countyRide('tpuy'), gig: countyRide('tgig'), toll: COUNTY_API.toll(true) }));
+    r = await page.evaluate(() => ({ puy: countyRide('puyallup'), gig: countyRide('tgig'), toll: COUNTY_API.toll(true) }));
     assert.strictEqual(r.puy.via, 'bus'); assert.ok(r.gig.mins > 45, 'one bridge before 2007: ' + r.gig.mins); assert.strictEqual(r.toll, 0, 'no toll before 2007');
     // driving home from Gig Harbor in 2010: the toll at the booth, then with a Good To Go! pass
     await start(page, { length: '1y', year: 2010 });
@@ -96,29 +101,29 @@ module.exports = [
     const { page, errors } = await open(ctx);
     await packs(page);
     // the New game sheet: a Where you start row with Hilltop on by default
-    let r = await page.evaluate(() => { closeModals(); lifeStartModal(); const t = document.querySelector('#mbg').innerHTML; lifePick('startPlace', 'tpuy'); const t2 = document.querySelector('#mbg').innerHTML; closeModals(); return { t, t2, lp: LP.startPlace }; });
+    let r = await page.evaluate(() => { closeModals(); lifeStartModal(); const t = document.querySelector('#mbg').innerHTML; lifePick('startPlace', 'puyallup'); const t2 = document.querySelector('#mbg').innerHTML; closeModals(); return { t, t2, lp: LP.startPlace }; });
     assert.ok(/Where you start/.test(r.t) && /aria-pressed="true"[^>]*>🏘️ Hilltop/.test(r.t), 'Hilltop is the default');
-    assert.ok(/aria-pressed="true"[^>]*>🌷 Puyallup/.test(r.t2) && /rent there/.test(r.t2), 'picking Puyallup');
+    assert.ok(/aria-pressed="true"[^>]*>🎡 Puyallup/.test(r.t2) && /rent there/.test(r.t2), 'picking Puyallup');
     await page.evaluate(() => { LP.startPlace = 'hilltop'; });
     // Hilltop start (the default) has the old rent and home
     await start(page, { length: '1y' });
     const base = await page.evaluate(() => ({ rent: S.rent.amt, hood: L.home.hood, sp: S.startPlace, t: travelMins('home', 'mlk') }));
     assert.strictEqual(base.hood, undefined); assert.strictEqual(base.sp, undefined); assert.ok(base.t < 15);
-    await start(page, { length: '1y', place: 'tpuy' });
-    r = await page.evaluate(() => ({ rent: S.rent.amt, hood: L.home.hood, sp: lifeStartPlace(), t: travelMins('home', 'mlk'), local: travelMins('home', 'tp_main'), desc: L.home.desc, m: S.life.moments.map(x => x.t).join('|'),
+    await start(page, { length: '1y', place: 'puyallup' });
+    r = await page.evaluate(() => ({ rent: S.rent.amt, hood: L.home.hood, sp: lifeStartPlace(), t: travelMins('home', 'mlk'), local: travelMins('home', 'pu_pioneer'), desc: L.home.desc, m: S.life.moments.map(x => x.t).join('|'),
       go: actView(), opt: (gameOptionsModal(), document.querySelector('#mbg').textContent) }));
     await page.evaluate(() => closeModals());
-    assert.strictEqual(r.hood, 'tpuy'); assert.strictEqual(r.sp, 'tpuy');
+    assert.strictEqual(r.hood, 'puyallup'); assert.strictEqual(r.sp, 'puyallup');
     assert.ok(r.rent > base.rent, `rent in Puyallup ${r.rent} vs ${base.rent}`);
-    assert.ok(r.t > 40, 'MLK is a bus ride away: ' + r.t); assert.ok(r.local <= 12, 'the town is next door: ' + r.local);
+    assert.ok(r.t > 25, 'MLK is a bus or train ride away: ' + r.t); assert.ok(r.local <= 12, 'the town is next door: ' + r.local);
     assert.ok(/Puyallup/.test(r.desc) && /in Puyallup/.test(r.m), 'home and the life story');
     assert.ok(/Started in Puyallup/.test(r.opt), 'Game options say where');
     // Growing Up at 12 in Puyallup: the home and the school are there, the town is open, the school has the town's name on screen
-    await start(page, { length: '2y', age: 12, place: 'tpuy' });
-    r = await page.evaluate(() => ({ on: countyOn(), hidden: L.tp_main.hidden, gig: L.tg_main.hidden, home: L.home.hood, school: L.school.hood, t: travelMins('home', 'school'),
+    await start(page, { length: '2y', age: 12, place: 'puyallup' });
+    r = await page.evaluate(() => ({ on: countyOn(), hidden: L.pu_pioneer.hidden, gig: L.tg_main.hidden, home: L.home.hood, school: L.school.hood, t: travelMins('home', 'school'),
       txt: startText('Summit View is 10 minutes away. Then Hilltop High.'), acts: actionsHere().map(a => a.l).join('|') }));
     assert.strictEqual(r.on, false); assert.strictEqual(r.hidden, false, 'your own town is open'); assert.strictEqual(r.gig, true, 'the rest of the county is not');
-    assert.strictEqual(r.home, 'tpuy'); assert.strictEqual(r.school, 'tpuy'); assert.ok(r.t <= 12);
+    assert.strictEqual(r.home, 'puyallup'); assert.strictEqual(r.school, 'puyallup'); assert.ok(r.t <= 12);
     assert.strictEqual(r.txt, 'Puyallup Middle School is 10 minutes away. Then Puyallup High School.');
     assert.ok(!/Head home/.test(r.acts), 'no Head home at home');
     await page.evaluate(() => { render(); });
@@ -142,7 +147,10 @@ module.exports = [
     assert.ok(/Marine clerk/.test(r.out) && /Marine clerk at the Port of Tacoma/.test(r.t), 'promoted: ' + r.t);
     // JBLM with no Lakewood pack: a commute; the name follows the year
     r = await page.evaluate(() => { S.job = 'jblm'; S.career = null; return { hood: L.work.hood, t: travelMins('home', 'work'), place: job().place }; });
-    assert.strictEqual(r.hood, undefined); assert.ok(r.t >= 35, 'commute to the base: ' + r.t); assert.strictEqual(r.place, 'Joint Base Lewis-McChord');
+    assert.strictEqual(r.hood, 'lakewood', 'the base is out past Lakewood'); assert.ok(r.t >= 25, 'commute to the base: ' + r.t); assert.strictEqual(r.place, 'Joint Base Lewis-McChord');
+    // a county job with no pack for its town (none yet): a commute from Hilltop
+    r = await page.evaluate(() => { const a = COUNTY_JOBS.para.area; COUNTY_JOBS.para.area = [/Nowhere/]; S.job = 'para'; S.career = null; const o = { hood: L.work.hood, t: travelMins('home', 'work') }; COUNTY_JOBS.para.area = a; return o; });
+    assert.strictEqual(r.hood, undefined); assert.ok(r.t >= 35, 'the fallback commute: ' + r.t);
     // the Jobs app: county listings, and Hilltop ones while you hold a county job
     r = await page.evaluate(() => { S.ph = S.ph || {}; const h = phoneApp('jobs').view(); return h; });
     assert.ok(/Around Pierce County/.test(r) && /Port of Tacoma/.test(r) && /Apply to Tacoma General/.test(r), 'the Jobs app');
