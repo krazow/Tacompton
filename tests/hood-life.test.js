@@ -218,7 +218,7 @@ module.exports = [
     assert.doesNotMatch(sec, BAD_GRAPHIC); assert.doesNotMatch(t, BAD_ROMANCE); assert.doesNotMatch(sec, BAD_FISH);
     noErrors(errors);
   } },
-  { name: 'integration with the gang path (62-gang.js): the meters move S.gang, and the glass studio opens its arts way out', fn: async ctx => {
+  { name: 'integration with the gang path (62-gang.js) and the crime path (60-crime.js): the meters move S.gang, the glass studio opens its arts way out, a record can be sealed', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page, { grow: true, age: 12 });
     const r = await page.evaluate(() => {
@@ -230,6 +230,18 @@ module.exports = [
     });
     assert.ok(r.after && r.after.rep > 0 && r.after.heat > 0, 'S.gang Street Rep and Heat ' + JSON.stringify(r.after));
     assert.strictEqual(r.flag, true, "eventFlag('hood_glass')"); assert.strictEqual(r.glass, true);
+    // with the crime path (60-crime.js): a record from crimeOffense shows in the background check, and sealing clears it
+    await start(page, { grow: false, age: 18, length: 'life' });
+    const c = await page.evaluate(() => {
+      if (typeof crimeHasRecord !== 'function') return { skip: true };
+      S.cur = 200; S.t = S.cur * 1440 + 420; S.age = 20; S.crime = null;
+      for (let i = 0; i < 3; i++) crimeOffense('test_' + i, { label: 'A test offense', sev: 3 }); closeModals();
+      if (S.crime && !S.crime.record) S.crime.record = { d: day(), age: 20 };
+      const before = crimeHasRecord(), ok = window.HOOD.ok('hood_record');
+      EV.find(x => x.id === 'hood_record').choices()[0].fn();
+      return { before, ok, after: crimeHasRecord(), sealed: crimeSealed() };
+    });
+    if (!c.skip) { assert.ok(c.before && c.ok, 'the record is found ' + JSON.stringify(c)); assert.ok(!c.after && c.sealed, 'sealed ' + JSON.stringify(c)); }
     noErrors(errors);
   } },
 ];

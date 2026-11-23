@@ -109,7 +109,8 @@ function jobsMorning(d){const J=PH().jobs;if(!J||!adult())return;
     if(S.life){S.life.jobs.push({job:k,age:S.age,t:N.role0||N.role,ic:N.ic});lifeMoment(N.ic,`Started a new job: ${N.role0||N.role} at ${N.place}.`)}
     const t=`${N.ic} First day at your new job: <b>${N.n0||N.n}</b>. ${fmt(N.start)} to ${fmt(N.end)}. Your alarm is set for ${fmt(N.alarm)}.`;say(t);digestLine(t);return}
   if(J.app&&d>J.app.d){const k=J.app.k;delete J.app;let h=0;for(const c of 'job'+k+d)h=(h*31+c.charCodeAt(0))>>>0;
-    const yes=S.standing>=40&&h%100<(S.standing>=60?85:60);
+    const bg=k==='hospital'&&typeof crimeHasRecord==='function'&&crimeHasRecord();   // 60-crime.js: Tacoma General runs a background check
+    const yes=!bg&&S.standing>=40&&h%100<(S.standing>=60?85:60);
     if(yes){J.offer={k,until:d+3};notify('jobs',`${JOBS[k].ic} An offer from ${JOBS[k].place}!`)}else{J.no=k;notify('jobs',`${JOBS[k].place} went with someone else.`)}}
   if(J.offer&&d>J.offer.until){delete J.offer}}
 {const m0=onMorning;onMorning=function(d){const r=m0.apply(this,arguments);phTry(()=>jobsMorning(d));return r}}
@@ -125,9 +126,9 @@ definePhoneApp({id:'jobs',name:'Jobs',ic:'💼',order:62,size:'36 MB',desc:'Job 
     for(const g of GIGS){const why=gigBlock(g),pay=rp(g.pay);h+=phBtn(`${g.ic} ${g.n}: ${$(pay)}`,()=>gigDo(g),{dis:!net||!!why,sub:why||`${g.mins/60} h, energy ${g.e}. ${g.d}`})}
     h+=phSub('Job listings');
     if(!open)h+=phNote(jobsWhyNot());
-    for(const k of Object.keys(JOBS)){if(k===S.job)continue;const N=JOBS[k];
-      h+=phCard(`${N.ic} <b>${N.n0||N.n}</b><br>${N.blurb}<br>About ${$(N.pay)} a shift${N.tips?' plus tips':''} to start.`);
-      if(open)h+=phBtn(`Apply to ${N.place}`,()=>jobApply(k),{dis:!net||!!J.app||!!J.offer||!!J.start,sub:J.app||J.offer||J.start?'One application at a time.':'10 min. A new job starts a new ladder: raises and promotions start over.'})}
+    for(const k of Object.keys(JOBS)){if(k===S.job)continue;const N=JOBS[k],bg=k==='hospital'&&typeof crimeHasRecord==='function'&&crimeHasRecord();
+      h+=phCard(`${N.ic} <b>${N.n0||N.n}</b><br>${N.blurb}<br>About ${$(N.pay)} a shift${N.tips?' plus tips':''} to start.${k==='hospital'?' Background check required.':''}`);
+      if(open)h+=phBtn(`Apply to ${N.place}`,()=>jobApply(k),{dis:!net||bg||!!J.app||!!J.offer||!!J.start,sub:bg?'The background check would show your record. Once it’s vacated, you can apply.':J.app||J.offer||J.start?'One application at a time.':'10 min. A new job starts a new ladder: raises and promotions start over.'})}
     return h}});
 
 // ================= 🛒 GROCERIES =================

@@ -321,7 +321,7 @@ hev({id:'hood_record',band:'young',hi:35,tile:['🧾','A background check','bad'
   c:()=>hasRecord()&&S.job!=='hospital',
   txt:'🧾 You apply for a CNA spot at Tacoma General. A week later the hiring office calls: the background check found your juvenile record, and as it stands they can’t move you forward.',
   ch:()=>[
-    {ic:'⚖️',l:'Ask the court to seal it',s:'Washington lets you ask the juvenile court to seal a juvenile record.',fx:{min:120,st:4,fr:2},then:()=>{const h=H();h.sealed=true;h.noCna=false;if(typeof crimeSeal==='function')try{crimeSeal('hood')}catch(e){console.error(e)}},
+    {ic:'⚖️',l:'Ask the court to seal it',s:'Washington lets you ask the juvenile court to seal a juvenile record.',fx:{min:120,st:4,fr:2},then:()=>{const h=H();h.sealed=true;h.noCna=false;if(typeof crimeSeal==='function')try{crimeSeal('hood')}catch(e){console.error(e)}else if(S.crime&&S.crime.record&&!S.crime.sealed)S.crime.sealed={d:day(),age:S.age||18}},
       txt:'⚖️ A free legal clinic downtown helps you fill out the motion to seal. A few weeks later the letter comes: sealed. The CNA job is open to you again.'},
     {ic:'🚪',l:'Let it go',fx:{st:8},then:()=>{H().noCna=true},txt:'🚪 You let it go. The CNA job is off the table, and it stings more than you thought it would.'},
   ]});
