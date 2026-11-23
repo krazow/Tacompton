@@ -28,19 +28,21 @@ function titleScreen(){clearTiles();
   const prev=document.querySelector('.title details.about'),wasOpen=prev?prev.open:null;
   const d=loadSave(),multi=[2,3].some(k=>k<=GAME.slots&&k!==curSlot()&&rawSave(k));
   const help=typeof helpModal==='function'?'<button id="helpBtn" class="t-btn t-help" onclick="helpModal()"><span class="t-ic" aria-hidden="true">❓</span><span class="t-tx"><b>Help</b><span>How to play: the full guide, chapter by chapter</span></span></button>':'';
-  const fb=typeof feedbackModal==='function'?'<button id="feedbackBtn" class="t-btn t-feedback" onclick="feedbackModal()"><span class="t-ic" aria-hidden="true">💬</span><span class="t-tx"><b>Send feedback</b><span>Ideas, bugs, something we got wrong about Hilltop</span></span></button>':'';
+  const fb=typeof feedbackModal==='function'?'<button id="feedbackBtn" class="t-btn t-feedback" onclick="feedbackModal()"><span class="t-ic" aria-hidden="true">💬</span><span class="t-tx"><b>Send feedback</b><span>Ideas, bugs, or something we got wrong</span></span></button>':'';
   const inst=typeof installButton==='function'?installButton():'';
   const cells=[
-    ...(d?['<button class="ghost" onclick="startNewGame()">🆕 New game</button>']:[]),
+    ...(d&&typeof lifeStartModal!=='function'?['<button class="ghost" onclick="startNewGame()">🆕 New game</button>']:[]),
     ...(GAME.slots>1?['<button class="ghost" onclick="slotsModal()">💾 Save slots</button>']:[]),
     ...(typeof whatsNewModal==='function'?['<button id="whatsNewBtn" class="ghost" onclick="whatsNewModal()">🆕 What’s new</button>']:[]),
     '<button class="ghost" onclick="openTransfer()" title="Transfer a saved game to another device or browser">🔁 Transfer a save</button>'];
   if(cells.length%2)cells[cells.length-1]=cells[cells.length-1].replace('class="ghost"','class="ghost wide"').replace('🔁 Transfer a save<','🔁 Transfer a saved game<');
-  const about=TITLE.intro||TITLE.bullets.length;
+  const about=TITLE.intro||TITLE.bullets.length,hasLife=typeof lifeStartModal==='function';
   app.innerHTML=withName(`<div class="title">${typeof installBar==='function'?installBar():''}<div class="art"><button class="tgear" onclick="openSettings()" aria-label="Settings">⚙️</button>${TITLE.art()}</div>
   <div class="body"><h1>${esc(GAME.title)}<span>${esc(GAME.tagline)}</span></h1>
-  ${d?`<button class="big" onclick="resumeGame()">Continue as ${esc(d.S.name||currentName())}: ${dayName(d.S.cur)} ${fmt(d.S.t)}${multi||curSlot()>1?` (slot ${curSlot()})`:''}</button>`:`<button class="big" onclick="startNewGame()">${TITLE.start}</button>`}
-  ${help||fb||inst?`<div class="t-main">${help}${fb}${inst}</div>`:''}
+  ${d?`<button class="big" onclick="resumeGame()">Continue as ${esc(d.S.name||currentName())}: ${dayName(d.S.cur)} ${fmt(d.S.t)}${multi||curSlot()>1?` (slot ${curSlot()})`:''}</button>`:`<button class="big"${hasLife?' id="lifeBtn"':''} onclick="${hasLife?'lifeStartModal()':'startNewGame()'}">${TITLE.start}</button>`}
+  ${d&&hasLife?`<div class="t-main"><button id="lifeBtn" class="t-btn t-life" onclick="lifeStartModal()"><span class="t-ic" aria-hidden="true">🆕</span><span class="t-tx"><b>New game</b><span>Choose your starting age (12, 15 or 18), how long to play and the year</span></span></button></div>`:''}
+  ${!d&&hasLife?`<p class="t-hint">Choose your starting age (12, 15 or 18), how long to play, from two weeks to a lifetime, and the year you start.</p>`:''}
+  ${help||fb||inst?`<div class="t-sect">Help and more</div><div class="t-main">${help}${fb||inst?`<div class="t-half">${fb}${inst}</div>`:''}</div>`:''}
   ${about?`<details class="about"><summary>What’s the game about?</summary>${TITLE.intro?`<p>${TITLE.intro}</p>`:''}
   ${TITLE.bullets.length?`<ul>${TITLE.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}</details>`:''}
   <div class="tgrid" aria-label="More">${cells.join('')}</div>

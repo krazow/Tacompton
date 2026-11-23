@@ -70,7 +70,7 @@ function helpLengths(){
     return [`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LIFE_LEN[k].d.replace(/: about \w+\.$/,'.'),hRange(n),long]});
   const cutsG=typeof G_CUTS!=='undefined'?G_CUTS:[3400],cutsA=HELP_CUTS(),D=DIFFS;
   return `
-    <p>Tap <b>🌱 New life</b> on the title screen to choose how long to play and how old you start. Your birthday is picked at random and shown before you begin (🎲 picks another). One save holds the whole life.</p>
+    <p>Tap <b>🆕 New game</b> on the title screen, then choose your starting age, how long to play and the year you start. Your birthday is picked at random and shown before you begin (🎲 picks another). One save holds the whole life.</p>
     ${hTable(['Length','What you play','Key weeks','How long'],rows)}
     <p class="tut-small">Key weeks for starting ages 12, 15 and 18; your birthday moves the count a little.</p>
     <h3>Starting ages</h3>
@@ -244,7 +244,8 @@ function helpChapters(){
     <p>You just moved into a third-floor walk-up on <b>Hilltop</b>, the old neighborhood on the hill in Tacoma, Washington. The game is your first <b>${GAME.days} days</b> there: Monday, Aug 3 to Sunday, Aug 16, 2026.</p>
     <p>Your job for those two weeks: <b>hold down a job, make rent, keep food in the fridge, keep your energy up and your stress down, and become part of the neighborhood.</b> Make it to Sunday night and you get a score and a grade from A to F.</p>
     <h3>Starting a game</h3>
-    <ol><li>Tap the big orange button on the title screen (<b>${esc(TITLE.start)}</b>, or <b>Continue</b> if you have a game saved).</li>
+    <ol><li>Tap the big orange button on the title screen (<b>${esc(TITLE.start)}</b>, or <b>Continue</b> if you have a game saved; then 🆕 New game sits just below it).</li>
+    <li>Choose your starting age (12, 15 or 18), how long to play (<b>Quick play</b> is these two weeks at 18, or Growing Up’s first week at 12) and the start year, then <b>Start the game</b>.</li>
     <li>The first time, type the name everyone in the game will call you.</li>
     <li>Pick a difficulty. It changes your savings, prices, how hard shifts hit and your luck, never the score:</li></ol>
     ${hTable(['Difficulty','Savings','Prices','Shifts','Bad luck'],Object.values(D).map(d=>[`${d.ic} ${d.n}`,$(d.money),d.cost===1?'normal':(d.cost<1?`${Math.round((1-d.cost)*100)}% cheaper`:`${Math.round((d.cost-1)*100)}% pricier`),(d.strain||1)===1?'normal':(d.strain<1?'easier':'harder'),d.bad===1?'normal':(d.bad<1?'less often':'more often')]))}
@@ -435,7 +436,7 @@ function helpChapters(){
     <li>Open it once from the new icon while online. After that it plays with no signal.</li>
     <li>There’s also a one-file offline copy you can open by double-clicking; it doesn’t need installing.</li></ul>`],
   ['grow','Growing Up (new)',`
-    <p><b>🎒 Growing Up</b> is a second way to play, on the title screen under Help. You start life on Hilltop at <b>12</b>, and live it chapter by chapter: middle school, high school, and one day a place of your own. The two weeks in the rest of this guide stay just as they are.</p>
+    <p><b>🎒 Growing Up</b> is what you get when you pick a starting age of 12 or 15 in 🆕 New game. You start life on Hilltop at <b>12</b>, and live it chapter by chapter: middle school, high school, and one day a place of your own. The two weeks in the rest of this guide stay just as they are.</p>
     <h3>Chapter 1: the new kid</h3>
     <p>Your family (Mom, Dad, your little sister Nia and you) just moved to Hilltop. You have one week, <b>Monday, Aug 24 to Sunday, Aug 30, 2026</b>, and then the first day of seventh grade at <b>Summit View Middle School</b> on Monday, Aug 31. No job and no rent: just your allowance, your family and the kids on the hill.</p>
     ${hTable(['On the top bar','What it means'],[['Money','Your allowance. Chores pay $3, and Saturday is allowance day ($10).'],['Energy','Rest, dinner and bed by 10:30 PM keep it up.'],['Mood','Fun, friends and the view bring it up; nerves bring it down.'],['Family','Chores, family dinner (5:30–7:30 PM), playing with Nia. Missing curfew costs 12.'],['Friends','Every kid you know, and how well. Hang out once a day.'],['Ready','Supplies, the way to school, a haircut, the forms signed and turned in, and an outfit.']])}

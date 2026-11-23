@@ -53,10 +53,9 @@ for (const length of LENGTHS) for (const age of AGES) runs.push({ length, age })
 module.exports = [
   { name: 'the start screen: New life opens a sheet with lengths, ages and the birthday, and starts that life', fn: async ctx => {
     const { page, errors } = await open(ctx);
-    assert.match(await page.textContent('#lifeBtn'), /New life/);
+    assert.match(await page.textContent('#lifeBtn'), /New game/);
     // the old buttons are still the Quick play starts
-    assert.match(await page.textContent('.title button.big'), /Move in on Monday/);
-    assert.ok(await page.$('#growBtn'));
+    assert.match(await page.textContent('.title button.big'), /New game/);
     await page.click('#lifeBtn');
     const sheet = await page.textContent('#mbg');
     for (const t of ['Quick play', '6 months', '1 year', '2 years', 'Lifetime', 'Starting age', 'Your birthday', 'Key weeks']) assert.ok(sheet.includes(t), t);
@@ -64,8 +63,8 @@ module.exports = [
     await page.click('#mbg .lchip:text-is("15")');
     const s2 = await page.textContent('#mbg');
     assert.match(s2, /Hilltop High/); assert.match(s2, /Mon Aug 24, 2026/);
-    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '📅 1 year|15|2026');
-    await page.click('#mbg button.act:has-text("Start this life")');
+    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '15|📅 1 year|2026');
+    await page.click('#mbg button.act:has-text("Start the game")');
     await page.waitForSelector('#mbg');
     assert.match(await page.textContent('#mbg'), /difficulty/i);
     await page.evaluate(() => MBTN(1));
@@ -274,7 +273,7 @@ module.exports = [
   } },
   { name: 'Quick play is today’s game: no birthdays, no skips, same two weeks', fn: async ctx => {
     const { page, errors } = await open(ctx);
-    await page.click('text=Move in on Monday');
+    await page.evaluate(() => startNewGame());
     await page.evaluate(() => MBTN(1));
     const r = await page.evaluate(() => ({ len: S.length, days: GAME.days, rent: S.rent.due, hud: document.querySelector('.hud').textContent, long: lifeLong() }));
     assert.deepStrictEqual([r.len, r.days, r.rent, r.long], ['quick', 14, 13, false]);
