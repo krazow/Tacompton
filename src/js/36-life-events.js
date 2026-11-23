@@ -9,6 +9,7 @@
 //    ☂️ umbrella · 🔦 flashlight & batteries · 🔋 jumper cables (corner market on MLK)       → rain, a power outage, a neighbor's dead battery
 //    🫙 the savings jar at home (deposit / withdraw)                                        → the fridge repair, a ride to the ER
 //    📱 the block club group chat (meet 5 neighbors) · 🗳️ the block club meeting (Thursday evenings at People's)
+//    🧹 Nothing on the seats + 💡 parking under the streetlight (habits, toggled at home once you own a car) → no broken window
 //  Growing Up: 🔒 a bike lock, 🧥 lunch money in an inside pocket, 🤝 walking to the stop with a friend, 🗺️ the Link route map.
 //  Robbery stays rare and happens in the wider city (the Dome District, a crowded game-day bus), never on Hilltop's own streets.
 //  Quick play gets fewer and lighter ones (at most 4 a game, one of each, smaller losses); the longer games space them out
@@ -47,7 +48,7 @@ const aev=e=>ev(e,false),gev=e=>ev(e,true);
 
 // ================= ON THE WAY TO WORK (adult) =================
 // a wallet thief on a crowded bus, out in the wider city: the Dome District, or a game-day bus on the weekend
-const busy=c=>{if(!c.from||!c.to)return false;const a=hoodOf(c.from),b=hoodOf(c.to);if(a===b)return false;
+const busy=c=>{if(!c.from||!c.to||(window.CAR&&CAR.driving()))return false;const a=hoodOf(c.from),b=hoodOf(c.to);if(a===b)return false;
   if(a==='downtown'||b==='downtown')return true;
   const h=a||b;return !!h&&/Bus/.test(HOODS[h].ride.via)&&day()%7>=5};
 aev({id:'lev_wallet',hook:'travel',tile:['👛','A hand in your pocket','bad'],chance:0.035,bad:true,cooldown:45,max:2,urgent:true,
@@ -66,7 +67,7 @@ aev({id:'lev_wallet',hook:'travel',tile:['👛','A hand in your pocket','bad'],c
 
 // a phone grabbed at the Link stop downtown: a zipped pocket and the grab fails
 aev({id:'lev_phone',hook:'arrive',tile:['📱','A grab at the Link stop','bad'],chance:0.04,bad:true,cooldown:45,max:2,urgent:true,
-  cond:c=>['dt_pacific','dt_dome'].includes(c.at)&&c.from&&!out(c.from)&&tod()>=600&&tod()<1320,
+  cond:c=>['dt_pacific','dt_dome'].includes(c.at)&&c.from&&!out(c.from)&&!(window.CAR&&CAR.driving())&&tod()>=600&&tod()<1320,
   run:c=>{const z=LV().zip;S.ev.flags.levPhone=z?'safe':'gone';
     say(z?'📱 Stepping off the T Line, a guy brushes past and a hand tugs at your jacket. It finds a zipper, gives up, and he is gone into the crowd. Your phone is right where you put it.'
       :'📱 Stepping off the T Line, you’re reading a text when a guy on a bike snatches the phone out of your hand and is gone down the block before you can shout. A zipped pocket would have made it a lot harder.')},
@@ -195,6 +196,26 @@ aev({id:'lev_rentup',hook:'wake',tile:['📬','A rent increase notice','bad'],ch
     {ic:'✉️',l:'Write the landlord asking to phase it in',s:`30 min, stress +3. Maybe half: about ${$(Math.round(inc/2))}.`,fn:()=>{later('lev_rentup',30);adj('stress',3);money(Math.round(inc/2));say(`✉️ A careful, friendly letter. The landlord agrees to split the difference for a month: ${$(Math.round(inc/2))} back in your pocket.`)}},
     {ic:'😮‍💨',l:'Sign it and move on',s:'Stress +6.',fn:()=>{adj('stress',6);say('😮‍💨 You sign the renewal. Everybody’s rent is going up. That doesn’t make it feel better.')}},
   ]},dflt:2});
+
+// a car prowl overnight (only with a car: 38-car.js): nothing on the seats and the streetlight spot, and the window stays whole
+const hasCar=()=>!!(S.car&&S.car.own);
+aev({id:'lev_prowl',hook:'wake',tile:['🚗','Car prowlers on the block','bad'],chance:()=>LV().light?0.025:0.05,bad:true,cooldown:45,max:3,urgent:true,
+  cond:()=>day()>0&&S.loc==='home'&&hasCar()&&!S.car.taped,
+  run:()=>{const L0=LV(),safe=L0.seats&&L0.light;S.ev.flags.levProwl=safe?'safe':'broken';
+    if(safe){say('🚗 Ms. Lorraine is on her porch when you come out: “Somebody went down the whole block last night trying car doors.” Two cars down, a window is in pieces on the sidewalk. Yours sits under the streetlight with nothing on the seats, not a scratch on it.');return}
+    const got=L0.seats?0:lose(rp(lite(20)));S.ev.flags.levProwlGot=got;
+    say(`🚗 Glass all over the sidewalk by your car: the passenger window is smashed. ${L0.seats?'There was nothing on the seats to take, so they left with nothing, but the window is still gone.':`Your gym bag is gone from the back seat, and the ${$(got)} in the cup holder with it. Nothing on the seats gives them no reason to try.`}${L0.light?'':' The spot under the streetlight would have helped too.'}`)},
+  choices:()=>{const L0=LV();if(S.ev.flags.levProwl==='safe')return [
+    {ic:'📱',l:'Warn the block',s:L0.chat?'10 min. Post it in the group chat: community +2.':'10 min. Knock on a few doors: community +1, energy −2.',fn:()=>{later('lev_prowl',10);if(L0.chat)adj('community',2);else{adj('community',1);adj('energy',-2)}say('📱 “Lock up and clear your seats, everybody.” Three people thank you before lunch.')}},
+    {ic:'🚶',l:'Check your doors and go on with your day',s:'Stress −2. The habits paid off.',fn:()=>{adj('stress',-2);say('🚶 All locked, all whole. Clear seats and the streetlight spot: worth it.')}},
+  ];const g=rp(250),dd=rp(100),up=rp(8);return [
+    {ic:'🧾',l:`File a police report online and pay for the glass — ${$(g)}`,s:`About 1½ hours with the glass shop. Stress +3. ${jarTxt(g)}`,dis:!canPay(g),fn:()=>{later('lev_prowl',90);payJar(g);adj('stress',3);L0.seats=true;
+      say(`🧾 A report number from the Tacoma police website, then the glass shop on South Tacoma Way: new window by noon. ${$(g)}. From now on nothing stays on the seats.`)}},
+    {ic:'🩹',l:`Tape plastic over it for now — ${$(rp(6))}`,s:'20 min, stress +6. Replace it later (at home).',fn:()=>{later('lev_prowl',20);spend(rp(6));adj('stress',6);S.car.taped=true;L0.seats=true;
+      say('🩹 A trash bag and a roll of packing tape from the corner market. It flaps at every speed over 25. It will do for now.')}},
+    {ic:'📞',l:`Claim it on your insurance — ${$(dd)} deductible`,s:`40 min on the phone. Your rate goes up about ${$(up)} a month.`,dis:S.money<dd,fn:()=>{later('lev_prowl',40);spend(dd);S.car.ins+=up;adj('stress',2);L0.seats=true;
+      say(`📞 Forty minutes of hold music, a claim number, and a mobile glass van by the afternoon. ${$(dd)} out of pocket, and a slightly bigger bill every month.`)}},
+  ]},dflt:1});
 
 // ================= PEOPLE (adult) =================
 // a "lend me $20" story, out in the wider city: knowing your neighbors, you've heard this one
@@ -333,6 +354,10 @@ function adultActs(a){
     a.push({ic:'🫙',l:`Put $20 in the savings jar (${$(L0.jar)} in it)`,s:'It pays for the surprises: a dead fridge, a ride to the ER.',cat:'money',dis:S.money<20,fn:()=>{money(-20);L0.jar+=20;pass(2);say(`🫙 Twenty dollars into the jar on top of the fridge. ${$(L0.jar)} saved for a bad day.`)}});
     if(L0.jar>=20)a.push({ic:'🫙',l:'Take $20 out of the savings jar',s:`${$(L0.jar)} in it.`,cat:'money',fn:()=>{money(20);L0.jar-=20;pass(2);say(`🫙 Twenty out of the jar. ${$(L0.jar)} left.`)}});
     a.push({ic:'🤐',l:`Habit: phone in a zipped pocket on the go: ${onOff(L0.zip)}`,s:L0.zip?'Tap to stop. (Slower to answer texts, much harder to grab.)':'Tap to start. Slower to answer texts, much harder to grab.',cat:'here',fn:()=>{L0.zip=!L0.zip;say(L0.zip?'🤐 From now on your phone rides in the zipped inside pocket.':'🤐 Back to the easy pocket.')}});
+    if(S.car&&S.car.own){
+      a.push({ic:'🧹',l:`Habit: nothing on the car seats: ${onOff(L0.seats)}`,s:'Bags in the trunk or inside, nothing in the cup holder. Tap to change.',cat:'here',fn:()=>{L0.seats=!L0.seats;say(L0.seats?'🧹 From now on the seats stay empty: bags in the trunk or upstairs.':'🧹 Back to tossing things on the back seat.')}});
+      a.push({ic:'💡',l:`Park under the streetlight: ${onOff(L0.light)}`,s:'The spot by the light on your block. A few more steps from the door. Tap to change.',cat:'here',fn:()=>{L0.light=!L0.light;say(L0.light?'💡 You start leaving the car in the bright spot under the streetlight.':'💡 Back to the closest spot, light or not.')}});
+    }
     if(!L0.chat){const n=metCount();a.push({ic:'📱',l:'Join the block club group chat',s:n>=5?'10 min. Bev runs it: lost dogs, porch packages, who needs a jump. Community +1.':`Bev adds people she knows. Meet 5 neighbors first (you know ${n}).`,cat:'people',dis:n<5,
       fn:()=>{L0.chat=d+1;pass(10);adj('community',1);say('📱 Bev adds you: “Welcome! Rules: be kind, no selling, dogs get posted first.” Forty-one people, three lost-cat alerts and a recipe for peach cobbler.')}})}
   }
