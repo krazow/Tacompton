@@ -273,9 +273,9 @@ function lifeSimulate(from,to,ch){
         if(J.days.includes(wd)){money(J.pay*pf+(J.tips?(J.tips[0]+J.tips[1])/2:0));S.life.tot.shifts=(S.life.tot.shifts||0)+1}
         if(ch==='extra'&&wd===(J.days[0]===0?5:0))money(J.pay*pf*0.9);
       }else money(typeof careerPension==='function'?careerPension():500/7);   // 35-careers.js: a pension that follows your last pay
-      money(-((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0)));
+      money(-(typeof lifeLiving==='function'?lifeLiving(ch,d):((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0))));   // 38-prices.js
       if(o.d===1){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));rentN++;rentAmt+=S.rent.amt;helpAmt+=help;if(help)S.life.rentHelpLeft--;
-        if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-(S.life.path==='college'?380:120))}
+        if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-priceAmt(S.life.path==='college'?380:120))}
       if(isFairDay(d)){fair=true;S.fair=true;S.fairYear=o.y}
       f.standing=num('standing')+(75-num('standing'))*0.01+(ch==='extra'&&!S.life.retired?0.15:0);
       const tgt=ch==='extra'?(S.life.retired?30:50):ch==='save'?28:22;f.stress=num('stress')+(tgt-num('stress'))*0.03;
@@ -283,6 +283,7 @@ function lifeSimulate(from,to,ch){
       S.life.family=clamp(S.life.family+(60-S.life.family)*0.003+(ch==='save'?0.07:ch==='extra'?-0.03:0),0,100);
       if(S.life.path&&S.life.path!=='job'&&!S.life.done){S.life.prog=Math.min(100,S.life.prog+100/(S.life.path==='college'?4*365:365));
         if(S.life.prog>=100){S.life.done=true;S.life.parttime=false;const t=S.life.path==='college'?'🎓 You finish your degree at UW Tacoma. Your family fills a whole row at the ceremony.':'🔧 You finish the electrical pre-apprenticeship at the top of your class.';notes.push(t);lifeMoment(S.life.path==='college'?'🎓':'🔧',t.replace(/^\S+\s/,''))}}
+      if(typeof priceDay==='function')priceDay(d,notes);     // 38-prices.js: the price level rises each January
       if(typeof careerDay==='function')careerDay(d,notes);   // 35-careers.js: raises, reviews, school, promotions
     }
     if(S.age>=18&&grow)break;   // graduation comes next

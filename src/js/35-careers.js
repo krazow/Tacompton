@@ -135,7 +135,7 @@ function careerReview(C,d,ann,out){
 function careerPromoCheck(C,d,j,out){
   const R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||S.life.parttime||C.prog)return;
   if((d-C.since)/365.25<R.yrs-0.01||j.st<R.st||!j.ok)return;
-  if(R.prog&&!C.done[R.prog.id]){if(C.offer!==R.prog.id){C.offer=R.prog.id;out.push(`🎓 Your manager pulls you aside: you’d make a good ${R.t}. ${R.prog.n} is open to you (${R.prog.mo} months, ${$(R.prog.fee)} a month, and fewer shifts while you study). Choose it in a time skip.`)}return}
+  if(R.prog&&!C.done[R.prog.id]){if(C.offer!==R.prog.id){C.offer=R.prog.id;out.push(`🎓 Your manager pulls you aside: you’d make a good ${R.t}. ${R.prog.n} is open to you (${R.prog.mo} months, ${$(priceAmt(R.prog.fee))} a month, and fewer shifts while you study). Choose it in a time skip.`)}return}
   careerPromote(C,d,out);
 }
 function careerPromote(C,d,out,lead){
@@ -151,7 +151,7 @@ function careerEnroll(id,d){
   const C=careerS(),R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||!R.prog||R.prog.id!==id||C.prog)return null;
   const o=dateOf(d);C.prog={id,pt:R.prog.pt,fee:R.prog.fee,end:d+Math.round(R.prog.mo*30.44),mk:o.y*12+o.m};C.offer=null;
   lifeMoment('🎓',`Started ${R.prog.t}.`);
-  return `🎓 You start ${R.prog.t}: ${R.prog.n.toLowerCase().replace(/^an? /,'')}. Evenings in class, fewer shifts, ${$(R.prog.fee)} a month. It ends ${fullDate(C.prog.end)}.`;
+  return `🎓 You start ${R.prog.t}: ${R.prog.n.toLowerCase().replace(/^an? /,'')}. Evenings in class, fewer shifts, ${$(priceAmt(R.prog.fee))} a month. It ends ${fullDate(C.prog.end)}.`;
 }
 
 // ---- after college or a trade program: the new job ----
@@ -174,12 +174,12 @@ function careerDay(d,out){
   const C=careerS();
   if(S.life.retired&&C.pension==null){C.prog=null;C.pension=Math.max(500/7,CAREER.pension*careerShiftAll()*job().days.length/7);C.pcola=C.cola}
   if(C.prog){const o=dateOf(d),mk=o.y*12+o.m;
-    while(C.prog.mk<mk){C.prog.mk++;spendFee(C.prog.fee)}
+    while(C.prog.mk<mk){C.prog.mk++;spendFee(priceAmt(C.prog.fee))}
     if(d>=C.prog.end){const id=C.prog.id,R=CAREER_LADDERS[C.k].r[C.r+1];C.done[id]=true;C.prog=null;if(R&&R.prog&&R.prog.id===id)careerPromote(C,d,out,R.prog.end)}}
   while(d>=careerRevDay(C,C.n+1)){C.n++;careerReview(C,careerRevDay(C,C.n),C.n%2===0,out)}
 }
 function spendFee(f){if(typeof spend==='function')spend(f);else money(-f)}
-const careerPension=()=>{const C=S.career;if(!C||C.pension==null)return 500/7;return C.pension*C.cola/C.pcola};
+const careerPension=()=>{const C=S.career,v=!C||C.pension==null?500/7:C.pension*C.cola/C.pcola;return typeof pensionFloor==='function'?Math.max(v,pensionFloor()):v};   // floor: 38-prices.js
 window.careerDay=careerDay;window.careerPension=careerPension;
 
 // played days: each morning catches up, and says what happened
@@ -193,7 +193,7 @@ LIFE_HOOKS.weekEnd.push(()=>{if(!careerOn()||S.life.retired)return;const C=caree
   if(!careerOn()||S.life.retired)return a;const C=careerS();if(!C.offer||C.prog)return a;
   const R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||!R.prog||R.prog.id!==C.offer)return a;
   const pay=Math.round(job().pay*lifePayF()/careerPayF()*R.f*C.cola);
-  a.push({k:'prog:'+R.prog.id,l:`🎓 Start ${R.prog.t}`,s:`${R.prog.n}: ${R.prog.mo} months, ${$(R.prog.fee)} a month, and ${Math.round(R.prog.pt*100)}% of your shifts while you study. Then ${R.t} pay: about ${$(pay)} a shift.`})}catch(e){console.error(e)}return a}}
+  a.push({k:'prog:'+R.prog.id,l:`🎓 Start ${R.prog.t}`,s:`${R.prog.n}: ${R.prog.mo} months, ${$(priceAmt(R.prog.fee))} a month, and ${Math.round(R.prog.pt*100)}% of your shifts while you study. Then ${R.t} pay: about ${$(pay)} a shift.`})}catch(e){console.error(e)}return a}}
 {const ls=lifeSimulate;lifeSimulate=function(from,to,ch){
   if(typeof ch==='string'&&ch.startsWith('prog:')){const l=careerEnroll(ch.slice(5),from);const n=ls(from,to,'save');if(l)n.unshift(l);return n}
   return ls(from,to,ch)}}
