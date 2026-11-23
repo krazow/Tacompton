@@ -76,7 +76,7 @@ function assertAdult(r, label) {
 const offer = page => page.evaluate(() => {
   closeModals(); const o = { acts: {}, apps: [] }; const d0 = S.cur, t0 = S.t, l0 = S.loc;
   const r0 = Object.assign({}, S.rent); S.rent.paid = false; S.rent.due = S.cur + 9;   // the same rent state (the first rent of a kid save comes with the next key week)
-  S.cur = S.cur - (S.cur % 7) + 2; S.t = S.cur * 1440 + 660;   // the same weekday and time in both saves
+  S.cur = dayIndexOf(2026, 10, 14); S.t = S.cur * 1440 + 660;   // the same date and time in both saves (places and fairs follow the calendar)
   for (const k of Object.keys(L)) { S.loc = k; try { o.acts[k] = [...new Set(actionsHere().map(a => a.l.replace(/[\d$,.:]+|AM|PM/g, '#').replace(/\(.*?\)/g, '').trim()))].sort(); } catch (e) { o.acts[k] = ['ERR ' + e]; } }
   o.apps = PHONE_APPS.filter(a => phoneShown(a)).map(a => a.id).sort();
   o.tabs = typeof allTabs === 'function' ? allTabs().map(t => t[0]) : [];
