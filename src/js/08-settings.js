@@ -40,8 +40,8 @@ function titleScreen(){clearTiles();
   app.innerHTML=withName(`<div class="title">${typeof installBar==='function'?installBar():''}<div class="art"><button class="tgear" onclick="openSettings()" aria-label="Settings">⚙️</button>${TITLE.art()}</div>
   <div class="body"><h1>${esc(GAME.title)}<span>${esc(GAME.tagline)}</span></h1>
   ${d?`<button class="big" onclick="resumeGame()">Continue as ${esc(d.S.name||currentName())}: ${dayName(d.S.cur)} ${fmt(d.S.t)}${multi||curSlot()>1?` (slot ${curSlot()})`:''}</button>`:`<button class="big"${hasLife?' id="lifeBtn"':''} onclick="${hasLife?'lifeStartModal()':'startNewGame()'}">${TITLE.start}</button>`}
-  ${d&&hasLife?`<div class="t-main"><button id="lifeBtn" class="t-btn t-life" onclick="lifeStartModal()"><span class="t-ic" aria-hidden="true">🆕</span><span class="t-tx"><b>New game</b><span>Choose your starting age (12, 15 or 18), how long to play and the year</span></span></button></div>`:''}
-  ${!d&&hasLife?`<p class="t-hint">Choose your starting age (12, 15 or 18), how long to play, from two weeks to a lifetime, and the year you start.</p>`:''}
+  ${d&&hasLife?`<div class="t-main"><button id="lifeBtn" class="t-btn t-life" onclick="lifeStartModal()"><span class="t-ic" aria-hidden="true">🆕</span><span class="t-tx"><b>New game</b><span>Play as a kid (12 or 15) or start at 18, then pick how long to play and the year</span></span></button></div>`:''}
+  ${!d&&hasLife?`<p class="t-hint">Play as a kid (12 or 15) or start at 18, then pick how long to play, from six months to a lifetime, and the year you start. Not sure yet? Try it for 2 weeks first.</p>`:''}
   ${help||fb||inst?`<div class="t-sect">Help and more</div><div class="t-main">${help}${fb||inst?`<div class="t-half">${fb}${inst}</div>`:''}</div>`:''}
   ${about?`<details class="about"><summary>What’s the game about?</summary>${TITLE.intro?`<p>${TITLE.intro}</p>`:''}
   ${TITLE.bullets.length?`<ul>${TITLE.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}</details>`:''}
@@ -81,7 +81,7 @@ function slotModal(n){
   const use=()=>{if(S&&!S.over)saveGame();setSlot(n);S=null;closeModals()};
   modal(`💾 Slot ${n}`,`<p>${slotLabel(n)}</p>`,[
     ...(has?[{l:'▶️ Continue this game',fn:()=>{use();resumeGame()}}]:[]),
-    {l:has?'🆕 Start over in this slot':'🆕 Start a new game here',s:has?'Replaces the game in this slot.':'',fn:()=>{use();titleScreen();startNewGame()}},
+    {l:has?'🆕 Start over in this slot':'🆕 Start a new game here',s:has?'Replaces the game in this slot.':'',fn:()=>{use();titleScreen();if(typeof lifeStartModal==='function')lifeStartModal();else startNewGame()}},
     ...(has?[{l:'🗑️ Delete this save',fn:()=>modal('🗑️ Delete this save?',`<p>Slot ${n}: ${slotLabel(n)}. This can’t be undone.</p>`,[
       {l:'Delete it',fn:()=>{const ls=store();slotKeys(n).forEach(k=>ls&&ls.removeItem(k));if(n===curSlot()&&S&&!S.over){S=null;titleScreen()}else if(document.querySelector('.title'))titleScreen()}},
       {l:'Keep it',fn:()=>slotsModal()}])}]:[]),

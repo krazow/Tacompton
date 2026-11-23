@@ -178,7 +178,7 @@ definePhoneApp({id:'rides',name:'Rides',ic:'🚗',order:63,size:'48 MB',desc:'A 
 {const pg=phoneGuide;phoneGuide=function(){return pg()+`<h3>Getting around</h3>
   <ul><li><b>🚌 Transit:</b> the next T Line and bus times to every neighborhood open to you, and your ORCA card. Reload it in the app and it pays bus fares for you (the T Line is free; riders 18 and under ride free on a Youth ORCA card). Service alerts show up a day ahead: a bus pulled from your morning run or a station elevator out. If you saw it coming, you plan around it and it doesn’t slow you down.</li>
   <li><b>🗺️ Maps:</b> every neighborhood you can go to, with the time on foot, by Link or bus and by car (if you have one that runs). Tap a neighborhood, then a place, to start the trip.</li>
-  <li><b>🌦️ Weather:</b> today and tomorrow, and a notification the evening before rain, a windstorm, snow or wildfire smoke. In Quick play it shows the August forecast.</li>
+  <li><b>🌦️ Weather:</b> today and tomorrow, and a notification the evening before rain, a windstorm, snow or wildfire smoke. In 🧪 Try it it shows the August forecast.</li>
   <li><b>🚗 Rides</b> (18 and older): a rideshare to any other neighborhood, priced by distance, with a short wait. Prices go up late at night and right after a show at the Tacoma Dome.</li>
   <li>All four need a signal and a paid phone bill for live information.</li></ul>`}}
 window.PHONE_TRAVEL={TR,trAlerts,trDeps,rideQuote,rideGo,wxFc,trReload,driveEst};
