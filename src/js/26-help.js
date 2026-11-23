@@ -287,8 +287,9 @@ function helpChapters(){
     ${typeof HOODS!=='undefined'&&Object.keys(HOODS).length?`<h3>Around Tacoma</h3>
     <p>Hilltop is home, but the rest of Tacoma is a walk, a free Link ride or a bus ride away. Each neighborhood has its own places, people and things to do. Trips across town take longer and the bus costs a fare, so plan them around your shifts.</p>
     <p><b>🚗 A car</b> (the longer games): at home, <b>🔑 Shop for a used car</b> on South Tacoma Way, from an old Civic (about ${$(rp(4000))}) to a used RAV4 (about ${$(rp(11000))}). Insurance comes out on the 1st of every month, with gas on every drive, a downtown parking lot (${$(rp(6))}) and the odd repair. Then every other neighborhood gets a <b>🚗 Drive</b> button next to <b>Go</b>: faster than the bus or the Link, no fare, just gas. At home the car parks on the street, so clear the seats and park under the streetlight (both are habits you set at home).</p>
-    ${hTable(['Neighborhood','Getting there','From home','Fare'],Object.values(HOODS).map(h=>[`${h.ic} ${h.name}`,h.ride.via,travelMins('home',h.hub)+' min',h.ride.fare?$(rp(h.ride.fare)):'Free']))}
-    ${Object.values(HOODS).map(h=>`<p class="tut-place"><b>${h.ic} ${h.name}.</b> ${h.blurb} Places: ${Object.values(h.places).map(p=>p.name).join(', ')}.</p>`).join('')}`:''}
+    ${hTable(['Neighborhood','Getting there','From home','Fare'],Object.values(HOODS).filter(h=>!h.county).map(h=>[`${h.ic} ${h.name}`,h.ride.via,travelMins('home',h.hub)+' min',h.ride.fare?$(rp(h.ride.fare)):'Free']))}
+    ${Object.values(HOODS).filter(h=>!h.county).map(h=>`<p class="tut-place"><b>${h.ic} ${h.name}.</b> ${h.blurb} Places: ${Object.values(h.places).map(p=>p.name).join(', ')}.</p>`).join('')}`:''}
+    ${(()=>{try{const g=typeof countyGuideAreas==='function'?countyGuideAreas():'';return typeof g==='string'?g:''}catch(e){return ''}})()}
     <h3>Walking times (minutes)</h3>
     ${hTable(['From \\ to',...places.map(k=>L[k].ic)],places.map(a=>[`${L[a].ic} ${a==='work'?'Work':L[a].name}`,...places.map(b=>a===b?'·':travelMins(a,b))]))}
     <h3>What you can do where</h3>

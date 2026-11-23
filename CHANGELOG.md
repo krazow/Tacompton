@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🗺️ **Pierce County, south and west:** five county area packs (University Place, Lakewood, Fife, Puyallup, Parkland & Spanaway), each with 4 places drawn by day and night, actions, neighbors, 3 choice events and a guide section. Era-correct: Chambers Bay opens in June 2007, Curran Orchard park in 1996, Lakewood's shopping center is Villa Plaza, then Lakewood Mall (Sept 1989), then Towne Center (Aug 2002), the base is Fort Lewis and McChord before JBLM (2010), the fair is the Puyallup Fair before the 2013 rename, and the lahar siren test from 2000. Hidden until the county engine (72-county.js) opens the county.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed
