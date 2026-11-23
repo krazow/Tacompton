@@ -161,8 +161,12 @@ function helpGrowing(){
     <h3>Graduation and the choice at 18</h3>
     <p>The key week you turn 18 is graduation week. After the ceremony you choose what comes next and move into your own apartment on Hilltop; the same save carries on as the adult game.</p>
     <ul><li><b>💼 Go to work:</b> one of the three jobs, full-time.</li>
-    <li><b>🎓 College at UW Tacoma:</b> four years, about ${$(380)} a month after aid, with a part-time job at a Hilltop café. Then a job as an IT support tech downtown.</li>
-    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK. Then an electrician apprenticeship, and journey-level after four years.</li></ul>
+    <li><b>🎓 College at UW Tacoma:</b> four years, with a part-time job at a Hilltop café. Then a job as an IT support tech downtown.</li>
+    ${typeof AID!=='undefined'?`<li><b>🤝 Financial aid:</b> tuition and fees are about ${$(AID.tuition)} a month, but your family’s income is low, so a <b>Pell Grant</b> (about ${$(AID.pell)} a month) and a <b>Washington College Grant</b> (about ${$(AID.wcg)}) bring it down to about ${$(AID.tuition-AID.pell-AID.wcg)}. You see the numbers when you enroll, and on the 📅 Week tab.</li>
+    <li><b>⚠️ Money check:</b> if a time skip would leave you short on rent, its sheet warns you first and offers a cheaper room: a shared house on Hilltop or your old room at your family’s place. The first time rent comes up short without a warning, your family covers it. After a warning, a missed rent can cost you the apartment.</li>`:''}
+    <li><b>🔧 A trade program:</b> a one-year electrical pre-apprenticeship (${$(120)} a month), evenings on the line in a kitchen on MLK. Then an electrician apprenticeship, and journey-level after four years.</li>
+    ${typeof MIL!=='undefined'?`<li><b>🎖️ The Army:</b> a visit to the recruiting office downtown, then basic training and signal school (one time skip), then four years based at <b>Joint Base Lewis-McChord</b>, just south of Tacoma. A barracks room on base (no rent), pay of about ${$(2190)} a month to start (E-1), and promotions on a schedule: E-2 at six months, E-3 at a year, E-4 (specialist) at two years, with a yearly pay raise. A deployment may come: nine months away, told in a time skip, with Family and stress effects.</li>
+    <li><b>🎓 After four years:</b> re-enlist (a bonus, and sergeant with a housing allowance), the <b>GI Bill</b> (UW Tacoma with tuition covered and a housing allowance) or a civilian job as an IT support tech downtown.</li>`:''}</ul>
     ${helpCareers()}
     ${hTable(['You bring','It becomes'],[['🏠 Family',`Rent help for a year (Family 60 is ${$(help(60))} a month), and ${$(4)} of graduation money per point`],['🤝 Friends','Community: 5 plus half your Friends'],['📚 Grades','Job standing: 50 plus 30% of your Grades']])}
     <h3>Seasons and weather</h3>
@@ -180,7 +184,7 @@ function helpCareers(){
   if(typeof CAREER_LADDERS==='undefined')return '';
   const C=CAREER,rows=[];
   for(const k in CAREER_LADDERS){const J=JOBS[k],L0=CAREER_LADDERS[k];
-    L0.r.forEach((r,i)=>rows.push([`${i?'':J.ic+' '}${r.t}`,$(Math.round(J.pay*r.f)),i?`${r.yrs} year${r.yrs===1?'':'s'} as ${L0.r[i-1].t}, Job ${r.st}+, on time${r.prog?`, then ${r.prog.t} (${r.prog.mo} months, ${$(r.prog.fee)} a month)`:''}`:k==='elec'?'After the trade program':k==='tech'?'After college':'Day one']))}
+    L0.r.forEach((r,i)=>rows.push([`${i?'':J.ic+' '}${r.t}`,$(Math.round(J.pay*r.f)),i?`${r.yrs<1?`${Math.round(r.yrs*12)} months`:`${r.yrs} year${r.yrs===1?'':'s'}`} as ${L0.r[i-1].t}, Job ${r.st}+, on time${r.reup?', after you re-enlist':''}${r.prog?`, then ${r.prog.t} (${r.prog.mo} months, ${$(r.prog.fee)} a month)`:''}`:k==='elec'?'After the trade program':k==='tech'?'After college':k==='army'?'After enlisting':'Day one']))}
   return `<h3>Raises and promotions</h3>
     <p>In the longer adult games your pay grows with you, and it has to: rents rise 3–5% every August. Quick play has none of this.</p>
     <ul><li><b>📈 Every year</b> on your job anniversary: a cost-of-living raise (${C.cola[0]}–${C.cola[1]}%).</li>

@@ -46,8 +46,8 @@ function lifeLiving(ch,d){
   if(S.life.retired)inc=typeof careerPension==='function'?careerPension():500/7;
   else{const J=job(),pf=lifePayF(),tips=J.tips?(J.tips[0]+J.tips[1])/2:0;inc=((J.pay*pf+tips)*J.days.length+(c==='extra'?J.pay*pf*0.9:0))/7}
   const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp||0,S.rent.amt):0;
-  let fixed=(S.rent.amt-help)*12/365;
-  if(S.life.path&&!S.life.done&&S.life.path!=='job')fixed+=priceAmt(S.life.path==='college'?380:120)*12/365;
+  let fixed=(typeof lifeRentDue==='function'?lifeRentDue():S.rent.amt-help)*12/365;   // 38-paths.js: no rent in the barracks
+  if(S.life.path&&!S.life.done&&S.life.path!=='job')fixed+=lifePathFee()*12/365;
   if(S.career&&S.career.prog)fixed+=priceAmt(S.career.prog.fee)*12/365;
   const cush=PRICES.cushion*(fixed+need)*365/12,over=S.money>cush,sh=(PRICES.spend[c]||PRICES.spend[''])[over?1:0];
   const left=inc-need-fixed,v=need+(left>0?left*sh:0)+(over&&!S.life.retired?(S.money-cush)*PRICES.drift*(c==='save'?0.25:1):0);
