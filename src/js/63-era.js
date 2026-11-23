@@ -24,8 +24,8 @@ const ERA_YEARS=[1980,1990,2000,2010,2020,2026];
 // the first year each thing is part of everyday life on Hilltop
 const ERA_FEATURES={
   // phones and the internet (64-era-phone.js)
-  pager:1985,cell:1996,text:2002,camera:2004,streaming:2008,apps:2008,maps:2008,weather:2008,phoneBank:2011,transitLive:2012,
-  datingApp:2012,nextdoor:2013,rideshare:2014,gig:2015,telehealth:2015,grocery:2016,
+  pager:1985,cell:1998,text:2002,camera:2003,apps:2008,maps:2008,weather:2008,transitLive:2008,phoneBank:2010,nextdoor:2011,
+  streaming:2011,datingApp:2012,rideshare:2014,gig:2015,grocery:2015,telehealth:2020,
   // money
   atm:1980,debit:1995,onlineBank:1998,
   // getting around

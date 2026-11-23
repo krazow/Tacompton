@@ -140,4 +140,11 @@ module.exports = [
     assert.doesNotMatch(t, /\b(romance|romantic|dat(e|es|ing)|couples?)\b/i);
     noErrors(errors);
   } },
+  { name: 'with the phone by era (64-era-phone.js): the start year picks the phone', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    const out = {};
+    for (const y of [1980, 2000, 2010, 2026]) { await start(page, '1y', 18, y); out[y] = await page.evaluate(() => typeof epDev === 'function' ? epDev() : null); }
+    if (out[2026] !== null) assert.deepStrictEqual(out, { 1980: 'land', 2000: 'cell', 2010: 'smart', 2026: 'smart' });
+    noErrors(errors);
+  } },
 ];
