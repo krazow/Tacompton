@@ -14,11 +14,11 @@
 //    The run starts Mon Aug 3, 2026 at age 18, Mon Aug 24, 2026 at ages 12 and 15 (LIFE_START).
 //  Age and stage:
 //    S.age, S.birthday {m, d} (S.birthday.label 'March 14'), stage(age=S.age) → 'middle' (12–13) | 'high' (14–17) | 'adult' (18+)
-//    lifeLong()       → true for 6 months, 1 year, 2 years and Lifetime; false for Quick play (today's two-week games)
+//    lifeLong()       → true for 6 months, 1 year, 2 years and Lifetime; false for 🧪 Try it (the short teaser, key 'quick')
 //  Key weeks (S.keyWeeks[i] = {start, end, kind, from, to}; you play days from..to, the rest is a time skip):
 //    lifeKw()         → the key week being played;  lifeKwIs(kind) → its kind is kind
 //      kinds: 'start' | 'month' | 'season' | 'birthday' | 'graduation' | 'movein' | 'milestone' | 'retire' | 'final'
-//    lifeWeekDays()   → the day indices you play this key week (Quick play: every day)
+//    lifeWeekDays()   → the day indices you play this key week (Try it: every day)
 //  Content registers key-week events with defLifeEvent(e): a defEvent() whose cond also checks the key week.
 //    defLifeEvent({id, hook:'wake'|'arrive'|…, kinds:['birthday'], stages:['high'], seasons:['winter'], mode:'grow'|'adult',
 //                  cond, chance, run, …})   everything else is plain defEvent (03-events.js)
@@ -34,9 +34,10 @@
 
 const LIFE_START={18:'2026-08-03',15:'2026-08-24',12:'2026-08-24'};
 const LIFE_AGES=[12,15,18];
-const LIFE_ORDER=['quick','6m','1y','2y','life'];
+const LIFE_ORDER=['6m','1y','2y','life'];   // the lengths of a new life (the teaser, 'quick', is apart: 🧪 Try it)
+const LIFE_ALL=['quick'].concat(LIFE_ORDER);   // every key a save or a best score can have
 const LIFE_LEN={
-  quick:{n:'Quick play',ic:'⚡',d:'Today’s game: two weeks at 18, or Growing Up’s first week at 12.',short:'Quick'},
+  quick:{n:'Try it',ic:'🧪',d:'A short taste: 2 weeks at 18, or Growing Up’s first week at 12 or 15. No birthdays or time skips.',short:'Try it'},
   '6m':{n:'6 months',ic:'🍂',d:'About six key weeks, one a month, with a summary between them.',short:'6 mo'},
   '1y':{n:'1 year',ic:'📅',d:'A key week every six weeks or so, plus your birthday: about nine.',short:'1 yr'},
   '2y':{n:'2 years',ic:'🗓️',d:'One key week a season, plus two birthdays: about ten.',short:'2 yrs'},
@@ -45,7 +46,9 @@ const LIFE_LEN={
 const LIFE_HOOKS={weekStart:[],weekEnd:[],skip:[],birthday:[],memorial:null,plan:[],schoolDay:null};
 const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let LIFE_PICK=null;   // {length, startAge, birthday}: the start screen's choice, used by the next new game (null = Quick play)
+let LIFE_PICK=null;   // {length, startAge, birthday}: the start screen's choice, used by the next new game (null = the Try it teaser)
+// the teaser's honest name: two weeks at 18, Growing Up's first week (8 days, its chapter 1) at 12 and 15
+const tryName=a=>a<18?'Try it for a week':'Try it for 2 weeks';
 
 // ---- calendar ----
 function lifeStartDate(s){s=s||(typeof S!=='undefined'?S:null);return (s&&s.startDate)||(typeof isGrow==='function'&&isGrow()?LIFE_START[12]:LIFE_START[18])}
@@ -143,11 +146,11 @@ function lifeBlank(x){return {weekPlay:'full',diffWk:-1,snaps:[],moments:[],stag
 function lifeStartFor(age,y){return typeof eraStartDate==='function'?eraStartDate(age,y||2026):LIFE_START[age]}
 function lifeSetup(x,p){
   x.length=p.length;x.startAge=p.startAge;x.age=p.startAge;x.birthday=p.birthday;
-  x.startYear=p.length!=='quick'&&p.startYear?p.startYear:2026;x.startDate=lifeStartFor(p.startAge,x.startYear);   // Quick play is always 2026
+  x.startYear=p.length!=='quick'&&p.startYear?p.startYear:2026;x.startDate=lifeStartFor(p.startAge,x.startYear);   // the Try it teaser is always 2026
   x.stage=stage(x.age);x.lengthLog=[];x.keyWeeks=lifeBuild(p.length,x);x.kwi=0;x.life=lifeBlank(x);
   const k=x.keyWeeks[0];k.from=k.start;k.to=k.end;
 }
-// old saves (0.3 and before) are Quick play: adult at 18, Growing Up at 12 (MIGRATIONS in 21-story.js)
+// old saves (0.3 and before) are the teaser ('quick'): adult at 18, Growing Up at 12 (MIGRATIONS in 21-story.js)
 function lifeMigrateQuick(x){if(x.length)return;const g=x.mode==='grow';lifeSetup(x,{length:'quick',startAge:g?12:18,birthday:x.birthday||lifeRandBirthday()})}
 function lifeMoment(ic,t){if(!S||!S.life)return;S.life.moments.push({d:day(),age:S.age,ic,t});if(S.life.moments.length>80)S.life.moments.splice(1,1)}
 // called first thing in onNewGame() (21-story.js)
@@ -381,7 +384,7 @@ const lifeMonths=()=>Math.max(0.5,Math.round((Math.min(day(),lifeRange(lifeKw())
 function lifeFinish(kind){
   S.over=true;clearTiles();closeModals();sfx('win');S.life&&(S.life.ended=kind);
   const L0=LIFE_LEN[S.length]||LIFE_LEN.quick;
-  if(!lifeLong()) return endScreen('{{name}}, you called it here',`You stopped on ${fullDate(day())}. ${FINISH_TEXT.sub()}`);
+  if(!lifeLong()) return endScreen('{{name}}, you called it here',`You stopped trying it out on ${fullDate(day())}. ${FINISH_TEXT.sub()}`);
   endScreen(kind==='here'?`{{name}}, you called it here`:`{{name}}: ${L0.n} on Hilltop`,`${fullDate(0)} to ${fullDate(day())}. Age ${S.startAge} to ${S.age}, ${S.keyWeeks.slice(0,S.kwi+1).length} key weeks played.`);
 }
 function endLife(reason){
@@ -413,7 +416,7 @@ function lifeRecord(sc,lost){if(lost)return false;const a=lifeRuns(),len=(S&&S.l
   try{localStorage.setItem(RUNS_KEY,JSON.stringify(a.slice(0,30)))}catch(e){}return sc>prev}
 function bestScoresModal(back){
   const a=lifeRuns();
-  const per=LIFE_ORDER.map(k=>{const r=a.filter(x=>x.len===k)[0];return `<div class="kv"><span>${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}</span><b>${r?`${grp(r.sc)} · start ${r.age}`:'—'}</b></div>`}).join('');
+  const per=LIFE_ALL.map(k=>{const r=a.filter(x=>x.len===k)[0];return `<div class="kv"><span>${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}</span><b>${r?`${grp(r.sc)} · start ${r.age}`:'—'}</b></div>`}).join('');
   const list=a.slice(0,12).map((r,i)=>`<div class="kv"><span>${i+1}. ${esc(r.name||'')} <small style="display:block;color:var(--mute);font-weight:400">${LIFE_LEN[r.len]?LIFE_LEN[r.len].n:r.len} · starting age ${r.age}${r.end&&r.end!==r.age?` → ${r.end}`:''}</small></span><b>${grp(r.sc)}</b></div>`).join('');
   modal('🏅 Best scores',`<p style="font-size:13px;color:var(--mute)">Scores are per month played, so every length compares fairly. Each length keeps its own best.</p><div class="sect">Best for each length</div>${per}<div class="sect">Every run</div>${list||'<p>No finished runs yet.</p>'}`,
     (back?[{l:'Back',fn:back}]:[]).concat([{l:'Close',fn:()=>{}}]));
@@ -444,29 +447,43 @@ function lifeEndExtras(){const e=document.querySelector('.end');if(!e||e.querySe
 window.lifeAgain=()=>{const p={length:S.length,startAge:S.startAge,startYear:S.startYear||2026,birthday:lifeRandBirthday()};lifeStartWith(p)};
 
 // ---- the start screen: pick a length and a starting age ----
-let LP={length:'6m',startAge:18,startYear:2026,birthday:null};
+let LP={length:'1y',startAge:18,startYear:2026,birthday:null};
 function lifePlanText(p){
   const o={startDate:lifeStartFor(p.startAge,p.length==='quick'?2026:p.startYear),startAge:p.startAge,birthday:p.birthday},w=lifeBuild(p.length,o),e=w[w.length-1].end;
   const endAge=p.startAge+[...Array(90)].findIndex((_,j)=>lifeBday(o,p.startAge+j+1)>e);
   return {weeks:w.length,end:`${dAt(o.startDate,e).label}, ${dAt(o.startDate,e).y}`,start:`${dAt(o.startDate,0).label}, ${dAt(o.startDate,0).y}`,endAge};
 }
+// the age question, everywhere a new game asks it: play as a kid (then 12 or 15), or start at 18
+function lifeAgePick(p,fn){
+  const kid=p.startAge<18,c=(v,lab,on,extra)=>`<button class="lchip${on?' on':''}" aria-pressed="${on}"${extra||''} onclick="${fn}${v})">${lab}</button>`;
+  return `<div class="lchips lage">${c(kid?p.startAge:12,'🎒 Play as a kid',kid,' data-age="kid"')}${c(18,'🧑 Start at 18',!kid,' data-age="18"')}</div>`
+    +(kid?`<div class="lchips lkid"><span class="lnote" style="margin:0 4px 0 0;align-self:center">How old?</span>${c(12,'12',p.startAge===12)}${c(15,'15',p.startAge===15)}</div>`:'');
+}
 function lifeStartModal(){
+  if(!LIFE_ORDER.includes(LP.length))LP.length='1y';
   if(!LP.birthday)LP.birthday=lifeRandBirthday();
-  const t=lifePlanText(LP),setup={12:'Growing Up: your family just moved to Hilltop, a week before seventh grade at Summit View Middle School.',15:'Growing Up: a high school sophomore at Hilltop High. Curfew 10 PM.',18:'Your own apartment on Hilltop, a job to pick and rent to make.'}[LP.startAge];
+  const t=lifePlanText(LP),setup={12:'Growing Up at 12: your family just moved to Hilltop, a week before seventh grade at Summit View Middle School.',15:'Growing Up at 15: a high school sophomore at Hilltop High. Curfew 10 PM.',18:'Your own apartment on Hilltop, a job to pick and rent to make.'}[LP.startAge];
   const chip=(k,v,lab,on)=>`<button class="lchip${on?' on':''}" aria-pressed="${on}" onclick="lifePick('${k}','${v}')">${lab}</button>`;
-  const body=`<div class="sect">1. Starting age</div><div class="lchips">${LIFE_AGES.map(a=>chip('startAge',a,`${a}`,LP.startAge===a)).join('')}</div>
+  const tn=tryName(LP.startAge);
+  const body=`<div class="sect">1. Starting age</div>${lifeAgePick(LP,"lifePick('startAge',")}
     <p class="lnote">${setup}</p>
     <div class="sect">2. How long?</div><div class="lchips">${LIFE_ORDER.map(k=>chip('length',k,`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LP.length===k)).join('')}</div>
-    <p class="lnote">${LIFE_LEN[LP.length].d}</p>${typeof eraYearChips==='function'?eraYearChips(LP).replace(/(<div class="sect">)/,'$13. '):''}
+    <p class="lnote">${LIFE_LEN[LP.length].d}</p>
+    <div class="ltry"><span>Not sure yet? <b>${tn}</b>: a short taste${LP.startAge<18?' of Growing Up, up to the first day of school':', moving in at 18'}, no birthdays or time skips.</span><button id="tryItBtn" class="lchip sm" onclick="lifeTryIt()">🧪 ${tn}</button></div>
+    ${typeof eraYearChips==='function'?eraYearChips(LP).replace(/(<div class="sect">)/,'$13. '):''}
     <div class="lplan"><div class="kv"><span>🎂 Your birthday</span><b>${LP.birthday.label} <button class="lchip sm" onclick="lifePick('birthday','')" aria-label="Pick another birthday">🎲</button></b></div>
-    <div class="kv"><span>📅 Starts</span><b>${t.start}</b></div><div class="kv"><span>🏁 Ends</span><b>${t.end}${LP.length==='quick'?'':` (age ${t.endAge})`}</b></div>
-    <div class="kv"><span>⭐ Key weeks</span><b>${t.weeks}${LP.length==='quick'?' (one long stretch)':', with a summary between them'}</b></div></div>`;
-  const yr=LP.length==='quick'?2026:LP.startYear||2026;
+    <div class="kv"><span>📅 Starts</span><b>${t.start}</b></div><div class="kv"><span>🏁 Ends</span><b>${t.end} (age ${t.endAge})</b></div>
+    <div class="kv"><span>⭐ Key weeks</span><b>${t.weeks}, with a summary between them</b></div></div>`;
+  const yr=LP.startYear||2026;
   const btns=[{l:'▶️ Start the game',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}${yr!==2026?` in ${yr}`:''}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP,{startYear:yr}))},{l:'Cancel',fn:()=>{}}];
   const el=document.getElementById('mbg');
   if(el&&el.dataset.life){SWAPOK=true;try{modalSwap('🆕 New game',body,btns)}finally{SWAPOK=false}el.dataset.life='1';return}
   modal('🆕 New game',body,btns);const m=document.getElementById('mbg');if(m)m.dataset.life='1';
 }
+// 🧪 Try it: the teaser, at the age picked on the sheet (always 2026)
+window.lifeTryIt=()=>{closeModals();lifeStartWith({length:'quick',startAge:LP.startAge,startYear:2026,birthday:LP.birthday||lifeRandBirthday()})};
+// the teaser's end: "Liked it? Start a new life" opens the sheet with the same age
+window.tryNewLife=age=>{LP.startAge=LIFE_AGES.includes(+age)?+age:18;if(!LIFE_ORDER.includes(LP.length))LP.length='1y';titleScreen();lifeStartModal()};
 window.lifeStartModal=lifeStartModal;
 window.lifePick=(k,v)=>{if(k==='birthday')LP.birthday=lifeRandBirthday();else LP[k]=k==='startAge'||k==='startYear'?+v:v;lifeStartModal()};
 function lifeStartWith(p){
@@ -496,7 +513,7 @@ function gameOptionsModal(){
     {l:`🎚️ Difficulty: ${DF().ic} ${DF().n}`,s:dLock?'Changed this week already. One step at a time, at most once a week.':'One step easier or harder, at most once a week.',dis:dLock,fn:()=>diffStepModal()},
     {l:`🔔 Event pop-ups: ${popupsOn()?'On':'Off'}`,s:'An OK window for each event during the day, or just tiles.',fn:()=>{try{localStorage.setItem(POPUP_KEY,popupsOn()?'off':'on')}catch(e){}gameOptionsModal()}},
     {l:`💡 Tips: ${prefs().tips?'On':'Off'}`,s:'One short tip at a time.',fn:()=>{setPref('tips',!prefs().tips);gameOptionsModal()}},
-    {l:`📅 Week play: ${S.life.weekPlay==='highlights'?'Highlights':'Full week'}`,s:!lifeLong()?'Quick play always plays every day.':S.life.weekPlay==='highlights'?'You play 3 days of each key week. Tap for the full week (from the next key week).':'You play all 7 days of each key week. Tap for highlights: 3 days each (from the next key week).',dis:!lifeLong(),fn:()=>{S.life.weekPlay=S.life.weekPlay==='highlights'?'full':'highlights';lifeSync();saveGame();gameOptionsModal()}},
+    {l:`📅 Week play: ${S.life.weekPlay==='highlights'?'Highlights':'Full week'}`,s:!lifeLong()?'Try it always plays every day.':S.life.weekPlay==='highlights'?'You play 3 days of each key week. Tap for the full week (from the next key week).':'You play all 7 days of each key week. Tap for highlights: 3 days each (from the next key week).',dis:!lifeLong(),fn:()=>{S.life.weekPlay=S.life.weekPlay==='highlights'?'full':'highlights';lifeSync();saveGame();gameOptionsModal()}},
     {l:'✏️ Rename your character',s:`Now: ${esc(currentName())}.`,fn:()=>nameModal({back:gameOptionsModal})},
     {l:'Back to settings',fn:()=>openSettings()},{l:'Close',fn:()=>{}}]);
 }

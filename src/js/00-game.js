@@ -44,7 +44,7 @@ const DIFFS={
   // money: starting cash. bad: random-event multiplier (the bad ones only). cost: groceries, food, bills.
   // strain: shift stress multiplier. worry: stress each night while rent is unpaid. No difficulty changes the score.
   easy:  {n:'Soft Landing',ic:'🌱',d:'More savings in the bank, cheaper groceries, easier shifts and fewer things going sideways. For learning the neighborhood.',money:1300,bad:0.6,cost:0.85,strain:0.85,worry:0},
-  normal:{n:'Hilltop',     ic:'🏘️',d:'The two weeks as they come: rent is due, the fridge empties, and the neighborhood is right outside your door.',money:900,bad:1,cost:1,strain:1,worry:2},
-  hard:  {n:'Tight Month', ic:'🔥',d:'Thin savings, pricier everything, harder shifts, rent on your mind every night and more bad luck. Rent is the same $1,150. Same score, tougher two weeks.',money:450,bad:1.6,cost:1.2,strain:1.2,worry:4},
+  normal:{n:'Hilltop',     ic:'🏘️',d:'Life as it comes: rent is due, the fridge empties, and the neighborhood is right outside your door.',money:900,bad:1,cost:1,strain:1,worry:2},
+  hard:  {n:'Tight Month', ic:'🔥',d:'Thin savings, pricier everything, harder shifts, rent on your mind every night and more bad luck. Rent is the same $1,150. Same score, tougher weeks.',money:450,bad:1.6,cost:1.2,strain:1.2,worry:4},
 };
 const DF=()=>DIFFS[(typeof S!=='undefined'&&S&&S.diff)||'normal']||DIFFS.normal;
