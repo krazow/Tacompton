@@ -474,3 +474,9 @@ html.hc .ph-tabs{background:#ddd}
 .ph-flash{background:radial-gradient(circle at 50% 30%,#fffbe6,#f7e7a1 40%,#222 75%);color:#222}
 /* phone: Transit, Maps, Weather, Rides (54-phone-travel.js) */
 .ph-card .ph-note{display:block;margin:4px 0 0}
+/* phone: Bank, Jobs, Groceries, Telehealth, Block club, Camera, Photos, Tacoma Hearts (55-phone-life.js) */
+.ph-post{display:flex;gap:9px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0}
+.ph-post p{margin:3px 0 0;font-size:13.5px;line-height:1.4}.ph-post small{font-size:11px;color:var(--mute);font-weight:400}
+.ph-photo{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0}
+.ph-photo b{display:block;font-size:13.5px;line-height:1.35}.ph-photo small{display:block;font-size:11.5px;color:var(--mute);margin-top:2px}
+.ph-pic{flex:none;width:54px;height:54px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(160deg,#cfe0ea,#f3d9b8)}

@@ -165,7 +165,7 @@ module.exports = [
     const t0 = await page.evaluate(() => S.t);
     await page.click('#tiles button.tdec');
     await page.waitForSelector('#mbg .choice-sheet', { state: 'attached' });
-    const bs = await page.$$eval('#mbg .modal > button.act', b => b.map(x => x.textContent));
+    const bs = await page.$$eval('#mbg .modal > button.act', b => b.map(x => x.textContent).filter(t => !/^📷/.test(t)));   // (55-phone-life.js adds 📷 Stop and take a photo)
     assert.strictEqual(bs.length, 2, 'Stop and watch / Keep going, no Not now');
     await page.evaluate(() => MBTN(0));
     r = await page.evaluate(() => ({ dt: S.t, waiting: choicesWaiting() }));
