@@ -28,7 +28,7 @@ module.exports = [
         const k = h.hub, m = travelMins('home', k), back = travelMins(k, 'home');
         out[h.key] = { m, back, fare: hoodFare('home', k) };
       }
-      const bus = Object.values(HOODS).find(h => !h.county && h.ride.fare > 0);
+      const bus = Object.values(HOODS).find(h => h.ride.fare > 0 && !h.county);
       window.__t = { before: S.money, hub: bus.hub, key: bus.key }; go(bus.hub);
       out.inner = travelMins(...Object.keys(bus.places).slice(0, 2));
       return out;
