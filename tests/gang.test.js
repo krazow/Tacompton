@@ -185,7 +185,7 @@ module.exports = [
     assert.doesNotMatch(SRC.replace(/^\s*\/\/.*$/gm, ''), /\bSafe Streets\b|Hilltop Artists/, 'real programs are described generically');
     await page.click('#helpBtn'); await page.waitForSelector('#tut');
     const g = await page.evaluate(() => document.getElementById('tut').innerText);
-    for (const s of ['The gang life path', 'Street Rep', 'Heat', 'Loyalty', 'Lookout', 'Runner', 'Soldier', 'OG', 'Ways out', 'outreach', 'glass-art studio', 'mentor', 'never Quick play']) assert.ok(g.includes(s), 'guide: ' + s);
+    for (const s of ['The gang life path', 'Street Rep', 'Heat', 'Loyalty', 'Lookout', 'Runner', 'Soldier', 'OG', 'Ways out', 'outreach', 'glass-art studio', 'mentor', 'never 🧪 Try it']) assert.ok(g.includes(s), 'guide: ' + s);
     assert.doesNotMatch(GANG_GUIDE = await page.evaluate(() => GANG.guide()), GRAPHIC);
     const w = await page.evaluate(() => CHANGELOG['0.4.1'].join(' '));
     assert.match(w, /Gang life path/i);

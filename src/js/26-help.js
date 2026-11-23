@@ -80,7 +80,7 @@ function helpLengths(){
       ['18',hStartDay(18),'The adult game: your own apartment, a job to pick and rent to make.']])}
     <h3>Key weeks and the summaries between them</h3>
     ${hFig(HSVG_KW(),'The key weeks of the first two years, starting at 12. Each mark is a week you play; the rest is skipped.')}
-    <ul><li><b>Quick play</b> is the classic game: every day of the two weeks at 18, or Growing Up’s first week at 12.</li>
+    <ul><li><b>🧪 Try it</b> isn’t a length: it’s a short taste from the New game sheet (2 weeks at 18, or Growing Up’s first week at 12 or 15), with every day played and no birthdays or time skips. When it ends, <b>Liked it? Start a new life</b> opens the sheet at the same age.</li>
     <li>The longer games play <b>key weeks</b> day by day: your first week, one a month or a season, every birthday, and in a Lifetime the milestones (half a year after each birthday until 22, then every five years), graduation and moving day at 18, retirement at 67 and the last week.</li>
     <li>Growing Up’s month and season weeks move onto the school calendar when one is close: the fall concert, winter break, testing week, finals, prom and the last day of school.</li>
     <li>On the last night of a key week, <b>⏩</b> asks how you spend the weeks until the next one. In the adult game: 💼 extra shifts, 🐷 save money or 🤝 see friends, plus 🎓 a nursing program once it’s offered (retired: friends, keep it simple or volunteer). In Growing Up: 📚 study hard, 🏠 help out at home, 🤝 see friends, and from 16, 🧾 pick up shifts.</li>
@@ -89,17 +89,17 @@ function helpLengths(){
     <h3>Changing the length later</h3>
     <p>In a game, open <b>⚙️ Settings → 🎮 Game options → 📏 Game length</b>.</p>
     <ul><li><b>➕ Lengthen</b> any time. The weeks you’ve played stay, and the rest of the plan is rebuilt for the new length.</li>
-    <li><b>➖ Shorten</b> only to a length that still ends ahead of today. A length you’re already past shows “Too short now”. Quick play is only possible in the first key week.</li>
+    <li><b>➖ Shorten</b> only to a length that still ends ahead of today. A length you’re already past shows “Too short now”. Try it isn’t a length you can switch to.</li>
     <li><b>🏁 Finish here</b> ends the game now and scores the months you played.</li></ul>
     <h3>The other Game options</h3>
     <ul><li><b>🎂 Starting age</b> and <b>🎒 Mode</b> are shown grayed out: they’re set when a life begins (Growing Up turns into the adult game at 18, in the same save).</li>
-    <li><b>⏩ Skip to 18</b> (Growing Up, in a game that reaches 18, not Quick play): fast-forward to your 18th birthday. Two or three quick choices about how those years go (study hard, work part-time from 16, family first or friends), one summary of what changed, then graduation, what comes next and your own place, the same as playing there.</li>
+    <li><b>⏩ Skip to 18</b> (Growing Up, in a game that reaches 18, not in Try it): fast-forward to your 18th birthday. Two or three quick choices about how those years go (study hard, work part-time from 16, family first or friends), one summary of what changed, then graduation, what comes next and your own place, the same as playing there.</li>
     <li><b>🎚️ Difficulty:</b> one step easier or harder (${DIFF_ORDER.map(k=>`${D[k].ic} ${D[k].n}`).join(', ')}), at most once a week. It changes prices, luck and strain, never the score.</li>
     <li><b>🔔 Event pop-ups</b> and <b>💡 Tips</b>, on or off.</li>
     <li><b>📅 Week play:</b> a full week, or <b>Highlights</b>: 3 days of each key week (around your birthday when it falls in that week), from the next key week on.</li>
     <li><b>✏️ Rename your character.</b></li></ul>
     <h3>Scores per month</h3>
-    <p>Each key week gets its mode’s own score (in the adult game, cash counts up to ±${$(2500)} and shifts are scaled to a two-week game). Your score is the average over the life, weighted by the months each key week stands for, so a 6-month game and a Lifetime compare fairly. The grade uses the same cutoffs as the mode you finish in (an A is ${grp(cutsA[0])} in the adult game, ${grp(cutsG[0])} in Growing Up). An adult life that ends early is graded F, “Cut Short”, but every month still counts. <b>🏅 Best scores</b> keeps a best for each length.</p>
+    <p>Each key week gets its mode’s own score (in the adult game, cash counts up to ±${$(2500)} and shifts are scaled to a 14-day stretch). Your score is the average over the life, weighted by the months each key week stands for, so a 6-month game and a Lifetime compare fairly. The grade uses the same cutoffs as the mode you finish in (an A is ${grp(cutsA[0])} in the adult game, ${grp(cutsG[0])} in Growing Up). An adult life that ends early is graded F, “Cut Short”, but every month still counts. <b>🏅 Best scores</b> keeps a best for each length.</p>
     <h3>How a Lifetime ends</h3>
     <ul><li>At <b>67</b> you retire: the shifts stop, a pension comes in every week, and the choices between key weeks turn to friends, family and volunteering.</li>
     <li>The last key week is the one of your <b>${lifePlanText({length:'life',startAge:12,birthday:HELP_BD}).endAge}th birthday</b>. When it ends you get <b>A life on Hilltop</b>: your stages, your work, the people (friends from growing up, a best friend, neighbors, family) and the moments worth remembering. Then the score.</li>
@@ -112,7 +112,7 @@ function helpGrowing(){
     prom:'The third Saturday in May, at 16 and 17',finalsJun:'The last week or so of school',last:'June 15, or the weekday before',job:'From June 16, at 16 and 17'};
   const X={orient:'A tour with a senior, your schedule and the club fair. Pick one: questions, clubs or lockers.','first':'Find your friends, sit up front, or sit with someone new at lunch.',
     concert:'Band or choir, with the family in the third row. Practice at home in the days before for the solo. Miss it: Family −4.',finalsDec:'A choice in the morning: how you study. It moves your Grades on each test day.',
-    winter:'Two weeks off: baking, Zoolights at Point Defiance, a call with Grandma, or sleeping in, and family game night at home.',testing:'The state tests. How you get ready moves your Grades on each test day.',
+    winter:'Time off from school: baking, Zoolights at Point Defiance, a call with Grandma, or sleeping in, and family game night at home.',testing:'The state tests. How you get ready moves your Grades on each test day.',
     prom:'A friends’ night out as one big group: photos at Wright Park, then dancing in the gym. Home by 11, just this once.',finalsJun:'Like December: how you study counts on test days.',
     last:'Yearbooks: get them signed, write a long note, or make summer plans.',job:'The corner market, lifeguarding at the People’s pool or the Sunbreak Café.'};
   const term=id=>[tn(id),W[id]||'',X[id]||''];
@@ -176,7 +176,7 @@ function helpGrowing(){
     <li>Sunrise and sunset follow the year: about ${sr(dec)} and ${ss(dec)} in late December, ${sr(jun)} and ${ss(jun)} in late June.</li></ul>
     <h3>The changing city</h3>
     <p>Hilltop changes while you grow up: ${nCity} pieces of city news over the years, told in the summaries between key weeks. New murals, a six-story building on MLK with a bakery downstairs, a favorite spot that closes and a new one that opens in its place, a street fair that keeps growing, a pocket park, and the T Line extension to Tacoma Community College, told as Sound Transit’s plan. Rents go up 3–5% every August, with no cap, so your raises have to keep up (see <b>Raises and promotions</b>). Each birthday notes how much the block has changed.</p>${typeof PRICES!=='undefined'?`
-    <p>🛒 Everyday prices rise too, ${PRICES.pct[0]}–${PRICES.pct[1]}% every January once you have your own place: groceries, meals, bus fares, shop items, bills and tuition (rent has its own rise, and pay its raises). Between key weeks you spend more as you earn more, and most people keep about ${PRICES.cushion} months of rent and bills saved. Quick play and the years at home stay at today’s prices.</p>`:''}`;
+    <p>🛒 Everyday prices rise too, ${PRICES.pct[0]}–${PRICES.pct[1]}% every January once you have your own place: groceries, meals, bus fares, shop items, bills and tuition (rent has its own rise, and pay its raises). Between key weeks you spend more as you earn more, and most people keep about ${PRICES.cushion} months of rent and bills saved. 🧪 Try it and the years at home stay at today’s prices.</p>`:''}`;
 }
 
 // raises and promotions in the longer adult games (35-careers.js)
@@ -186,7 +186,7 @@ function helpCareers(){
   for(const k in CAREER_LADDERS){const J=JOBS[k],L0=CAREER_LADDERS[k];
     L0.r.forEach((r,i)=>rows.push([`${i?'':J.ic+' '}${r.t}`,$(Math.round(J.pay*r.f)),i?`${r.yrs<1?`${Math.round(r.yrs*12)} months`:`${r.yrs} year${r.yrs===1?'':'s'}`} as ${L0.r[i-1].t}, Job ${r.st}+, on time${r.reup?', after you re-enlist':''}${r.prog?`, then ${r.prog.t} (${r.prog.mo} months, ${$(r.prog.fee)} a month)`:''}`:k==='elec'?'After the trade program':k==='tech'?'After college':k==='army'?'After enlisting':'Day one']))}
   return `<h3>Raises and promotions</h3>
-    <p>In the longer adult games your pay grows with you, and it has to: rents rise 3–5% every August. Quick play has none of this.</p>
+    <p>In the longer adult games your pay grows with you, and it has to: rents rise 3–5% every August. 🧪 Try it has none of this.</p>
     <ul><li><b>📈 Every year</b> on your job anniversary: a cost-of-living raise (${C.cola[0]}–${C.cola[1]}%).</li>
     <li><b>📋 Every six months</b>, a review: a merit raise (${C.merit[0]}–${C.merit[1]}%) with Job ${C.reviewSt} or more and at most one late or missed shift (or 15% of them). Below ${C.warnSt}, no raise and a written warning. Merit raises stop ${Math.round((C.meritMax-1)*100)}% over a title’s pay: a promotion is the way up.</li>
     <li><b>Your habits count:</b> a review in a time skip judges you by the key weeks you played, the latest most.</li>
@@ -241,15 +241,15 @@ function helpChapters(){
   const places=['home','mlk','work','link','peoples','view'];
   return [
   ['start','Getting started',`
-    <p>You just moved into a third-floor walk-up on <b>Hilltop</b>, the old neighborhood on the hill in Tacoma, Washington. The game is your first <b>${GAME.days} days</b> there: Monday, Aug 3 to Sunday, Aug 16, 2026.</p>
-    <p>Your job for those two weeks: <b>hold down a job, make rent, keep food in the fridge, keep your energy up and your stress down, and become part of the neighborhood.</b> Make it to Sunday night and you get a score and a grade from A to F.</p>
+    <p>You just moved into a third-floor walk-up on <b>Hilltop</b>, the old neighborhood on the hill in Tacoma, Washington. A life here starts on Monday, Aug 3 (at 18) and lasts as long as you choose: 6 months, 1 year, 2 years or a whole lifetime. Play as a kid instead and you start with your family at 12 or 15 (chapter 9, <b>Growing Up</b>).</p>
+    <p>The job of every week: <b>hold down a job, make rent, keep food in the fridge, keep your energy up and your stress down, and become part of the neighborhood.</b> The important weeks play day by day; the time between is a summary with a choice. When the game ends you get a score per month played and a grade from A to F.</p>
     <h3>Starting a game</h3>
     <ol><li>Tap the big orange button on the title screen (<b>${esc(TITLE.start)}</b>, or <b>Continue</b> if you have a game saved; then 🆕 New game sits just below it).</li>
-    <li>Choose your starting age (12, 15 or 18), how long to play (<b>Quick play</b> is these two weeks at 18, or Growing Up’s first week at 12) and the start year, then <b>Start the game</b>.</li>
+    <li>Choose <b>🎒 Play as a kid</b> (then 12 or 15) or <b>🧑 Start at 18</b>, how long to play (6 months, 1 year, 2 years or Lifetime) and the start year, then <b>Start the game</b>. Not sure yet? <b>🧪 Try it for 2 weeks</b> on the same sheet is a short taste (a week at 12 or 15), with no birthdays or time skips.</li>
     <li>The first time, type the name everyone in the game will call you.</li>
     <li>Pick a difficulty. It changes your savings, prices, how hard shifts hit and your luck, never the score:</li></ol>
     ${hTable(['Difficulty','Savings','Prices','Shifts','Bad luck'],Object.values(D).map(d=>[`${d.ic} ${d.n}`,$(d.money),d.cost===1?'normal':(d.cost<1?`${Math.round((1-d.cost)*100)}% cheaper`:`${Math.round((d.cost-1)*100)}% pricier`),(d.strain||1)===1?'normal':(d.strain<1?'easier':'harder'),d.bad===1?'normal':(d.bad<1?'less often':'more often')]))}
-    <ol start="4"><li>Pick your job (chapter 5). You keep it for the whole two weeks.</li><li>Read the welcome note and tap <b>Open the blinds</b>. You’re in.</li></ol>
+    <ol start="4"><li>Pick your job (chapter 5). It grows with you: raises, promotions, and later college, a trade or the Army.</li><li>Read the welcome note and tap <b>Open the blinds</b>. You’re in.</li></ol>
     ${hTip('The one rule to remember','Time only moves when you act. Nothing happens while you read, so take your time.')}`],
   ['day1','Your first day step by step',`
     <p>Day one starts at <b>${fmt(GAME.wake)}</b>, Monday, Aug 3, in your apartment. You have ${boxes} boxes, a fridge with 3 meals and your savings (${$(D.normal.money)} on ${D.normal.n}). Here is a good first day.</p>
@@ -272,7 +272,7 @@ function helpChapters(){
       ['😣 Stress','25','0 to 100, and high is bad. Red at 75. At <b>100</b> you burn out and the game ends.'],
       ['🍽️ Food','3','Meals in the fridge. You eat one every night. Red at 0.'],
       ['💼 Job','70','0 to 100: how work feels about you. Red under 25. At <b>0</b> you’re let go.']])}
-    <p>Two more numbers live off the bar: <b>Community</b> (0–100, starts at 5) on the 🤝 Neighbors tab, and the <b>day</b>, shown as “Mon Aug 3 · Day 1 of ${GAME.days}”.</p>`],
+    <p>Two more numbers live off the bar: <b>Community</b> (0–100, starts at 5) on the 🤝 Neighbors tab, and the <b>day</b>, your age and the key week, shown as “Mon Aug 3 · Age 18 · Week 1 of 9” in a 1-year game.</p>`],
   ['places','Places on Hilltop',`
     <p>Six places on Hilltop, all a short walk apart, plus the rest of Tacoma (below). Open <b>Go somewhere</b> on the Here tab to move. Walking takes the minutes shown.</p>
     ${hFig(HSVG_MAP(),'Walking minutes between the places (the full table is below).')}
@@ -301,7 +301,7 @@ function helpChapters(){
       ['🌄 The overlook',[['Sit on the bench†','free, 30 min','Stress −8'],['Watch the sunset*','free, 45 min','Stress −18'],['Walk the edge of the hill†','free, 45 min','Stress −8, energy −4']]]].map(([pl,rs])=>`<tbody><tr class="tut-grp"><th colspan="3" scope="colgroup">${pl}</th></tr>${rs.map(r=>`<tr><th scope="row">${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`).join('')}</table></div>
     <p class="tut-small">* Once a day. † Full effect twice a day, then about a third. Prices are for the ${D.normal.n} difficulty. ${D.easy.n} is ${Math.round((1-D.easy.cost)*100)}% cheaper and ${D.hard.n} is ${Math.round((D.hard.cost-1)*100)}% pricier. Everywhere, <b>Wait a while</b> skips ahead 30, 60 or 120 minutes.</p>`],
   ['job','Your job and shifts',`
-    <p>You moved here for work. On day one you pick one of three jobs, and you keep it for the two weeks. (In the longer games the job grows with you: raises and promotions, in <b>Growing up</b>.)</p>
+    <p>You moved here for work. On day one you pick one of three jobs, and the job grows with you: raises and promotions, in <b>Growing up</b>. (In 🧪 Try it you keep the job you came for.)</p>
     ${hFig(HSVG_SHIFTS(),'When each shift runs, 5 AM to midnight.')}
     ${hTable(['Job','Shift','Pay','Each shift costs'],Object.values(J).map(j=>[`${j.ic} ${j.role==='certified nursing assistant'?'CNA':j.role[0].toUpperCase()+j.role.slice(1)}`,`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} (${hShifts(j)} shifts)`,`${$(j.pay)}${j.tips?` + ${$(j.tips[0])}–${$(j.tips[1])} tips`:''}`,`Energy −${j.energy}, stress +${j.stress}${DIFFS.hard.strain&&DIFFS.hard.strain!==1?` (+${Math.round(j.stress*DIFFS.hard.strain)} on ${DIFFS.hard.n})`:''}`]))}
     <ul><li><b>🏥 CNA:</b> the best pay and the hardest days. Your alarm is set to ${fmt(J.hospital.alarm)}.</li>
@@ -325,7 +325,7 @@ function helpChapters(){
     <li><b>Cook something proper</b> at home uses one extra meal for Energy +14 and stress −4.</li>
     <li><b>Eating out</b> doesn’t touch the fridge: a teriyaki plate (${$(14)}) is a lift, not dinner.</li>
     <li>Neighbors help, too: tomatoes from across the street, a barbecue plate and the free community fridge on MLK can each add a meal or two. A power blip at night can spoil one.</li></ul>
-    ${hTip('Rule of thumb',`Shop when you’re down to 1 meal. Three grocery runs (about ${$(126)}) keep you fed for the whole two weeks.`)}`],
+    ${hTip('Rule of thumb',`Shop when you’re down to 1 meal. Three grocery runs (about ${$(126)}) keep you fed for about 14 days.`)}`],
   ['energy','Energy and stress',`
     <p>Work wears you down. The neighborhood picks you back up.</p>
     <h3>Energy</h3>
@@ -341,15 +341,15 @@ function helpChapters(){
     <li>At <b>100</b> you burn out and the game ends. At 70 the Here tab marks you “stressed”; the morning report warns you at 80.</li></ul>
     ${hTip('One thing a day',`Do one thing for yourself every day. A ${$(5)} swim after work and a call home take off about what a hard shift puts on.`)}`],
   ['rent','Rent',`
-    <p>Rent is the big one: <b>${rent}</b>, due by the end of <b>Sunday, Aug 16</b>, the last day.</p>
+    <p>Rent is the big one: <b>${rent}</b>. The first month’s is due by the end of your first week, <b>Sunday, Aug 9</b> (in 🧪 Try it, Sunday, Aug 16); after that it’s due on the 1st of every month (or at the end of a key week that crosses it).</p>
     <ul><li>Pay it at home with <b>Pay rent</b> as soon as you have the money.</li>
     <li>Paying in the <b>first week</b> (by Sunday, Aug 9) takes a weight off: stress −10 and a <b>+${w.early}</b> score bonus. Later, it’s stress −4.</li>
-    <li>If it’s still unpaid on the last night and you have the money, you pay at 11:58 PM (stress +4). If you don’t, you lose the apartment.</li>
+    <li>If it’s still unpaid on the night it’s due and you have the money, you pay at 11:58 PM (stress +4). If you don’t, you lose the apartment.</li>
     <li>Two bills come out on their own: the internet hookup (${$(60)}) on Tuesday, Aug 4 and the power bill (${$(72)}) on Tuesday, Aug 11.</li></ul>
     <h3>Will I make it?</h3>
     ${hTable(['Job','About what you earn','With'],Object.values(J).map(j=>[`${j.ic} ${j.n}`,$(j.pay*hShifts(j)),`${hShifts(j)} on-time shifts${j.tips?', plus tips':''}`]))}
     <p>Starting with ${$(D.normal.money)}, every job covers rent, food and bills if you show up. On ${D.hard.n} (${$(D.hard.money)}) it’s tight: skip the extras until rent is paid.</p>
-    ${hWarn('Two ways to lose the apartment','Rent unpaid at the end of Sunday, Aug 16, or more than $500 in the hole at any time.')}`],
+    ${hWarn('Two ways to lose the apartment','Rent unpaid at the end of the day it’s due, or more than $500 in the hole at any time.')}`],
   ['hood','Neighbors and community',`
     <p>Hilltop is a neighborhood that notices who shows up. <b>Community</b> (0 to 100) measures how many people know you, and how well. Each point is worth <b>${w.community}</b> on your score.</p>
     <ul><li><b>Stop and talk on the corner</b> on MLK, <b>help out</b> at People’s, play <b>pickup</b>, get a <b>haircut</b>, go to the <b>Street Fair</b> and say yes when a neighbor waves you over.</li>
@@ -382,19 +382,19 @@ function helpChapters(){
   ['tabs','The Week and Neighbors tabs',`
     <p>The tabs along the bottom: <b>🧭 Here</b> (what you can do where you are), <b>📅 Week</b>, <b>🤝 Neighbors</b>, <b>📋 To-do</b> and <b>📜 Log</b>.</p>
     <h3>📅 Week</h3>
-    <ul><li>All ${GAME.days} days, from Mon Aug 3 to Sun Aug 16. 👉 marks today and ✔️ the days behind you.</li>
+    <ul><li>Every day of the week you’re playing (your first week starts Mon Aug 3). 👉 marks today and ✔️ the days behind you.</li>
     <li>Each day says <b>work</b> with the shift times, or <b>day off</b>. Past days say how the shift went: on time, late, or missed.</li>
-    <li>The Street Fair (Sat Aug 8) and rent due (Sun Aug 16) are marked. The bottom line says whether rent is paid.</li></ul>
+    <li>The Street Fair (the second Saturday of August) and the day rent is due are marked. The bottom line says whether rent is paid.</li></ul>
     <h3>🤝 Neighbors</h3>
     <ul><li>Your community score and how many of the ${N.length} neighbors know your name.</li>
     <li>Each neighbor you’ve met, with a line about them and the day you met.</li></ul>
     <h3>📋 To-do and 📜 Log</h3>
     <ul><li><b>To-do</b> lists today’s goals: work, rent, food, stress under 70, job in good standing, neighbors, boxes and the fair. Urgent ones are marked on the tab.</li>
-    <li><b>Log</b> keeps every line of your two weeks.</li></ul>`],
+    <li><b>Log</b> keeps every line of your game.</li></ul>`],
   ['score','Winning, losing and the score',`
-    <p>There’s no single way to win. Make it to Sunday night, Aug 16, and the score adds up how your two weeks went.</p>
+    <p>There’s no single way to win. When the game ends, the score adds up how your weeks went, per month played, so every length compares fairly.</p>
     <h3>Three ways it ends early</h3>
-    <ul><li><b>Let go:</b> your Job reaches 0.</li><li><b>Burned out:</b> your stress reaches 100.</li><li><b>Out of the apartment:</b> rent unpaid at the end of Aug 16, or cash below −$500.</li></ul>
+    <ul><li><b>Let go:</b> your Job reaches 0.</li><li><b>Burned out:</b> your stress reaches 100.</li><li><b>Out of the apartment:</b> rent unpaid at the end of the day it’s due, or cash below −$500.</li></ul>
     <h3>The score</h3>
     <div class="tut-formula">cash × ${HELP_HALF(w.cash)} + community × ${w.community} + job × ${w.standing} − stress × ${w.stress} + shifts × ${w.shift}</div>
     ${hTable(['Bonus','Points'],[['Went to the Street Fair',`+${w.fair}`],['Rent paid in the first week',`+${w.early}`],[`All ${boxes} boxes unpacked`,`+${w.unpacked}`],[`Met all ${N.length} neighbors`,`+${w.neighbors}`]])}
@@ -439,7 +439,7 @@ function helpChapters(){
     <li>Open it once from the new icon while online. After that it plays with no signal.</li>
     <li>There’s also a one-file offline copy you can open by double-clicking; it doesn’t need installing.</li></ul>`],
   ['grow','Growing Up (new)',`
-    <p><b>🎒 Growing Up</b> is what you get when you pick a starting age of 12 or 15 in 🆕 New game. You start life on Hilltop at <b>12</b>, and live it chapter by chapter: middle school, high school, and one day a place of your own. The two weeks in the rest of this guide stay just as they are.</p>
+    <p><b>🎒 Growing Up</b> is what you get when you pick a starting age of 12 or 15 in 🆕 New game. You start life on Hilltop at <b>12</b>, and live it chapter by chapter: middle school, high school, and one day a place of your own. Start at 18 instead and the rest of this guide is your first weeks on your own.</p>
     <h3>Chapter 1: the new kid</h3>
     <p>Your family (Mom, Dad, your little sister Nia and you) just moved to Hilltop. You have one week, <b>Monday, Aug 24 to Sunday, Aug 30, 2026</b>, and then the first day of seventh grade at <b>Summit View Middle School</b> on Monday, Aug 31. No job and no rent: just your allowance, your family and the kids on the hill.</p>
     ${hTable(['On the top bar','What it means'],[['Money','Your allowance. Chores pay $3, and Saturday is allowance day ($10).'],['Energy','Rest, dinner and bed by 10:30 PM keep it up.'],['Mood','Fun, friends and the view bring it up; nerves bring it down.'],['Family','Chores, family dinner (5:30–7:30 PM), playing with Nia. Missing curfew costs 12.'],['Friends','Every kid you know, and how well. Hang out once a day.'],['Ready','Supplies, the way to school, a haircut, the forms signed and turned in, and an outfit.']])}
@@ -449,14 +449,14 @@ function helpChapters(){
     <li><b>Saturday:</b> a free back-to-school giveaway at People’s (10 AM–2 PM) and a barbecue across the street in the evening.</li>
     <li><b>Monday, Aug 31:</b> walk to school by the 8:15 AM bell, and Chapter 1 ends with your grade. There’s no game over in Growing Up: every week gets to Monday.</li></ul>
     ${hTip('Get the forms done early','Mom and Dad sign them at home in the evening or on the weekend; the school office takes them weekdays, 9 AM to 3 PM. Friday is the last chance.')}
-    <p>That’s Quick play. In the longer games the same week opens a whole life: the next two chapters, <b>Game lengths and ages</b> and <b>Growing up</b>, cover how long you can play and what happens as you grow.</p>`],
+    <p>That’s also 🧪 Try it at 12 or 15. In a new life the same week opens a whole life: the next two chapters, <b>Game lengths and ages</b> and <b>Growing up</b>, cover how long you can play and what happens as you grow.</p>`],
   ['lengths','Game lengths and ages',helpLengths()],
   ['growup','Growing up',helpGrowing()],
   ['choices','Choices and consequences',helpChoices()],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>
-    <dt>Can I change my job?</dt><dd>No. You keep the job you pick for the two weeks. Start a new game to try another.</dd>
+    <dt>Can I change my job?</dt><dd>Not in your first weeks. In a longer life you can change jobs later (📱 the phone’s job apps), go to college, learn a trade or enlist. In 🧪 Try it you keep the job you came for.</dd>
     <dt>I can’t clock in. Why?</dt><dd>It’s not a shift day, the shift is in its last hour, or you already worked today. The 📅 Week tab shows your shift days.</dd>
     <dt>Why is an action greyed out?</dt><dd>It’s closed right now, you can’t afford it, or it’s once a day and you already did it. The line under it says which.</dd>
     <dt>Does difficulty change my grade?</dt><dd>No. The score and the cutoffs are the same on every difficulty. Only savings, prices, how hard shifts hit and luck change, so the same play scores lower on a Tight Month.</dd>
@@ -483,7 +483,7 @@ function helpDoc(){
     <h2 id="${helpId(k)}-h" tabindex="-1"><span class="tut-n">${i+1}</span><span>${h}</span></h2>${t}
     <a class="tut-up" href="#${helpId('toc')}" onclick="return helpJump('toc')">↑ Back to contents</a></section>`).join('');
   return `<article class="tut-doc"><header class="tut-cover">${HSVG_COVER()}<h1 id="tut-h">How to play ${esc(GAME.title)}</h1>
-    <p class="tut-lede">A player’s guide to your first two weeks on Hilltop: ${ch.length} short chapters, from your first morning to your final grade.</p>
+    <p class="tut-lede">A player’s guide to a life on Hilltop: ${ch.length} short chapters, from your first morning to your final grade.</p>
     <p class="tut-small">Version ${APP_VERSION}. Prices are for the ${DIFFS.normal.n} difficulty.</p></header>${toc}${secs}
     <footer class="tut-foot"><p>Hilltop is a real neighborhood. The businesses, neighbors and events in the game are made up, written with love.</p></footer></article>`;
 }
