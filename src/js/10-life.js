@@ -454,18 +454,18 @@ function lifeStartModal(){
   if(!LP.birthday)LP.birthday=lifeRandBirthday();
   const t=lifePlanText(LP),setup={12:'Growing Up: your family just moved to Hilltop, a week before seventh grade at Summit View Middle School.',15:'Growing Up: a high school sophomore at Hilltop High. Curfew 10 PM.',18:'Your own apartment on Hilltop, a job to pick and rent to make.'}[LP.startAge];
   const chip=(k,v,lab,on)=>`<button class="lchip${on?' on':''}" aria-pressed="${on}" onclick="lifePick('${k}','${v}')">${lab}</button>`;
-  const body=`<div class="sect">How long?</div><div class="lchips">${LIFE_ORDER.map(k=>chip('length',k,`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LP.length===k)).join('')}</div>
-    <p class="lnote">${LIFE_LEN[LP.length].d}</p>
-    <div class="sect">Starting age</div><div class="lchips">${LIFE_AGES.map(a=>chip('startAge',a,`${a}`,LP.startAge===a)).join('')}</div>
-    <p class="lnote">${setup}</p>${typeof eraYearChips==='function'?eraYearChips(LP):''}
+  const body=`<div class="sect">1. Starting age</div><div class="lchips">${LIFE_AGES.map(a=>chip('startAge',a,`${a}`,LP.startAge===a)).join('')}</div>
+    <p class="lnote">${setup}</p>
+    <div class="sect">2. How long?</div><div class="lchips">${LIFE_ORDER.map(k=>chip('length',k,`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LP.length===k)).join('')}</div>
+    <p class="lnote">${LIFE_LEN[LP.length].d}</p>${typeof eraYearChips==='function'?eraYearChips(LP).replace(/(<div class="sect">)/,'$13. '):''}
     <div class="lplan"><div class="kv"><span>🎂 Your birthday</span><b>${LP.birthday.label} <button class="lchip sm" onclick="lifePick('birthday','')" aria-label="Pick another birthday">🎲</button></b></div>
     <div class="kv"><span>📅 Starts</span><b>${t.start}</b></div><div class="kv"><span>🏁 Ends</span><b>${t.end}${LP.length==='quick'?'':` (age ${t.endAge})`}</b></div>
     <div class="kv"><span>⭐ Key weeks</span><b>${t.weeks}${LP.length==='quick'?' (one long stretch)':', with a summary between them'}</b></div></div>`;
   const yr=LP.length==='quick'?2026:LP.startYear||2026;
-  const btns=[{l:'▶️ Start this life',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}${yr!==2026?` in ${yr}`:''}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP,{startYear:yr}))},{l:'Cancel',fn:()=>{}}];
+  const btns=[{l:'▶️ Start the game',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}${yr!==2026?` in ${yr}`:''}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP,{startYear:yr}))},{l:'Cancel',fn:()=>{}}];
   const el=document.getElementById('mbg');
-  if(el&&el.dataset.life){SWAPOK=true;try{modalSwap('🌱 Start a new life',body,btns)}finally{SWAPOK=false}el.dataset.life='1';return}
-  modal('🌱 Start a new life',body,btns);const m=document.getElementById('mbg');if(m)m.dataset.life='1';
+  if(el&&el.dataset.life){SWAPOK=true;try{modalSwap('🆕 New game',body,btns)}finally{SWAPOK=false}el.dataset.life='1';return}
+  modal('🆕 New game',body,btns);const m=document.getElementById('mbg');if(m)m.dataset.life='1';
 }
 window.lifeStartModal=lifeStartModal;
 window.lifePick=(k,v)=>{if(k==='birthday')LP.birthday=lifeRandBirthday();else LP[k]=k==='startAge'||k==='startYear'?+v:v;lifeStartModal()};
@@ -476,10 +476,7 @@ function lifeStartWith(p){
 }
 window.lifeStartWith=lifeStartWith;
 // the start page row (31-grow-story.js calls this after it adds the Growing Up row)
-function lifeTitleRow(after){
-  const b=document.createElement('div');b.className='t-main t-liferow';
-  b.innerHTML='<button id="lifeBtn" class="t-btn t-life" onclick="lifeStartModal()"><span class="t-ic" aria-hidden="true">🌱</span><span class="t-tx"><b>New life (new)</b><span>Pick a length, 6 months to a lifetime, and a starting age: 12, 15 or 18</span></span></button>';
-  after.before(b);
+function lifeTitleRow(){
   const g=document.querySelector('.title .tgrid');if(g&&!g.querySelector('#bestTBtn')){g.insertAdjacentHTML('beforeend','<button id="bestTBtn" class="ghost" onclick="bestScoresModal()">🏅 Best scores</button>');
     const c=[...g.children];c.forEach(x=>x.classList.remove('wide'));if(c.length%2)c[c.length-1].classList.add('wide')}
 }

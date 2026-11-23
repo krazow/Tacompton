@@ -25,7 +25,7 @@
 const GAME={
   id:'tacompton',           // storage-key prefix and service-worker cache prefix (lowercase, no spaces)
   title:'Tacompton',
-  tagline:'Two weeks on Hilltop',
+  tagline:'Grow up, get by and make a life in Tacoma',
   codePrefix:'TACOMPTON',   // transfer codes start with this, e.g. POCKETWEEK:eyJ…
   version:'0.4.0',           // bump on every release: shown in Settings, stamped into saves and sw.js
   schema:2,                  // bump when the shape of S changes, and add a MIGRATIONS entry (21-story.js)

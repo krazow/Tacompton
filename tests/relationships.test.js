@@ -61,7 +61,7 @@ module.exports = [
     await page.click('#adultBtn'); assert.strictEqual(await page.$('#mbg'), null); assert.match(await page.textContent('#adultBtn'), /Off/);
     await page.click('#adultBtn'); assert.strictEqual(await page.$('#mbg'), null); assert.match(await page.textContent('#adultBtn'), /On/);
     // the start page order is unchanged: Help, Feedback, Install still right under the big button
-    const order = await page.$$eval('.title .body button', bs => bs.map(b => b.id || b.className));
+    const order = await page.$$eval('.title .body button', bs => bs.map(b => /\bbig\b/.test(b.className) ? 'big' : (b.id || b.className)));
     const big = order.findIndex(c => /\bbig\b/.test(c));
     assert.strictEqual(order[big + 1], 'helpBtn');
     // a new adult game starts with the mode on, and the log says so

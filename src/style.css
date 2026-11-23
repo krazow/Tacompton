@@ -485,3 +485,16 @@ html.hc .ph-tabs{background:#ddd}
 .pg-rules .ph-card{margin-bottom:6px}
 .pg-meter{height:8px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}.pg-meter i{display:block;height:100%;background:#2f6fd6;border-radius:4px}
 .ph-card.warn .pg-meter i{background:#d9822b}
+
+/* start screen: sections and half-width cards */
+.title .t-sect{margin:10px 2px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.title .t-half{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.title .t-half .t-btn{flex-direction:column;align-items:flex-start;gap:6px;min-height:0;padding:10px 12px}
+.title .t-half .t-tx span{font-size:12px}
+.title .t-quick{background:var(--accent,#e8743b);color:#fff;border:0;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.title .t-quick .t-ic{background:rgba(255,255,255,.22)}
+.title .t-quick .t-tx span{color:rgba(255,255,255,.88)}
+.title .t-quick:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.title .t-growrow{margin-top:0}
+.title .t-half>:only-child{grid-column:1/-1}
+.title .t-hint{margin:6px 4px 2px;font-size:13px;color:rgba(255,255,255,.82);line-height:1.35}

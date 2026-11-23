@@ -136,9 +136,9 @@ module.exports = [
     assert.strictEqual(await page.$('#mbg'), null);
     noErrors(errors);
   } },
-  { name: 'start page: the big button, then Help, Send feedback right under it, then Install app', only: 'index.html', fn: async ctx => {
+  { name: 'start page: the big button, then Help, with Send feedback and Install app side by side under it', only: 'index.html', fn: async ctx => {
     const { page, errors } = await open(ctx);
-    const order = await page.$$eval('.title .body button', bs => bs.map(b => b.id || b.className));
+    const order = await page.$$eval('.title .body button', bs => bs.map(b => /\bbig\b/.test(b.className) ? 'big' : (b.id || b.className)));
     const big = order.findIndex(c => /\bbig\b/.test(c)), help = order.indexOf('helpBtn'), fb = order.indexOf('feedbackBtn'), inst = order.indexOf('installBtn');
     assert.ok(big >= 0 && help === big + 1 && fb === help + 1 && inst === fb + 1, 'order: ' + order.join(', '));
     assert.match(await page.textContent('#feedbackBtn'), /Send feedback/);
@@ -148,7 +148,7 @@ module.exports = [
     assert.match(await page.textContent('#installBtn'), /Install app/);
     const [h, i] = await Promise.all(['#helpBtn', '#installBtn'].map(s => page.$eval(s, b => b.getBoundingClientRect().toJSON())));
     assert.ok(h.height >= 44 && i.height >= 44, '44px targets');
-    assert.ok(fbBox.top >= h.bottom && i.top >= fbBox.bottom, 'Feedback sits beneath Help, Install beneath Feedback');
+    assert.ok(fbBox.top >= h.bottom && i.top >= h.bottom && Math.abs(i.top - fbBox.top) < 2, 'Feedback and Install sit side by side beneath Help');
     // the other buttons are still there
     const txt = await page.textContent('.title .tgrid');
     for (const t of ['Save slots', 'What’s new', 'Transfer']) assert.ok(txt.includes(t), t);

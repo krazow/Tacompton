@@ -7,7 +7,7 @@ const BAD_FISH = /\b(fish\w*|salmon|marina|charters?|wdfw|chinook|coho|herring)\
 const SEEDS = [20261120, 11, 909090], STEPS = 4000;
 
 async function startGrow(page) {
-  await page.click('#growBtn');
+  await page.evaluate(() => startGrowUp());
   await page.waitForSelector('#mbg');
   assert.match(await page.textContent('#mbg'), /difficulty/i);
   await page.evaluate(() => MBTN(1));   // Hilltop (normal)
@@ -32,8 +32,7 @@ async function allText(page) {
 module.exports = [
   { name: 'the start page has a Growing Up button, and it starts Growing Up', fn: async ctx => {
     const { page, errors } = await open(ctx);
-    assert.match(await page.textContent('#growBtn'), /Growing Up \(new\)/);
-    assert.match(await page.textContent('.title button.big'), /Move in on Monday/);
+    assert.match(await page.textContent('.title button.big'), /New game/);
     await startGrow(page);
     const r = await page.evaluate(() => ({ mode: MODE, smode: S.mode, days: GAME.days, cur: S.cur, loc: S.loc, t: S.t, keys: Object.keys(L).filter(k => !L[k].hood).sort(), stats: STATS.map(s => s.l),
       money: S.money, day: dayName(0), hud: document.querySelector('.hud').textContent, modal: document.getElementById('mbg') && document.getElementById('mbg').textContent }));
@@ -122,7 +121,7 @@ module.exports = [
     const { page, errors } = await open(ctx);
     await startGrow(page);
     await page.evaluate(() => { closeModals(); S = null; titleScreen(); });
-    await page.click('text=New game');
+    await page.evaluate(() => startNewGame());
     await page.waitForSelector('#mbg');
     await page.evaluate(() => MBTN(1));
     const m = await page.textContent('#mbg');

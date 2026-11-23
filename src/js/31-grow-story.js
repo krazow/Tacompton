@@ -365,17 +365,12 @@ window.startGrowUp=()=>{const go=k=>{setMode('grow');newGame(k);render()};const 
 {const sng=window.startNewGame;
   // "Play again" on the Growing Up end screen plays Growing Up again; everything else starts the adult game
   window.startNewGame=()=>{if(isGrow()&&document.querySelector('.end'))return startGrowUp();setMode('adult');sng()};}
-TITLE.bullets.push('New: <b>🎒 Growing Up</b>. Start at 12, the week before middle school, and live your life on Hilltop chapter by chapter.');
 {const ts=titleScreen;
   titleScreen=function(){
     ts();
     try{
       const body=document.querySelector('.title .body');if(!body)return;
-      const after=body.querySelector('.t-main')||body.querySelector('button.big');
-      const b=document.createElement('div');b.className='t-main t-growrow';
-      b.innerHTML='<button id="growBtn" class="t-btn t-grow" onclick="startGrowUp()"><span class="t-ic" aria-hidden="true">🎒</span><span class="t-tx"><b>Growing Up (new)</b><span>Start at 12: your family’s first week on Hilltop, then middle school</span></span></button>';
-      after.after(b);
-      lifeTitleRow(b);   // 10-life.js: 🌱 New life, just above
+      lifeTitleRow();   // 10-life.js: 🏅 Best scores in the grid
       const d=loadSave(),big=body.querySelector('button.big');
       if(d&&d.S.mode==='grow'&&big)big.textContent='🎒 '+big.textContent;
       fitTitle();
