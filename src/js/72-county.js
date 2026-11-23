@@ -120,6 +120,7 @@ function busOf(k){const H=HS()[k],r=H.ride0,y=Y(),out=r.ptOut&&y>=r.ptOut&&!(Y()
 function ride(k){prep();const H=HS()[k];if(!H||!H.ride0)return null;const r=H.ride0,y=Y();
   const drv={via:'drive',mins:driveOf(k),fare:0};
   if(typeof S!=='undefined'&&S&&driving())return Object.assign(drv,{label:LABEL.drive,drive:drv.mins});
+  if(r.bus===false||r.noBus||r.via==='drive')return {via:'drive',mins:typeof S!=='undefined'&&S&&driving()?drv.mins:r.mins,fare:0,label:'🚗 Drive only',drive:drv.mins};
   let best=busOf(k);
   if(typeof S!=='undefined'&&S&&rush()){
     if(r.express&&y>=(r.express.from||1980)&&r.express.mins+(oneBridge(H)?8:0)<best.mins)best={via:'express',mins:r.express.mins+(oneBridge(H)?8:0),fare:r.express.fare||3};
@@ -204,11 +205,17 @@ function countyPhoneGroups(html){
   html=html.slice(0,cs)+phSub('🌲 Pierce County')+html.slice(cs);
   const ti=firstOf(tac);if(ti>=0&&ti<cs){const ts=start(ti);if(ts>=0)html=html.slice(0,ts)+phSub('🏙️ Tacoma')+html.slice(ts)}
   return html}
+function countyNoBus(html,id){
+  for(const k of COUNTY_KEYS){const r=countyRide(k);if(!r||r.label!=='🚗 Drive only')continue;const H=HOODS[k],nm=`${H.ic} ${H.name}`,i=html.indexOf(nm);if(i<0)continue;
+    const txt=`🚗 No bus goes there: a drive, about ${r.drive} min${COUNTY.driving()||(S.car&&S.car.own&&!S.car.down)?'':' (you’d need a car, or a ride)'}`;
+    if(id==='transit'){const a=html.indexOf('<span>',i),b=html.indexOf('</span>',a);if(a>0&&b>a&&a-i<200)html=html.slice(0,a+6)+txt+html.slice(b)}
+    else{const a=html.indexOf('<small>',i),b=html.indexOf('</small>',a);if(a>0&&b>a&&a-i<200)html=html.slice(0,a+7)+txt.replace(/🚗 /,'').replace(/(\d+) min/,'$1 minutes')+html.slice(b)}}
+  return html}
 function countyTollNote(){if(isGrow()||!COUNTY.anyNarrows()||!countyOn())return '';const y=yearNow();
   if(y<2007)return phNote('🌉 One Narrows Bridge in these years: no toll, but expect a backup at rush hour.');
   const C=COUNTY.CS();return phNote(`🌉 Driving back into Tacoma over the Narrows Bridge: a toll of ${$(COUNTY.toll(true))} with a Good To Go! pass${C.gtg?' (you have one)':`, ${$(COUNTY.toll(false))} at the booth`}. Westbound is free.`)}
 for(const id of ['maps','transit']){const A=typeof PHONE_APPS!=='undefined'&&PHONE_APPS.find(x=>x.id===id);if(!A)continue;const v0=A.view;
-  A.view=function(arg){let h=v0.apply(this,arguments);try{if(arg==null){h=countyPhoneGroups(h);if(id==='maps')h+=countyTollNote()}
+  A.view=function(arg){let h=v0.apply(this,arguments);try{if(arg==null){h=countyNoBus(countyPhoneGroups(h),id);if(id==='maps')h+=countyTollNote()}
     else if(id==='maps'&&countyIs(arg)){const r=countyRide(arg);if(r)h+=phNote(`${r.label}: about ${r.mins} min from Hilltop${r.fare&&!isGrow()?`, ${$(rp(r.fare))}`:''}. By car about ${r.drive} min.${HOODS[arg].narrows?' Across the Narrows Bridge.':''}`)+(HOODS[arg].narrows?countyTollNote():'')}}catch(e){console.error(e)}return h}}
 
 // ============================================================
@@ -268,7 +275,7 @@ function startChips(p){
   return `<div class="sect">Where you start</div><div class="lchips">${chips}</div><p class="lnote">${note}</p>`;
 }
 window.startChips=startChips;
-if(typeof eraYearChips==='function'){const ec=eraYearChips;eraYearChips=function(p){let h=ec.apply(this,arguments);try{h+=startChips(p)}catch(e){console.error(e)}return h};window.eraYearChips=eraYearChips}
+if(typeof eraYearChips==='function'){const ec=eraYearChips;eraYearChips=function(p){let h=ec.apply(this,arguments);try{if(p&&p.length!=='quick')h+=startChips(p)}catch(e){console.error(e)}return h};window.eraYearChips=eraYearChips}
 // Game options: where this life started
 {const go=gameOptionsModal;gameOptionsModal=function(){go.apply(this,arguments);try{const H=startTown();if(!H)return;const p=document.querySelector('#mbg .mb p');
   if(p&&!p.querySelector('.cty-st'))p.insertAdjacentHTML('beforeend',` <span class="cty-st">${H.ic} Started in ${esc(H.name)}.</span>`)}catch(e){console.error(e)}};window.gameOptionsModal=gameOptionsModal}
@@ -285,7 +292,7 @@ if(typeof GROW!=='undefined'&&GROW.actionsHere){const ah=GROW.actionsHere;GROW.a
 const COUNTY_JOBS={
   jblm:{get n0(){return `Civilian supply technician at ${yearNow()>=2010?'JBLM':'Fort Lewis'}`},short:'the base',ic:'🎖️',
     get place(){return yearNow()>=2010?'Joint Base Lewis-McChord':'Fort Lewis'},role0:'civilian supply technician',
-    start:420,end:930,pay:166,days:[0,1,2,3,4],stress:13,energy:24,alarm:330,open:()=>[300,1140],area:[/Lakewood/i,/DuPont|JBLM|Lewis|Steilacoom/i,/Spanaway|Parkland/i],commute:35,bg:true,
+    start:420,end:930,pay:166,days:[0,1,2,3,4],stress:13,energy:24,alarm:330,open:()=>[300,1140],area:[/JBLM|Lewis/i,/Lakewood/i,/DuPont|Steilacoom/i,/Spanaway|Parkland/i],commute:35,bg:true,
     get blurb(){return `Seven to 3:30, Monday to Friday, in a supply warehouse on ${yearNow()>=2010?'Joint Base Lewis-McChord (Fort Lewis and McChord, one base since 2010)':'Fort Lewis'}, just south of Lakewood: a federal civilian job, with a badge at the gate and a background check first.`},
     ladder:{get at(){return yearNow()>=2010?'JBLM':'Fort Lewis'},r:[
       {role:'civilian supply technician',t:'Supply technician',f:1},
@@ -380,7 +387,7 @@ function cjCommuteTxt(k){const was=S.job;S.job=k;try{return travelMins('home','w
   const day1=Object.values(JOBS),cj=Object.keys(COUNTY_JOBS);
   modal('💼 Your new job',`<p>You moved here for work. Which job did you take?</p>${day1.map(j=>`<p><b>${j.ic} ${j.n}.</b> ${j.blurb} About <b>${$(j.pay)}</b> a shift${j.tips?' plus tips':''}.</p>`).join('')}
     <div class="sect">🌲 Around Pierce County</div>${cj.map(k=>{const j=JOBS[k];return `<p><b>${j.ic} ${j.n0}.</b> ${j.blurb} About <b>${$(j.pay)}</b> a shift. ${cap(cjWhere(k))}: about ${cjCommuteTxt(k)} min from home.</p>`}).join('')}
-    <p style="font-size:13px;color:var(--mute)">You can change jobs later with the 💼 Jobs app on your phone.</p>`,
+    <p style="font-size:13px;color:var(--mute)">You can change jobs later${typeof eraHas!=='function'||eraHas('apps')?' with the 💼 Jobs app on your phone':''}.</p>`,
     Object.entries(JOBS).map(([k,j])=>({l:`${j.ic} ${j.n}`,s:`${fmt(j.start)}–${fmt(j.end)}, ${j.days[0]===0?'Mon–Fri':'Wed–Sun'} · ${$(j.pay)} a shift${j.tips?' + tips':''}`,np:true,fn:()=>pickJob(k)}))
       .concat(cj.map(k=>{const j=JOBS[k];return {l:`${j.ic} ${j.n0}`,s:`${fmt(j.start)}–${fmt(j.end)}, ${dayRange(j.days)} · ${$(j.pay)} a shift · ${cjCommuteTxt(k)} min commute${cjBg(k)?' · background check':''}`,np:true,dis:cjBg(k),fn:()=>pickJob(k)}})),true)}}
 const dayRange=ds=>`${DAYS[ds[0]].slice(0,3)}–${DAYS[ds[ds.length-1]].slice(0,3)}`;
@@ -441,6 +448,6 @@ function countyGuideHTML(){
     ${tip('A long commute is a real cost','An hour on the bus each way means leaving earlier, getting home later, and less time for everything else. A car, the express bus or the Sounder can win back half of it.')}
     <p>Each county area, its places and what to do there are in the places chapter, under <b>Pierce County</b>.</p>`;
 }
-{const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);try{const i=ch.findIndex(c=>c[0]==='faq');ch.splice(i<0?ch.length:i,0,['county','Pierce County',countyGuideHTML()])}catch(e){console.error(e)}return ch}}
+{const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);try{let i=ch.findIndex(c=>c[0]==='adult18');if(i<0)i=ch.findIndex(c=>c[0]==='faq');ch.splice(i<0?ch.length:i,0,['county','Pierce County',countyGuideHTML()])}catch(e){console.error(e)}return ch}}
 
 window.COUNTY_API={countyMins:COUNTY.countyMins,toll:COUNTY.toll,ride:COUNTY.ride,jobHood:countyJobHood,commute:countyCommute,startText,startChips,guide:countyGuideHTML,phoneGroups:countyPhoneGroups};

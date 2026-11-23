@@ -64,7 +64,7 @@ module.exports = [
     await page.click('#mbg .lchip:text-is("15")');
     const s2 = await page.textContent('#mbg');
     assert.match(s2, /Hilltop High/); assert.match(s2, /Mon Aug 24, 2026/);
-    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '🎒 Play as a kid|15|📅 1 year|2026');
+    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '🎒 Play as a kid|15|📅 1 year|2026|🏘️ Hilltop');   // 72-county.js: Where you start, Hilltop by default
     await page.click('#mbg button.act:has-text("Start the game")');
     await page.waitForSelector('#mbg');
     assert.match(await page.textContent('#mbg'), /difficulty/i);
