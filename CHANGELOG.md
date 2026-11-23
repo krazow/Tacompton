@@ -7,6 +7,7 @@ are taken from it.
 
 ### Added
 - Try it for 2 weeks: the two-week game is no longer a length; it's a teaser on the New game sheet (2 weeks at 18, Growing Up's first week at 12 or 15) with a "Trying it out: N days left" HUD tag and a "Liked it? Start a new life" end button. Lengths are 6 months, 1 year, 2 years and Lifetime (default 1 year). The guide, title, rules, achievements and end screens no longer describe the game as two weeks. The age question is "Play as a kid" (12 or 15) or "Start at 18" everywhere a new game asks it.
+- 🍕 **Historical Tacoma places:** real Tacoma restaurants, parks and landmarks open and close on their real dates (Pizza & Pipes 1974–1999, Bimbo's 1921–2001, Knapp's 1938–2026, The Harvester, Steve's Gay '90s, Kim Anh, Clinkerdagger's → Duke's, Johnny's Dock, the Lobster Shop, the Rialto and the Pantages, the Tacoma Mall and its Sears, Frisko Freeze, Bob's Java Jive, the Dune Peninsula), each with a visit, city news lines, a farewell visit in the month before it closes, a source note in the code, and a "Tacoma through the years" table in the guide. The life summary lists your most-visited places.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed
