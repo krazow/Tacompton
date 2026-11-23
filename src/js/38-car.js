@@ -6,7 +6,8 @@
 //    1st of every month, gas on every drive, parking downtown and the odd repair. A car adds a 🚗 Drive chip next to Go for
 //    the other neighborhoods: faster than the bus or the Link, no fare, but gas (and downtown parking). At home the car
 //    lives on the street (the car prowl in 36-life-events.js; its two habits are toggled at home there).
-//  Starting at 18 you already have a license from back home; coming up from Growing Up you need to have passed the test.
+//  Starting at 18 you already have a license from back home; coming up from Growing Up you can pass the test from 16, and at 18
+//  (graduation, 73-adult-unlock.js) you have one either way, the same as a game started at 18.
 //  State: S.car (made on first use, so older saves just work; it lives outside newState(), so it survives graduation).
 // ============================================================
 (function(){
@@ -21,7 +22,7 @@ const CAR_TIERS={
   Object.defineProperty(CAR_TIERS.corolla,'n',{get(){return `a ${Y()-10} Toyota Corolla`}});
   Object.defineProperty(CAR_TIERS.rav4,'n',{get(){const y=Y()-9;return y>=1996?`a ${y} Toyota RAV4`:`a ${y} Chevy Blazer`}});}
 window.CAR_TIERS=CAR_TIERS;
-const CS=()=>S.car||(S.car={lic:(S.startAge||18)>=18,practice:0,tests:0,testDay:-1,lesson:-1,own:null,ins:0,billed:null,down:false,taped:false,trips:0,gas:0});
+const CS=()=>S.car||(S.car={lic:(S.startAge||18)>=18||!!(S.life&&S.life.graduated),practice:0,tests:0,testDay:-1,lesson:-1,own:null,ins:0,billed:null,down:false,taped:false,trips:0,gas:0});
 const owns=()=>!!S&&!!S.car&&!!S.car.own;
 const adultOn=()=>!!S&&!isGrow()&&lifeLong()&&(S.age||18)>=18;
 const canDrive=()=>adultOn()&&owns()&&!S.car.down;
