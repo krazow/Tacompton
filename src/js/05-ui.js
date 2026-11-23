@@ -60,10 +60,11 @@ function actView(){
   const p=prefs().goOpen,open=p===null||p===undefined?(day()===0||acts.length<=5):p;   // open on day one, so a new player sees where to go
   h+=`<details class="go" ${open?'open':''} ontoggle="setPref('goOpen',this.open)"><summary>🧭 Go somewhere (${dests.length})</summary>`;
   const hood=k=>(L[k]||{}).hood||'',hereH=hood(S.loc),grouped=dests.some(k=>hood(k));
-  if(grouped) dests.sort((x,y)=>{const a=hood(x),b=hood(y);if(a===b)return 0;if(a===hereH)return -1;if(b===hereH)return 1;if(!a)return -1;if(!b)return 1;return travelMins(S.loc,x)-travelMins(S.loc,y)});
+  const cty=h=>typeof countyIs==='function'&&countyIs(h)?1:0;   // 72-county.js: Pierce County after Tacoma
+  if(grouped) dests.sort((x,y)=>{const a=hood(x),b=hood(y);if(a===b)return 0;if(a===hereH)return -1;if(b===hereH)return 1;if(!a)return -1;if(!b)return 1;if(cty(a)!==cty(b))return cty(a)-cty(b);return travelMins(S.loc,x)-travelMins(S.loc,y)});
   let lastH=null;
   dests.forEach(k=>{const m=travelMins(S.loc,k),i=ACTS.push(()=>go(k))-1,hk=hood(k);
-    if(grouped&&hk!==lastH){lastH=hk;const H=hk&&typeof HOODS!=='undefined'?HOODS[hk]:null;h+=`<div class="gohood">${H?`${H.ic} ${H.name} <span>${H.ride.via}</span>`:'🏘️ Hilltop'}</div>`}
+    if(grouped&&hk!==lastH){const prev=lastH;lastH=hk;if(typeof goGroupHead==='function')h+=goGroupHead(hk,prev,dests.map(hood));const H=hk&&typeof HOODS!=='undefined'?HOODS[hk]:null;h+=`<div class="gohood">${H?`${H.ic} ${H.name} <span>${H.ride.via}</span>`:'🏘️ Hilltop'}</div>`}
     h+=`<div class="dest compact"><div class="dn"><b>${L[k].ic} ${L[k].name}</b><span>${L[k].hours?hoursTxt(k):L[k].desc||''}</span></div><div class="chips"><button class="chip" onclick="ACT(${i})" aria-label="Go to ${esc(L[k].name)} · ${m} min">Go · ${m} min</button>${typeof driveChip==='function'?driveChip(k):''}</div></div>`});
   return h+'</details>';
 }

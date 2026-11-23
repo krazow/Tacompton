@@ -25,7 +25,7 @@ module.exports = [
     const { page, errors } = await open(ctx); await newGame(page);
     const r = await page.evaluate(keys => keys.map(k => { const h = HOODS[k]; if (!h) return { k, missing: true };
       return { k, county: h.county, startable: h.startable, places: Object.keys(h.places), hubOk: !!L[h.hub] && L[h.hub].hood === k, nb: (h.neighbors || []).length,
-        ride: h.ride, guide: typeof h.guide === 'string' ? h.guide : '',
+        ride: Object.assign({}, h.ride, h.ride0 ? { via: h.ride0.via } : {}), guide: typeof h.guide === 'string' ? h.guide : '',
         art: Object.keys(h.places).every(p => /<(rect|path|circle|polygon)/.test(L[p].art({ night: false })) && /<(rect|path|circle|polygon)/.test(L[p].art({ night: true })) && L[p].art({ night: true }) !== L[p].art({ night: false })) }; }), KEYS);
     for (const h of r) {
       assert.ok(!h.missing, h.k + ' is registered');

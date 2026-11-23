@@ -20,14 +20,14 @@ module.exports = [
     for (const t of ['🎒 Play as a kid', '🧑 Start at 18', '🍂 6 months', '📅 1 year', '🗓️ 2 years', '🌳 Lifetime']) assert.ok(chips.includes(t), t);
     assert.ok(!chips.some(t => /Quick|⚡/.test(t)), 'no Quick play length');
     assert.strictEqual(await page.evaluate(() => LIFE_ORDER.join(',')), '6m,1y,2y,life');
-    assert.strictEqual(await onChips(page), '🧑 Start at 18|📅 1 year|2026');
+    assert.strictEqual(await onChips(page), '🧑 Start at 18|📅 1 year|2026|🏘️ Hilltop');   // 72-county.js: Where you start (Hilltop by default)
     let t = await sheet(page);
     assert.match(t, /Not sure yet\? Try it for 2 weeks: a short taste, moving in at 18, no birthdays or time skips/);
     assert.ok(!chips.includes('12') && !chips.includes('15'), 'the kid ages show only after Play as a kid');
     await page.click('#mbg .lchip:has-text("Play as a kid")');
-    assert.strictEqual(await onChips(page), '🎒 Play as a kid|12|📅 1 year|2026');
+    assert.strictEqual(await onChips(page), '🎒 Play as a kid|12|📅 1 year|2026|🏘️ Hilltop');
     await page.click('#mbg .lchip:text-is("15")');
-    assert.strictEqual(await onChips(page), '🎒 Play as a kid|15|📅 1 year|2026');
+    assert.strictEqual(await onChips(page), '🎒 Play as a kid|15|📅 1 year|2026|🏘️ Hilltop');
     t = await sheet(page);
     assert.match(t, /Try it for a week/);
     await page.click('#mbg .lchip:has-text("Start at 18")');
