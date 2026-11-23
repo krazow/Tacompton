@@ -9947,6 +9947,8 @@ const epTry=(f,d)=>{try{return f()}catch(e){console.error(e);return d}};
 function epYear(){try{if(typeof yearNow==='function'){const y=+yearNow();if(y>0)return y}}catch(e){}return 2026}
 function epHas(f){try{if(typeof eraHas==='function'&&typeof ERA_FEATURES!=='undefined'&&ERA_FEATURES&&f in ERA_FEATURES)return !!eraHas(f)}catch(e){}
   return epYear()>=(EP_Y[f]||0)}
+// the first year of a feature: ERA_FEATURES (63-era.js) when it has it, otherwise this file's table
+const epY=f=>(typeof ERA_FEATURES!=='undefined'&&ERA_FEATURES&&ERA_FEATURES[f])||EP_Y[f]||0;
 const epKid=()=>typeof S!=='undefined'&&!!S&&isGrow()&&(S.age==null?12:S.age)<18;
 function epDev(){if(typeof S==='undefined'||!S)return 'smart';const y=epYear();
   if(epKid()){if(y<2000||!epHas('cell'))return 'land';return y<2010?'flip':'smart'}
@@ -10186,18 +10188,19 @@ if(typeof relApp==='function'){const o=relApp;relApp=function(){if(epHas('dating
 if(typeof relView==='function'){const o=relView;relView=function(){return epRelTxt(o.apply(this,arguments))}}
 if(typeof REL_TAB!=='undefined'&&REL_TAB)REL_TAB.view=()=>relView();
 if(typeof relGuideChapter==='function'){const o=relGuideChapter;relGuideChapter=function(){const h=o.apply(this,arguments);
-  return h+`<h3>Before the apps</h3><p>In a game that starts before 2012 there is no phone app for meeting people: you meet in person, and before the late 1990s the home thing is the personal ads in the back of the weekly paper. From the late 1990s it is a dating website on the home computer. 💘 Tacoma Hearts comes to the App Store in 2012.</p>`}}
+  return h+`<h3>Before the apps</h3><p>In a game that starts before ${epY('datingApp')} there is no phone app for meeting people: you meet in person, and before the late 1990s the home thing is the personal ads in the back of the weekly paper. From the late 1990s it is a dating website on the home computer. 💘 Tacoma Hearts comes to the App Store in ${epY('datingApp')}.</p>`}}
 
 // ---- ❓ Help: Phones through the years ----
+const EP_GNAME={maps:'🗺️ Maps',transitLive:'🚌 Transit',weather:'🌦️ Weather',orca:'the ORCA card',phoneBank:'🏦 Bank',nextdoor:'🏘️ Block club',streaming:'🎧 Music',rideshare:'🚗 Rides',gig:'💼 Jobs',grocery:'🛒 Groceries',telehealth:'🩺 Telehealth'};
 {const g0=phoneGuide;phoneGuide=function(){return g0.apply(this,arguments)+`<h3>Phones through the years</h3>
   <p>In a game that starts in an earlier year, each part of the phone arrives in the year it became common, and before that the game offers the way people did it then. In 2026 everything above is there from the start.</p>
-  <ul><li><b>Before cell phones</b> (until the late 1990s; for kids, until 2000): the ☎️ home phone on the kitchen wall and an answering machine. Calls from home, or from a pay phone anywhere in town for a quarter. Calls while you’re out go to the machine. In the 1980s and 1990s adults carry a 📟 pager: a page means find a phone and call back. Kids get ${EP_LINE} minutes a day on the line, and no first-phone talk.</li>
-  <li><b>Late 1990s:</b> a cell phone for adults. Calls from anywhere, no texting.</li>
-  <li><b>The 2000s:</b> a flip phone. Calls and texts (about ${$(EP_TEXT)} a text for adults), a camera from 2003, no App Store. Kids get a first flip phone from Mom and Dad.</li>
-  <li><b>2008 on:</b> a smartphone and the 🛍️ App Store (kids from 2010). Apps arrive in their own years: 🗺️ Maps, 🚌 Transit, 🌦️ Weather, 🔦 Flashlight and 📝 Notes in 2008 (the ORCA card in 2009), 🏦 Bank in 2010, 🏘️ Block club and 🎧 Music in 2011, 🚗 Rides in 2014, 💼 Jobs and 🛒 Groceries in 2015, 🩺 Telehealth in 2020. A new app is announced in the morning or in the time-skip summary.</li>
-  <li><b>Before that:</b> 🚕 call a cab; 🗺️ the Thomas Guide (🖨️ MapQuest printouts from 1998) and the paper bus schedule; 📰 the morning paper and 📺 the evening news for the weather, still a day ahead; 📋 the classifieds for odd jobs (job sites from 1998); 🏦 the bank branch on MLK, ATMs and checks (💻 online banking from 1998); the corner market for groceries; the walk-in clinic or urgent care; 📸 a film camera and one-hour photo; 🎧 a Walkman in the 1980s, a Discman in the 1990s, an iPod in the 2000s; and the block club’s phone tree and a flyer on the door.</li></ul>`}}
+  <ul><li><b>Before cell phones</b> (until ${epY('cell')}; for kids, until 2000): the ☎️ home phone on the kitchen wall and an answering machine. Calls from home, or from a pay phone anywhere in town for a quarter. Calls while you’re out go to the machine. From ${epY('pager')} to the end of the 1990s adults carry a 📟 pager: a page means find a phone and call back. Kids get ${EP_LINE} minutes a day on the line, and no first-phone talk.</li>
+  <li><b>${epY('cell')}:</b> a cell phone for adults. Calls from anywhere, no texting.</li>
+  <li><b>${epY('text')} on:</b> a flip phone. Calls and texts (about ${$(EP_TEXT)} a text for adults), a camera from ${epY('camera')}, no App Store. Kids get a first flip phone from Mom and Dad in the 2000s.</li>
+  <li><b>${epY('apps')} on:</b> a smartphone and the 🛍️ App Store (kids from 2010). Apps arrive in their own years: ${['maps','transitLive','weather','orca','phoneBank','nextdoor','streaming','rideshare','gig','grocery','telehealth'].map(f=>[f,epY(f)]).sort((a,b)=>a[1]-b[1]).map(([f,y])=>`${EP_GNAME[f]} ${y}`).join(', ')}. 🔦 Flashlight and 📝 Notes come with the App Store. A new app is announced in the morning or in the time-skip summary.</li>
+  <li><b>Before that:</b> 🚕 call a cab; 🗺️ the Thomas Guide (🖨️ MapQuest printouts from ${epY('mapquest')}) and the paper bus schedule; 📰 the morning paper and 📺 the evening news for the weather, still a day ahead; 📋 the classifieds for odd jobs (job sites from ${epY('jobSites')}); 🏦 the bank branch on MLK, ATMs and checks (💻 online banking from ${epY('onlineBank')}); the corner market for groceries; the walk-in clinic or urgent care; 📸 a film camera and one-hour photo; 🎧 a Walkman in the 1980s, a Discman in the 1990s, an iPod in the 2000s; and the block club’s phone tree and a flyer on the door.</li></ul>`}}
 
-window.ERAPHONE={dev:epDev,has:epHas,year:epYear,text:epText,cam:epCam,pager:epPager,appOk:id=>epAppOk(phoneApp(id)),news:epNews,init:epInit,
+window.ERAPHONE={fy:epY,dev:epDev,has:epHas,year:epYear,text:epText,cam:epCam,pager:epPager,appOk:id=>epAppOk(phoneApp(id)),news:epNews,init:epInit,
   page:epPage,callBack:epCallBack,cab:epCabGo,cabQuote:epCabQuote,S:()=>EPS(),LINE:EP_LINE,QUARTER:EP_QUARTER,TEXT:EP_TEXT};
 })();
 // ---------------- boot ----------------
