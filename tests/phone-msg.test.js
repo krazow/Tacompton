@@ -4,7 +4,7 @@ const { open, noErrors, assert } = require('./helpers');
 async function start(page, { grow = false } = {}) {
   await page.evaluate(grow => {
     closeModals(); setMode(grow ? 'grow' : 'adult'); LIFE_PICK = null;
-    newGame('normal'); closeModals(); if (!isGrow()) { pickJob('cafe'); closeModals(); PH().plan = 'prepaid'; } tab = 'act'; render();
+    newGame('normal'); closeModals(); if (!isGrow()) { pickJob('cafe'); closeModals(); PH().plan = 'prepaid'; } else if (typeof pgGiftScene === 'function') { pgGiftScene(); MBTN(0); closeModals(); } tab = 'act'; render();   // Growing Up: the first-phone scene (57-phone-grow.js)
   }, grow);
 }
 const btns = page => page.evaluate(() => [...document.querySelectorAll('#phoneUI .ph-btn')].map(b => b.textContent));

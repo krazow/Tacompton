@@ -480,3 +480,8 @@ html.hc .ph-tabs{background:#ddd}
 .ph-photo{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0}
 .ph-photo b{display:block;font-size:13.5px;line-height:1.35}.ph-photo small{display:block;font-size:11.5px;color:var(--mute);margin-top:2px}
 .ph-pic{flex:none;width:54px;height:54px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(160deg,#cfe0ea,#f3d9b8)}
+/* 📱 Growing Up phone (57-phone-grow.js): the 9 PM lock screen, the rules, the screen-time meter */
+.pg-lock{background:#0d1424}.pg-lock span{color:#aab}
+.pg-rules .ph-card{margin-bottom:6px}
+.pg-meter{height:8px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}.pg-meter i{display:block;height:100%;background:#2f6fd6;border-radius:4px}
+.ph-card.warn .pg-meter i{background:#d9822b}

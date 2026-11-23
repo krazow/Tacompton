@@ -6,7 +6,7 @@ async function start(page, { grow = false, length = 'quick', age } = {}) {
   await page.evaluate(([grow, length, age]) => {
     closeModals(); setMode(grow ? 'grow' : 'adult');
     LIFE_PICK = length === 'quick' ? null : { length, startAge: age || (grow ? 12 : 18), birthday: { m: 3, d: 14, label: 'March 14' } };
-    newGame('normal'); closeModals(); if (!isGrow() && !S.jobPicked) { pickJob('cafe'); closeModals(); } tab = 'act'; render();
+    newGame('normal'); closeModals(); if (!isGrow() && !S.jobPicked) { pickJob('cafe'); closeModals(); } else if (isGrow() && typeof pgGiftScene === 'function') { pgGiftScene(); MBTN(0); closeModals(); } tab = 'act'; render();   // Growing Up: the first-phone scene (57-phone-grow.js)
     if (!isGrow()) phonePickPlan('prepaid');
     window.inst = (...ids) => ids.forEach(id => { if (!S.ph.apps.includes(id)) S.ph.apps.push(id); });
   }, [grow, length, age]);

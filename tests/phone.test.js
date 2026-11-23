@@ -186,7 +186,7 @@ module.exports = [
   { name: 'Growing Up: a phone at 12, no plan or bill, opens without errors', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page, { grow: true });
-    const r = await page.evaluate(() => { const o = { owned: phoneOwned(), btn: !!document.querySelector('.hud .ph-top') };
+    const r = await page.evaluate(() => { const o = {}; pgGiftScene(); MBTN(0); closeModals(); render(); o.owned = phoneOwned(); o.btn = !!document.querySelector('.hud .ph-top');   // the first-phone scene (57-phone-grow.js)
       phoneOpen(); o.txt = document.querySelector('#phoneUI').textContent;
       for (const id of ['store', 'clock', 'contacts', 'settings']) { phoneGo(id); o[id] = /Something went wrong/.test(document.querySelector('#phoneUI').textContent); phoneBack(); }
       o.people = phoneContacts().map(c => c.n); phoneClose(); return o; });
