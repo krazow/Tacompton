@@ -25,7 +25,7 @@
 
 const TP_PLACES=[
   // ---- the West End ----
-  {key:'pizzapipes',name:'Pizza & Pipes',hood:'westend',opened:[1974,2,1],closed:[1999,8,3],sudden:true,kind:'meal',ic:'🍕',art:'organ',sign:'PIZZA & PIPES',price:16,hours:[690,1290],
+  {key:'pizzapipes',name:'Pizza & Pipes',hood:'univplace',opened:[1974,2,1],closed:[1999,8,3],sudden:true,kind:'meal',ic:'🍕',art:'organ',sign:'PIZZA & PIPES',price:16,hours:[690,1290],
     where:'at 19th & Mildred, on the line with University Place',
     desc:'A pizza parlor at 19th & Mildred with a giant theater pipe organ behind glass: pipes, drums, bells and lights that flash with the music',
     act:'A pizza and the pipe organ',
@@ -184,6 +184,11 @@ const TP_PLACES=[
     source:'Parks Tacoma, Point Defiance Park history: a city park since 1888'},
   {key:'zoo',name:'Point Defiance Zoo & Aquarium',hood:'ruston',existing:'ru_zoo',opened:[1899,1,1],ic:'🐺',
     source:'Parks Tacoma, Point Defiance Park history: the zoo began with the first bear pit in 1899; the Pacific Rim zoo from the 1977 bond'},
+  // ---- Pierce County places the county packs already have (23-county-*.js) ----
+  {key:'chambers',name:'Chambers Bay',hood:'univplace',existing:'up_chambers',opened:[2007,6,23],ic:'⛳',
+    source:'Wikipedia, Chambers Bay: the county golf course on the former sand-and-gravel quarry (bought by Pierce County in 1992) opened for play June 23, 2007'},
+  {key:'lwtowne',name:'Lakewood Towne Center',hood:'lakewood',existing:'lw_towne',opened:[2002,8,2],ic:'🏬',
+    source:'Wikipedia, Lakewood Towne Center: Villa Plaza opened Aug 8, 1957; the enclosed Lakewood Mall Sept 15, 1989; it closed and was torn down in 2001; the Towne Center opened Aug 2, 2002'},
 ];
 // milestones with no place of their own: news lines and the guide
 const TP_NEWS=[
@@ -267,7 +272,7 @@ if(typeof L!=='undefined'&&typeof HOODS!=='undefined'){
   for(const e of TP_PLACES){const k=tpPlaceKey(e);if(!k||!HOODS[e.hood]||L[k])continue;
     L[k]={hood:e.hood,ic:e.ic,desc:e.desc,art:tpArt(e),hours:TP_HOURS(e),
       get name(){return tpName(e)},set name(v){},
-      get hidden(){return !tpOpenNow(e.key)},set hidden(v){}}}
+      get hidden(){return !tpOpenNow(e.key)||(!!HOODS[e.hood].county&&!(typeof countyOn==='function'&&countyOn()))},set hidden(v){}}}   // a county place waits for the county (72-county.js)
 }
 const tpHere=loc=>TP_PLACES.filter(e=>!e.existing&&(e.in?e.in===loc:tpPlaceKey(e)===loc));
 const tpClosesIn=e=>{if(!e.closed)return Infinity;return dayIndexOf(...e.closed)-day()};
