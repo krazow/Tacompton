@@ -43,7 +43,11 @@ function newState(){
 
 // ---- small shared helpers (21-story.js uses these too) ----
 const BOXES=6;                                             // moving boxes still taped shut on day one
-const rp=c=>Math.round(c*(DF().cost||1));                  // a price scaled by the difficulty
+// the price level: 1.0 at the start, up 2.5–3.5% every January in the longer adult games (S.prices, 38-prices.js).
+// Quick play and Growing Up stay at 1.0. Rent (its own August rise, 33-seasons.js), wages and fixed story amounts don't use it.
+const priceLv=()=>typeof S!=='undefined'&&!!S&&!isGrow()&&typeof S.prices==='number'&&S.prices>0&&typeof lifeLong==='function'&&lifeLong()?S.prices:1;
+const priceAmt=c=>Math.round(c*priceLv());                 // an amount that follows the price level only (tuition, program fees)
+const rp=c=>Math.round(c*(DF().cost||1)*priceLv());        // a price scaled by the difficulty and the price level
 function canAfford(c){return S.money>=c}
 // Repeatable ways to unwind (rest, the bench, the park, the platform, the murals, the hill walk) work fully twice a day,
 // then about a third as well: the big stress relief is in the once-a-day things (a swim, the sunset, a call home, a Link ride).
