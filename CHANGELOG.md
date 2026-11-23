@@ -7,6 +7,7 @@ are taken from it.
 
 - 🚗 Driving: driving lessons with a parent and the license test at the DOL office from 16 in Growing Up; in the longer adult games a used car (three price tiers) with monthly insurance, gas, downtown parking and repairs, a faster 🚗 Drive option to the other neighborhoods, and a car prowl life event (nothing on the seats and parking under the streetlight keep the window whole).
 - 🛒 Prices rise with inflation in the longer adult games: a price level that goes up 2.5–3.5% every January (city news and the time-skip summary) multiplies groceries, meals, fares, shop items, dates, bills, tuition and program fees. Rent (its own August rise), wages and fixed story amounts don't follow it. Time skips now spend most of the pay left after rent and everyday costs once about nine months of costs are saved, and in retirement income always covers rent and everyday costs, so a steady Lifetime player has tens of thousands saved at 60, not millions. Quick play and Growing Up are unchanged.
+- ⏩ Skip to 18: in a Growing Up game that reaches 18 (not Quick play), ⚙️ Settings → 🎮 Game options → Skip to 18 fast-forwards to your 18th birthday after two or three quick choices about how the years go (study hard, work part-time, family first, friends), shows one summary of what changed (money, grades, family, friends, school milestones), then carries on with graduation, the path choice and your own place. The 18+ mode switch for an under-18 character offers it too, and turns the mode on at 18.
 
 ## 0.4.0 (2026-11-22)
 

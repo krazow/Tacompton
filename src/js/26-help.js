@@ -93,6 +93,7 @@ function helpLengths(){
     <li><b>🏁 Finish here</b> ends the game now and scores the months you played.</li></ul>
     <h3>The other Game options</h3>
     <ul><li><b>🎂 Starting age</b> and <b>🎒 Mode</b> are shown grayed out: they’re set when a life begins (Growing Up turns into the adult game at 18, in the same save).</li>
+    <li><b>⏩ Skip to 18</b> (Growing Up, in a game that reaches 18, not Quick play): fast-forward to your 18th birthday. Two or three quick choices about how those years go (study hard, work part-time from 16, family first or friends), one summary of what changed, then graduation, what comes next and your own place, the same as playing there.</li>
     <li><b>🎚️ Difficulty:</b> one step easier or harder (${DIFF_ORDER.map(k=>`${D[k].ic} ${D[k].n}`).join(', ')}), at most once a week. It changes prices, luck and strain, never the score.</li>
     <li><b>🔔 Event pop-ups</b> and <b>💡 Tips</b>, on or off.</li>
     <li><b>📅 Week play:</b> a full week, or <b>Highlights</b>: 3 days of each key week (around your birthday when it falls in that week), from the next key week on.</li>

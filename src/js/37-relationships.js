@@ -9,7 +9,7 @@
 //   · Consent is part of the game: anyone can say no, the game takes it gracefully, and there is never a pressure option.
 //
 //  The mode: a one-time age check on this device (prefs.age18), then prefs.adult18 turns it on for new adult games.
-//  In a game: ⚙️ Settings → 🎮 Game options → 🔞 18+ mode. Under 18 it waits for 18 (S.rel.auto18) or starts a new adult save.
+//  In a game: ⚙️ Settings → 🎮 Game options → 🔞 18+ mode. Under 18 it waits for 18 (S.rel.auto18) , starts a new adult save, or skips to 18 (38-skip18.js) and turns on.
 //  Turning it off hides everything; relationships pause, they don't end. S.rel holds it all, with a log of every switch.
 //
 //  Wraps (from here, nothing else edited): baseState, onNewGame, onMorning, onNight, actionsHere, render, allTabs,
@@ -475,6 +475,8 @@ function relUnder18(){
     {l:'🎂 Turn on automatically at 18',s:lifeLong()?'When you turn 18 and move into your own place, it turns on, with a note in the log.':'This game ends before you turn 18, so it would never turn on here.',dis:!lifeLong(),np:true,fn:()=>{relS().auto18=true;relLog('auto18','settings');say('🔞 18+ mode will turn on at 18, once you’re in your own place.');saveGame();gameOptionsModal()}},
     {l:'🆕 Start a new adult save',s:free?`Starts at 18 in empty slot ${free}. This save stays in slot ${curSlot()}.`:`Replaces the game in slot ${curSlot()}: every slot is full.`,np:true,fn:()=>{saveGame();if(free)setSlot(free);setPref('adult18',true);
       const len=S.length||'quick';S=null;lifeStartWith({length:len,startAge:18,birthday:lifeRandBirthday()})}},
+    ...(typeof skip18Start==='function'?[(()=>{const why=skip18Why();return {l:'⏩ Skip to 18',s:why||'Fast-forward this save to your 18th birthday (a few quick questions, then graduation and your own place), then 18+ mode turns on.',dis:!!why,np:true,
+      fn:()=>skip18Start(()=>{relS().auto18=false;relSetOn(true,'skip to 18');return '🔞 18+ mode is on now: you’re 18 and in your own place.'},()=>relUnder18())}})()]:[]),
     {l:'Back',fn:()=>gameOptionsModal()}]);
 }
 {const gm=gameOptionsModal;gameOptionsModal=function(){if(!S||S.over)return gm();const m0=modal;
