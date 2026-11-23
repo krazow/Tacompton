@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🍕 **Historical Tacoma places:** real Tacoma restaurants, parks and landmarks open and close on their real dates (Pizza & Pipes 1974–1999, Bimbo's 1921–2001, Knapp's 1938–2026, The Harvester, Steve's Gay '90s, Kim Anh, Clinkerdagger's → Duke's, Johnny's Dock, the Lobster Shop, the Rialto and the Pantages, the Tacoma Mall and its Sears, Frisko Freeze, Bob's Java Jive, the Dune Peninsula), each with a visit, city news lines, a farewell visit in the month before it closes, a source note in the code, and a "Tacoma through the years" table in the guide. The life summary lists your most-visited places.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed
