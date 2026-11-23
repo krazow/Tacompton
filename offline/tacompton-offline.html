@@ -7558,6 +7558,57 @@ function relSummary(){const R=S&&S.rel;if(!R||!R.log.length&&!R.on)return '';
 {const ls=lifeSummaryHTML;lifeSummaryHTML=function(){return ls()+relSummary()}}
 {const es=endScreen;endScreen=function(h1,sub,lost){es(h1,sub,lost);if(lifeLong())return;   // the longer games show it in the life summary
   try{const e=document.querySelector('.end'),h=relSummary();if(e&&h&&!e.querySelector('.rel-sum')){const b=e.querySelector('button.big');const d=document.createElement('div');d.className='rel-sum';d.innerHTML=h;if(b)b.before(d);else e.appendChild(d)}}catch(err){}}}
+
+// ---- the guide: an "18+ mode" chapter, only when the mode is on (the rest of the guide stays free of it) ----
+// On the start page it shows once this device passed the age check and turned the mode on for new games;
+// during a game it shows only when relActive() (an adult game, 18+, mode on). Never in Growing Up.
+function relGuideOn(){
+  if(!relAgeOK()) return false;
+  const inGame=typeof S!=='undefined'&&!!S&&!S.over;
+  if(inGame) return relActive();
+  return relPrefOn();
+}
+function relGuideChapter(){
+  const D=REL_DATES,dates=Object.values(D).map(x=>[`${x.ic} ${x.n}`,x.cost?$(rp(x.cost)):'Free',`${Math.round(x.mins/5)*5} min`,x.when]);
+  const tones=Object.values(REL_TONES).map(t=>`${t.ic} <b>${t.l}</b>: ${t.s}`).join('<br>');
+  const ages=REL_PEOPLE.map(p=>p.age),lo=Math.min(...ages),hi=Math.max(...ages);
+  return `
+    <p><b>18+ mode</b> adds adult relationships to the adult game: meeting people around Tacoma, going on dates, and building a life with someone, or not. It is off unless you turn it on, and it never appears in Growing Up or for a character under 18.</p>
+    ${hTip('Everyone is an adult',`The ${REL_PEOPLE.length} people you can meet are all invented adults, ${lo} to ${hi}, with their age on their profile. Friends from Growing Up join only once both of you are 18 or older.`)}
+    <h3>Turning it on and off</h3>
+    <ul>
+      <li><b>On the start page:</b> 🔞 Adults only (18+). The first time, you confirm you're 18 or older. New adult games then start with the mode on.</li>
+      <li><b>During a game:</b> ⚙️ Settings → 🎮 Game options → 🔞 18+ mode. At 18 or older it turns on right away in that save.</li>
+      <li><b>Under 18:</b> choose to turn it on automatically once your character is 18 and in their own place, or start a new adult save. Nothing changes in the current save before then.</li>
+      <li><b>Turning it off</b> hides the ❤️ tab, the actions and the events. Relationships pause; they pick up again if you turn it back on.</li>
+    </ul>
+    <h3>Meeting people</h3>
+    <p>You can meet someone on the Link, at a show at the Tacoma Dome, at the Proctor Farmers Market, at a party down the hall, at work, or on the dating app at home (a match or two a week, after three quick profile questions). Each person has two meters: <b>interest</b> and <b>chemistry</b>. Shared interests help; so does being kind. Some people aren't interested, and that's fine: the game moves on.</p>
+    <h3>Dates</h3>
+    ${hTable(['Date','Cost','Time','When'],dates)}
+    <p>How you flirt matters, and everyone reacts differently:</p><p>${tones}</p>
+    ${hTip('Consent is part of the game','Anyone can say no to a date or to coming back to your place, and the game takes it gracefully: there is never an option to push. Talking about protection is a choice, and it matters. What happens behind closed doors is one line and a fade to black.')}
+    <h3>Relationships</h3>
+    <ul>
+      <li><b>Keep it casual or go exclusive:</b> it's a conversation, and both of you have a say.</li>
+      <li><b>Meet the friends, then the family.</b></li>
+      <li><b>Move in together:</b> the rent splits in half, and so do the chores.</li>
+      <li><b>The future:</b> propose with a ring or without, a wedding at the Seymour Conservatory (${$(rp(3200))}) or the courthouse (${$(rp(150))}), or decide together not to marry.</li>
+      <li><b>Kids:</b> in Lifetime games, a talk about kids can lead to the parent stage of your life.</li>
+    </ul>
+    <h3>When things go wrong</h3>
+    <ul>
+      <li><b>Jealousy</b> comes up as a decision. <b>Seeing someone else</b> while you're exclusive warns you first; if it comes out, it can end things.</li>
+      <li><b>Breakups</b> hurt: a partner who lived with you moves out, the rent goes back up, and a sad week follows.</li>
+      <li><b>A pregnancy scare</b> means a clinic or a pharmacy test, and you both get more careful afterwards.</li>
+      <li><b>A partner's news</b> can change your plans: a job across the state, a promotion, a bigger place.</li>
+    </ul>
+    <h3>The ❤️ Romance tab</h3>
+    <p>Lists your partner and the people you know, with their meters and what you can do next: text, ask out, talk, or step back.</p>`;
+}
+{const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);
+  if(!relGuideOn()) return ch;
+  const i=ch.findIndex(c=>c[0]==='faq');ch.splice(i<0?ch.length:i,0,['adult18','18+ mode',relGuideChapter()]);return ch}}
 // ---------------- "📲 Install app" on the title screen, and the install bar above it ----------------
 // 08-settings.js puts installButton() right under ❓ Help on the title screen, and installBar() at the very top: a slim
 // "📲 Play offline: install the app [Install] [✕]" line for phones and tablets in a browser (and any browser that has offered an

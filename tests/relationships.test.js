@@ -405,4 +405,32 @@ module.exports = [
     assert.ok(await page.evaluate(() => relActive() && !!S.rel.people.amara && allTabs().some(t => t[0] === 'rel')));
     noErrors(errors);
   } },
+  { name: '18+ mode: the guide gets an "18+ mode" chapter only when the mode is on, never in Growing Up', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    const HC = `(typeof withMode==='function'?withMode('adult',helpChapters):helpChapters())`;
+    const ids = () => page.evaluate(hc => eval(hc).map(c => c[0]), HC);
+    // off by default, on the start page
+    assert.ok(!(await ids()).includes('adult18'), 'hidden by default');
+    // age check alone is not enough: the mode has to be on
+    await page.evaluate(() => setPref('age18', true));
+    assert.ok(!(await ids()).includes('adult18'), 'hidden until the mode is turned on');
+    await adultsOn(page);
+    const on = await ids();
+    assert.ok(on.includes('adult18'), 'shown on the start page with the mode on');
+    assert.strictEqual(on.indexOf('adult18'), on.indexOf('faq') - 1, 'sits just before the FAQ');
+    // its content comes from the code
+    const t = await page.evaluate(() => { helpModal(); const el = document.getElementById('tut-adult18'); const x = el ? el.innerText : ''; closeModals && closeModals(); return x; });
+    for (const s of ['18+ mode', 'Turning it on and off', 'Consent is part of the game', 'fade to black', 'Romance tab', 'Seymour Conservatory'])
+      assert.ok(t.includes(s), 'mentions ' + s);
+    const d = await page.evaluate(() => Object.values(REL_DATES).map(x => x.n));
+    for (const n of d) assert.ok(t.includes(n), 'lists the date ' + n);
+    assert.doesNotMatch(t, EXPLICIT);
+    // in a Growing Up game: never, even with the mode on
+    const grow = await page.evaluate(() => { setMode('grow'); newGame('normal'); closeModals(); S.rel = S.rel || relBlank(); S.rel.on = true; return withMode('adult',helpChapters).map(c => c[0]); });
+    assert.ok(!grow.includes('adult18'), 'not in Growing Up');
+    // in an adult game: only while the mode is on in that save
+    const adult = await page.evaluate(() => { setMode('adult'); newGame('normal'); closeModals(); const a = withMode('adult',helpChapters).map(c => c[0]).includes('adult18'); relSetOn(false, 'test'); const b = withMode('adult',helpChapters).map(c => c[0]).includes('adult18'); return [a, b]; });
+    assert.deepStrictEqual(adult, [true, false], 'shown with the mode on in the save, hidden once it is off');
+    noErrors(errors);
+  } },
 ];
