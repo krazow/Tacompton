@@ -64,7 +64,7 @@ module.exports = [
     await page.click('#mbg .lchip:text-is("15")');
     const s2 = await page.textContent('#mbg');
     assert.match(s2, /Hilltop High/); assert.match(s2, /Mon Aug 24, 2026/);
-    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '📅 1 year|15');
+    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '📅 1 year|15|2026');
     await page.click('#mbg button.act:has-text("Start this life")');
     await page.waitForSelector('#mbg');
     assert.match(await page.textContent('#mbg'), /difficulty/i);
