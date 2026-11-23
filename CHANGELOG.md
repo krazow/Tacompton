@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🌲 **Pierce County** (the longer games): travel across the county by Pierce Transit bus (times by distance), express buses and the Sounder train at weekday rush hour in their real years, or by car; the Narrows Bridges to the Peninsula with the eastbound toll from 2007 and a Good To Go! pass; Go somewhere, Maps and Transit grouped into Tacoma and Pierce County; a Sounder day trip to Seattle from the Tacoma Dome. A **Where you start** row on the New game sheet (Hilltop by default, or a county town: home, rent and school names there). **County jobs** with commutes and their own career ladders (JBLM, the Port of Tacoma, a Puyallup valley farm, Good Samaritan Hospital in Puyallup, a Lakewood school). A Pierce County chapter in the guide.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed
