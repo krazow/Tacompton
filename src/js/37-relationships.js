@@ -161,24 +161,34 @@ function relText(id){
     .concat([{l:'Never mind',fn:()=>{}}]));
 }
 const relWeek=()=>Math.floor(day()/7);
-function relApp(){
-  if(!relActive())return;const R=relS();
-  if(!R.me)return relProfileSetup(()=>relApp());
+// the week's matches (a match or two a week), and a first message to one of them: the modal app below and the 💘 Tacoma Hearts
+// phone app (55-phone-life.js) share these
+function relAppRoll(){const R=relS();
   if(R.app.wk!==relWeek()){R.app.wk=relWeek();const pool=relPool('app').filter(id=>!R.app.matches.includes(id));
     const n=Math.min(pool.length,1+(Math.random()<0.5?1:0)),got=[];for(let i=0;i<n;i++){const k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];got.push(k)}
     R.app.matches=got;R.app.new=got.length}
-  const ms=R.app.matches.filter(id=>!relSt(id));
+  return R.app.matches.filter(id=>!relSt(id))}
+function relAppSend(id,k){if(!relActive()||relSt(id))return null;const n=relN(id);pass(10);const R=relS();relMeet(id,'app');const st=relSt(id),r=relTone(id,k);
+  const yes=st.int+st.chem/2+relRnd(0,25)>62;st.stage=yes?'talking':'passed';R.app.matches=R.app.matches.filter(x=>x!==id);
+  const line=yes?`${r.line} Then: “Want to get together sometime?” You can ask ${n} out from the ❤️ Romance tab.`:pick([`📭 No reply from ${n}. That’s how the apps go sometimes, and it isn’t about you.`,`📭 ${n} writes back, kindly: “You seem great, but I don’t feel a spark. Good luck out there!” You wish them the same.`]);
+  say(line);return {line,yes}}
+const relAppLooking=()=>{const R=relS();return R.me?`Your profile: ${REL_VIBES[R.me.vibe].l} · looking for ${{serious:'something serious',casual:'something casual',open:'whatever happens'}[R.me.look]} · interested in ${R.me.into}. Everyone on the app is 21 or older.`:''};
+// the phone app when it's installed and the phone works; the old pop-up app otherwise (no phone, a dead battery)
+const relPhoneApp=()=>typeof phoneInstalled==='function'&&phoneInstalled('hearts')&&phoneCan();
+function relOpenApp(){if(relPhoneApp()){closeModals();return phoneOpen('hearts')}return relApp()}
+function relApp(){
+  if(!relActive())return;const R=relS();
+  if(!R.me)return relProfileSetup(()=>relApp());
+  const ms=relAppRoll();
   const html=`<p>📱 <b>Tacoma Hearts</b>, the app everybody on the hill pretends not to use. ${ms.length?`${ms.length} new match${ms.length===1?'':'es'} this week:`:'No new matches right now. A match or two comes in each week.'}</p>`+ms.map(id=>relProfile(id)).join('')+
-    `<p style="font-size:12px;color:var(--mute)">Your profile: ${REL_VIBES[R.me.vibe].l} · looking for ${{serious:'something serious',casual:'something casual',open:'whatever happens'}[R.me.look]} · interested in ${R.me.into}. Everyone on the app is 21 or older.</p>`;
+    `<p style="font-size:12px;color:var(--mute)">${relAppLooking()}</p>`;
   modalSwap('📱 The dating app',html,ms.map(id=>({ic:'💬',l:`💬 Message ${relN(id)}`,s:`${relAge(id)} · ${relDef(id).job}`,np:true,stay:true,fn:()=>relAppMsg(id)}))
     .concat([{l:'✏️ Edit your profile',np:true,stay:true,fn:()=>relProfileSetup(()=>relApp(),true)},{l:'Close',fn:()=>{}}]));
 }
 function relAppMsg(id){const n=relN(id);
   modalSwap(`💬 First message to ${n}`,relProfile(id)+'<p class="ch-q">How do you open?</p>',Object.entries(REL_TONES).map(([k,t])=>({l:`${t.ic} ${t.l}`,s:t.s,np:true,stay:true,fn:()=>{
-    if(!relActive()||relSt(id))return;pass(10);const R=relS();relMeet(id,'app');const st=relSt(id),r=relTone(id,k);
-    const yes=st.int+st.chem/2+relRnd(0,25)>62;st.stage=yes?'talking':'passed';R.app.matches=R.app.matches.filter(x=>x!==id);
-    const line=yes?`${r.line} Then: “Want to get together sometime?” You can ask ${n} out from the ❤️ Romance tab.`:pick([`📭 No reply from ${n}. That’s how the apps go sometimes, and it isn’t about you.`,`📭 ${n} writes back, kindly: “You seem great, but I don’t feel a spark. Good luck out there!” You wish them the same.`]);
-    say(line);modalSwap(`💬 ${n}`,`<p>${line}</p>`,[{l:'Back to the app',np:true,stay:true,fn:()=>relApp()},{l:'Close',fn:()=>afterAction()}])}}))
+    const r=relAppSend(id,k);if(!r)return;
+    modalSwap(`💬 ${n}`,`<p>${r.line}</p>`,[{l:'Back to the app',np:true,stay:true,fn:()=>relApp()},{l:'Close',fn:()=>afterAction()}])}}))
     .concat([{l:'Back',stay:true,fn:()=>relApp()}]));
 }
 function relProfileSetup(then,edit){
@@ -410,7 +420,7 @@ LIFE_HOOKS.birthday.push(age=>{if(!relActive())return;const p=relPartner();if(p)
 // ---- the Here tab: a ❤️ section at home ----
 {const ah=actionsHere;actionsHere=function(){const a=ah();if(!relActive())return a;if(!ACT_CATS.love)ACT_CATS.love='❤️ Romance';
   if(S.loc==='home'){
-    a.push({ic:'📱',l:'Open the dating app',s:relS().me?(relS().app.wk!==relWeek()?'New matches this week.':'Check your matches.'):'Set up a profile: three questions. Adults only, 21+.',cat:'love',fn:()=>relApp()});
+    a.push({ic:'📱',l:'Open the dating app',s:relS().me?(relS().app.wk!==relWeek()?'New matches this week.':'Check your matches.'):'Set up a profile: three questions. Adults only, 21+.',cat:'love',fn:()=>relOpenApp()});
     const known=relKnownIds();if(known.length)a.push({ic:'❤️',l:'People you’re seeing',s:'Text, ask out or talk: open the ❤️ Romance tab.',cat:'love',fn:()=>setTab('rel')});
     relSteps().forEach(x=>a.push(Object.assign({cat:'love'},x)));
   }
@@ -439,7 +449,8 @@ function relView(){
   if(!p&&!others.length)h+=`<div class="rules">No one yet. Open the dating app at home, or get out there: the Link, a show at the Dome, the Proctor farmers market on Saturday, a party down the hall on a Friday or Saturday night, or work.</div>`;
   const ex=Object.keys(R.people).filter(id=>R.people[id].stage==='ex');
   if(ex.length)h+=`<div class="sect">Exes</div><div class="rules">${ex.map(relN).join(', ')}. ${R.sadUntil>day()?'A sad week: it gets easier.':'You’ve both moved on.'}</div>`;
-  if(S.loc==='home')h+=btn('📱 Open the dating app',()=>relApp(),false,'A match or two a week.');else h+='<div class="rules">📱 The dating app is a home thing: open it from your apartment.</div>';
+  if(relPhoneApp())h+=btn('💘 Open Tacoma Hearts on your phone',()=>relOpenApp(),false,'A match or two a week, wherever you are.');
+  else if(S.loc==='home')h+=btn('📱 Open the dating app',()=>relApp(),false,'A match or two a week.');else h+='<div class="rules">📱 The dating app is a home thing: open it from your apartment, or install 💘 Tacoma Hearts on your phone.</div>';
   return h;
 }
 const REL_TAB={k:'rel',ic:'❤️',l:'Romance',view:()=>relView()};
@@ -521,6 +532,8 @@ function relGuideChapter(){
     </ul>
     <h3>Meeting people</h3>
     <p>You can meet someone on the Link, at a show at the Tacoma Dome, at the Proctor Farmers Market, at a party down the hall, at work, or on the dating app at home (a match or two a week, after three quick profile questions). Each person has two meters: <b>interest</b> and <b>chemistry</b>. Shared interests help; so does being kind. Some people aren't interested, and that's fine: the game moves on.</p>
+    <h3>💘 Tacoma Hearts on your phone</h3>
+    <p>With the mode on, the App Store has <b>💘 Tacoma Hearts</b>, the same dating app as a phone app: it takes one of your five slots and works anywhere with signal, not just at home. The week's matches, a first message in one of three tones, and your profile. It disappears from the phone and the App Store when the mode is off, and the old way (📱 Open the dating app, at home) still works without a phone or with a dead battery.</p>
     <h3>Dates</h3>
     ${hTable(['Date','Cost','Time','When'],dates)}
     <p>How you flirt matters, and everyone reacts differently:</p><p>${tones}</p>
