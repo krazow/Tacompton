@@ -123,6 +123,7 @@ module.exports = [
     const { page, errors } = await open(ctx);
     await setup(page);
     const r = await page.evaluate(() => {
+      EV.forEach(e => { if (/^hood_/.test(e.id)) e.cond = () => false; });   // 61-hood-life.js: its events move friendships, and this test sets them by hand
       T.start('2y', 15); const o = { weeks: T.weeks() };
       T.to('Thu Aug 27'); closeModals(); S.t = day() * 1440 + 540;
       const ori = T.act(/orientation/); o.ori = ori && ori.cls; ori.fn(); o.om = T.M(); T.pick(0); o.oloc = [S.loc, fmt(S.t), S.sch.orient];
