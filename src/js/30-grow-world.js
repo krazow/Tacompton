@@ -65,7 +65,7 @@ GROW.newState=()=>({
 const G_BOXES=3;                                            // your room's boxes
 const G_CURFEW=1230;                                        // 8:30 PM: home by then (middle school)
 const G_CURFEW_HIGH=1320;                                   // 10 PM: from 14 (high school)
-const gCurfew=()=>typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?G_CURFEW_HIGH:G_CURFEW;
+const gCurfew=()=>(typeof S!=='undefined'&&S&&S.age&&stage(S.age)!=='middle'?G_CURFEW_HIGH:G_CURFEW)+(typeof lsCurfewPlus==='function'?lsCurfewPlus():0);   // + freedoms earned with report cards (67-life-school.js)
 const G_SUNSET=1205;                                        // about 8:05 PM at the end of August
 // the first day of school (the finale of the first week): the first isSchoolDay() of the run, Mon Aug 31, 2026 (day 7) from an Aug 24 start
 const gSchoolDay=()=>{const sd=lifeStartDate();for(let i=0;i<40;i++)if(schoolOn(dAt(sd,i)))return i;return 7};
