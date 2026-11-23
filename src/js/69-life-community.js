@@ -538,7 +538,7 @@ function weekHTML(){
 {const wv=GROW.weekView;GROW.weekView=function(){let h=wv.apply(this,arguments);try{h+=weekHTML()}catch(e){console.error(e)}return h}}
 {const wv=weekView;weekView=function(){let h=wv.apply(this,arguments);try{h+=weekHTML()}catch(e){console.error(e)}return h}}
 
-// ---- the guide: one chapter, just before the FAQ ----
+// ---- the guide: one chapter, just before the FAQ (and the 18+ chapter) ----
 function guideHTML(){
   return `<p>In the longer games, life on Hilltop is more than school and work. Here is the money, the bike and the neighborhood around you.</p>
     <h3>Money for kids</h3>
@@ -569,7 +569,7 @@ function guideHTML(){
     <li>🍲 <b>The Saturday community lunch</b> at the church hall on MLK, 11 AM to 1:30 PM: community +4.</li>
     <li>🧑‍🏫 <b>Mentoring</b> from 21: sign up at People’s (community 25 and up, and a clean background check), then meet your mentee on Tuesdays and Thursdays, 4 to 6 PM.</li></ul>`;
 }
-{const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);try{let i=ch.findIndex(c=>c[0]==='faq');if(i<0)i=ch.length;   // just before the FAQ
+{const hc=helpChapters;helpChapters=function(...a){const ch=hc(...a);try{let i=ch.findIndex(c=>c[0]==='adult18'||c[0]==='faq');if(i<0)i=ch.length;   // just before the FAQ (and the 18+ chapter, which sits right before it)
   ch.splice(i,0,['community','Money, a bike and the neighborhood',guideHTML()])}catch(e){console.error(e)}return ch}}
 
 // ---- tests and debugging ----
