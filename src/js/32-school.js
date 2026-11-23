@@ -322,8 +322,8 @@ function schNight(notes,d){
   }
   const J=SCH_JOBS[s.job[dateOf(d).y]];
   if(J&&J.l&&S.loc===J.at&&!S.pt[d]&&!isSchoolDay(d)&&S.age>=16&&schIn('job',d)){const ok=gAt(J.win[0],J.win[1]);
-    mine.push({ic:J.ic,l:J.l,s:ok?`${J.min/60} hours. About ${$(J.pay)}${J.tips?' plus tips':''}, energy −14. Once a day.`:`Shifts start between ${fmt(J.win[0])} and ${fmt(J.win[1])}.`,cat:'money',dis:!ok,
-      fn:()=>{pass(J.min);S.pt[d]=true;const tip=J.tips?J.tips[0]+Math.floor(Math.random()*(J.tips[1]-J.tips[0]+1)):0;gEarn(J.pay+tip);adj('energy',-14);adj('mood',1);say(`${pick(J.t)} ${$(J.pay+tip)}${tip?`, with ${$(tip)} in tips`:''}.`)}});
+    mine.push({ic:J.ic,l:J.l,s:ok?`${J.min/60} hours. About ${$(gAmt(J.pay))}${J.tips?' plus tips':''}, energy −14. Once a day.`:`Shifts start between ${fmt(J.win[0])} and ${fmt(J.win[1])}.`,cat:'money',dis:!ok,
+      fn:()=>{pass(J.min);S.pt[d]=true;const tip=J.tips?J.tips[0]+Math.floor(Math.random()*(J.tips[1]-J.tips[0]+1)):0;gEarn(J.pay+tip);adj('energy',-14);adj('mood',1);say(`${pick(J.t)} ${$(gAmt(J.pay+tip))}${tip?`, with ${$(gAmt(tip))} in tips`:''}.`)}});
   }
   return mine.concat(a);
 }}

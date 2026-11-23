@@ -86,6 +86,8 @@ const gLong=d=>longDate(d);
 const gRp=c=>Math.round(c*(DF().cost||1));
 const gSpend=c=>{money(-c);S.stats.spent+=c};
 const gEarn=c=>{money(c);S.stats.earned+=c};
+// a 2026 dollar amount in the start year's dollars, for text next to gEarn (money() scales Growing Up income in an older start year)
+const gAmt=n=>typeof eraOld==='function'&&eraOld()&&isGrow()?Math.round(n*eraPriceF()*100)/100:n;
 const gAt=(lo,hi)=>tod()>=lo&&tod()<hi;
 const gRain=()=>S.ev.flags.rain===day();
 const gWeekday=(d=day())=>d%7<5;
@@ -247,7 +249,7 @@ GROW.actionsHere=()=>{
     if(!S.rest[d]||S.energy<40) a.push({ic:'😴',l:'Rest in your room',s:'An hour with comics and the fan on. Energy +10, mood +3.',cat:'rest',dis:S.energy>=100,fn:()=>{pass(60);S.rest[d]=true;adj('energy',10);adj('mood',3);
       say(pick(['😴 You lie on your bed with a comic over your face and listen to the street: a bus, a dog, somebody laughing on a porch.','😴 Nap. Not on purpose. Nia puts a sticker on your forehead while you sleep. It says GREAT JOB.','😴 The fan turns back and forth. The ceiling has a crack shaped like Florida. You will know it well.']))}});
     if(!S.chore[d]&&!late){const c=GROW.chores[d%GROW.chores.length];
-      a.push({ic:c[0],l:c[1],s:`30 min. Family +6, and Dad pays ${$(3)}. Energy −4. Once a day.`,cat:'family',fn:()=>{pass(30);S.chore[d]=true;S.stats.chores++;adj('family',6);adj('energy',-4);gEarn(3);say(c[2])}});}
+      a.push({ic:c[0],l:c[1],s:`30 min. Family +6, and Dad pays ${$(gAmt(3))}. Energy −4. Once a day.`,cat:'family',fn:()=>{pass(30);S.chore[d]=true;S.stats.chores++;adj('family',6);adj('energy',-4);gEarn(3);say(c[2])}});}
     if(!S.dinner[d]&&gAt(1050,1170)) a.push({ic:'🍽️',l:'Family dinner',s:'45 min. Everybody at the table. Family +8, energy +12, mood +4.',cat:'family',cls:'primary',fn:()=>{pass(45);S.dinner[d]=true;S.stats.dinners++;adj('family',8);adj('energy',12);adj('mood',4);
       say(pick(GROW.dinners))}});
     if(!S.nia[d]&&gAt(480,1260)) a.push({ic:'🧸',l:'Play with Nia',s:'30 min. Your little sister is seven and has plans for you. Family +5, mood +3.',cat:'family',fn:()=>{pass(30);S.nia[d]=true;adj('family',5);adj('mood',3);adj('energy',-3);
@@ -272,8 +274,8 @@ GROW.actionsHere=()=>{
       say(pick(['🍬 Grace Kim rings you up and asks if you’re the new family on the side street. She says the good tortillas come in on Thursdays, and the good hot sauce is the one with the hand-drawn label.','🍬 A cold can from the back of the cooler and hot chips on the curb. Summer, perfected.','🍬 You count out quarters on the counter. Grace Kim waits like she has all day. She does, kind of.']))}});
     if(gCh1()&&!S.ready.supplies) a.push({ic:'🎒',l:`School supplies at the corner market — ${$(sup)}`,s:mk?`Binder, pencils, a calculator, a pack of paper. You have ${$(Math.round(S.money))}. (Or free at the giveaway at People’s, Sat 10–2.)`:'The market is open 7 AM to 10 PM.',cat:'school',dis:!mk||S.money<sup,
       fn:()=>{gSpend(sup);pass(20);gGetReady('supplies');say('🎒 A binder, a pack of pencils, a calculator with your initials scratched on the back, and paper that is going to be so organized for about one week. Mr. Kim throws in a free eraser shaped like a taco.')}});
-    if(S.age>=16&&!S.pt[d]){const ok=gAt(600,1080)&&!(isSchoolDay(d)&&tod()<925);a.push({ic:'🧾',l:'Work a shift at the corner market',s:ok?'4 hours stocking shelves and ringing up. About $56, energy −14. Once a day.':'Shifts start between 10 AM and 6 PM (after school on school days).',cat:'money',dis:!ok,
-      fn:()=>{pass(240);S.pt[d]=true;gEarn(56);adj('energy',-14);adj('mood',-1);say('🧾 Four hours at the corner market: stocking the hot-sauce shelf, ringing up neighbors, learning which regulars want a bag and which ones would be insulted. Grace Kim pays you in cash and a cold drink. $56.')}})}
+    if(S.age>=16&&!S.pt[d]){const ok=gAt(600,1080)&&!(isSchoolDay(d)&&tod()<925);a.push({ic:'🧾',l:'Work a shift at the corner market',s:ok?`4 hours stocking shelves and ringing up. About ${$(gAmt(56))}, energy −14. Once a day.`:'Shifts start between 10 AM and 6 PM (after school on school days).',cat:'money',dis:!ok,
+      fn:()=>{pass(240);S.pt[d]=true;gEarn(56);adj('energy',-14);adj('mood',-1);say(`🧾 Four hours at the corner market: stocking the hot-sauce shelf, ringing up neighbors, learning which regulars want a bag and which ones would be insulted. Grace Kim pays you in cash and a cold drink. ${$(gAmt(56))}.`)}})}
     if(gCh1()&&!S.ready.haircut) a.push({ic:'💈',l:`A back-to-school cut at the barbershop or the salon — ${$(cut)}`,s:shop&&gAt(540,1080)?'45 min. Dre at the barbershop, or the braider at the salon next door. Ready, mood +5.':'Open Tuesday to Saturday, 9 AM to 6 PM.',cat:'school',dis:!(shop&&gAt(540,1080))||S.money<cut,
       fn:()=>{gSpend(cut);pass(45);gGetReady('haircut');adj('mood',5);say('💈 Dre, in the chair by the window, has opinions about the Seahawks, the weather and your old haircut. He fixes two of the three. You walk out feeling taller. The whole shop says “Looking sharp, new kid.”')}});
     if(!S.murals[d]) a.push({ic:'🖼️',l:'Look at the murals',s:'30 min. Mood +5. Once a day.',cat:'fun',fn:()=>{pass(30);S.murals[d]=true;adj('mood',5);

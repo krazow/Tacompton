@@ -67,8 +67,6 @@ PHONE_APPS.forEach(epWrap);
 {const o=phoneUse;phoneUse=function(){if(S&&epDev()==='land')return;return o.apply(this,arguments)}}
 {const o=phoneTick;phoneTick=function(){const r=o.apply(this,arguments);if(S&&S.ph&&epDev()==='land')S.ph.batt=100;return r}}
 {const o=phoneMorning;phoneMorning=function(){if(S&&S.ph&&epDev()==='land')S.ph.batt=100;return o.apply(this,arguments)}}
-// no Link-stop phone grab when the phone is on the kitchen wall
-{const e=EV.find(x=>x.id==='lev_phone');if(e&&e.cond){const c0=e.cond;e.cond=function(){return epDev()!=='land'&&c0.apply(this,arguments)}}}
 
 // ---- calls without texting: Messages is off, calls still work ----
 // msgOn() is "texts and calls work"; with no texting it is true only for calls (EP_VOICE: inside the Phone app, Contacts,
