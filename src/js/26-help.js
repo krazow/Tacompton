@@ -197,6 +197,43 @@ function helpCareers(){
     <p class="tut-small">Pay before raises. Washington-plausible: an RN makes about twice a hospital CNA, an LPN about half again, a journey-level electrician about 1.7 times an apprentice.</p>`;
 }
 
+// ---- Choices and consequences (60-crime.js): temptations, the ladder, ways back ----
+function helpChoices(){
+  const Ld=typeof CRIME_LADDER!=='undefined'?CRIME_LADDER:[],k=typeof CRIMES!=='undefined'?CRIMES.cfg:{end:3,fare:124,lawyer:1500};
+  return `<p>Now and then the game offers a shortcut that isn’t quite right. Every one is a choice with a safe option, and the safe option is the default. Taking the shortcut sometimes works. Sometimes it doesn’t, and then there are real costs, and real ways back.</p>
+    <h3>Temptations in the adult game</h3>
+    <ul><li><b>🚌 The bus fare:</b> slip in the back door and keep the fare. About 1 ride in 10 gets checked: a ${$(k.fare)} citation, doubled each time after.</li>
+    <li><b>💵 A cash job over your shift:</b> ${$(80)} for moving help. If your boss learns you skipped, you lose the job.</li>
+    <li><b>🚲 A “too cheap” bike:</b> save ${$(150)}. About 1 in 4 turns out stolen: the owner gets it back, and your money is gone.</li>
+    <li><b>🪙 Extra change in the register:</b> ${$(20)}. The chance they notice rises every time, and then you’re let go.</li>
+    <li><b>🖍️ Tag a wall</b> instead of helping with the mural: about 3 in 10 get seen, with a cleanup bill and community service.</li>
+    <li><b>🤒 A fake sick call</b> on street-fair day: about 1 in 3 gets seen by a coworker, Job −20.</li>
+    <li><b>🛏️ Sublet without asking</b> (the longer games): ${$(300)} for a weekend. Caught once, a warning; twice, an eviction.</li>
+    <li><b>🚗 No car insurance</b> (with a car): you save the monthly bill, but after an accident you pay all the damage and lose your license for six months.</li></ul>
+    <h3>What happens if you’re caught</h3>
+    ${hTable(['Step','What it means'],Ld.map(x=>[`${x.ic} ${x.n}`,x.d]))}
+    <ul><li>Each time you’re caught, you go one step further up the ladder. Bigger things start higher.</li>
+    <li><b>Fines</b> can always go on a payment plan: a little on the 1st of each month. Pay them off at home any time.</li>
+    <li><b>Community service</b> is done at People’s Community Center, a few hours at a time.</li>
+    <li><b>Court:</b> a public defender is free; a lawyer (${$(k.lawyer)}) gives better odds of no record. Be there by 8:45 AM. Missing court puts it on your record.</li>
+    <li><b>A record</b> shows up on background checks: Tacoma General won’t hire a CNA with one, and the nursing programs won’t take you.</li>
+    <li><b>${k.end} open offenses</b> at once end the adult game, with a plain ending. Older ones clear after a clean stretch.</li></ul>
+    <h3>Ways back</h3>
+    <ul><li><b>Make it right:</b> the morning after, you can apologize and pay it back. The offense clears faster, and a judge goes easier.</li>
+    <li><b>Mr. Harris</b>, once you’ve met him at the overlook, will come along and stand next to you while you do it.</li>
+    <li><b>A clean stretch:</b> after three years with no new offenses (two if you made it right) the court vacates your record, and background checks come back clean.</li>
+    <li>The 📅 Week tab shows your record, fines, hours and any court hearing. The life summary at the end lists them too.</li></ul>
+    <h3>Growing Up</h3>
+    <p>Kids don’t deal with police here. It’s family and school:</p>
+    <ul><li><b>Skipping school</b> on a dare: a call home, Family down, and detention.</li>
+    <li><b>Candy on a dare</b> at the corner market: a call home, and you work it off sweeping the shop.</li>
+    <li><b>Cheating on a quiz:</b> a zero, and your teacher trusts you less.</li>
+    <li><b>Sneaking out</b> after curfew: grounded for 2 days (home and school only).</li>
+    <li><b>Covering for a friend:</b> if it comes out, both families trust you less.</li>
+    <li>Three times in trouble in a row means a family meeting with the school counselor and a week grounded.</li></ul>
+    ${hTip('The safe choice is always there','If you don’t decide by bedtime, the game takes the safe option for you.')}`;
+}
+
 // ---- the chapters: [key, title, html] (numbered in this order) ----
 function helpChapters(){
   const J=JOBS,w=HELP_W(),c=HELP_CUTS(),B=HELP_B(),rent=$(HELP_RENT()),D=DIFFS,N=typeof NEIGHBORS!=='undefined'?NEIGHBORS:[],boxes=typeof BOXES!=='undefined'?BOXES:6;
@@ -411,6 +448,7 @@ function helpChapters(){
     <p>That’s Quick play. In the longer games the same week opens a whole life: the next two chapters, <b>Game lengths and ages</b> and <b>Growing up</b>, cover how long you can play and what happens as you grow.</p>`],
   ['lengths','Game lengths and ages',helpLengths()],
   ['growup','Growing up',helpGrowing()],
+  ['choices','Choices and consequences',helpChoices()],
   ['faq','FAQ',`<dl class="tut-faq">
     <dt>Does time pass while I read?</dt><dd>No. The clock only moves when you take an action, travel or wait.</dd>
     <dt>What happens at midnight?</dt><dd>If you’re still up, the day ends anyway and you wake on the couch: less energy, more stress.</dd>
