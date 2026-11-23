@@ -472,3 +472,5 @@ html.hc .ph-tabs{background:#ddd}
 .ph-note-in .ph-btn{width:auto;margin:0;text-align:center}
 .ph-li.done b{text-decoration:line-through;opacity:.6}
 .ph-flash{background:radial-gradient(circle at 50% 30%,#fffbe6,#f7e7a1 40%,#222 75%);color:#222}
+/* phone: Transit, Maps, Weather, Rides (54-phone-travel.js) */
+.ph-card .ph-note{display:block;margin:4px 0 0}
