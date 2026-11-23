@@ -199,6 +199,15 @@ module.exports = [
     assert.ok(g.loc === 'home' && /grounded/.test(g.say) && g.mlk === 'mlk' && g.sweep && /Teacher trust/i.test(g.week), JSON.stringify(g).slice(0, 300));
     noErrors(errors);
   } },
+  { name: 'with the gang path (62-gang.js): its arrests go through the same ladder, and a record counts there too', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await start(page, { length: '1y' });
+    const r = await page.evaluate(() => { if (typeof gangOffense !== 'function') return { skip: true };
+      closeModals(); const a = gangOffense('g_test', { label: 'A gang test', sev: 3 }); closeModals();
+      return { step: a && a.step, list: CRIMES.S().list.length, court: !!CRIMES.S().court }; });
+    if (!r.skip) assert.deepStrictEqual(r, { step: 'court', list: 1, court: true });
+    noErrors(errors);
+  } },
   { name: 'the guide has a Choices and consequences chapter; What’s new; no romance or fishing words; the time skip handles hours, hearings and plans', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await page.click('#helpBtn'); await page.waitForSelector('#tut');
