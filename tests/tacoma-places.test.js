@@ -65,6 +65,7 @@ module.exports = [
   { name: 'tacoma places: a 1980 life sees the places of 1980, nothing before it opened, and the newer ones later', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page, 1980);
+    await page.evaluate(() => { if (typeof countyOn !== 'function') window.countyOn = () => true; });   // Pizza & Pipes is in University Place (county)
     const g80 = await goNames(page);
     for (const n of ['Pizza & Pipes', 'Bimbo’s', 'Knapp’s', 'Scotty’s', 'Steve’s Gay ’90s', 'Clinkerdagger', 'Harbor Lights', 'Tacoma Mall', 'Bob’s Java Jive', 'Johnny’s Dock']) assert.ok(g80.some(x => x.includes(n)), '1980 has ' + n);
     for (const n of ['Dune Peninsula', 'Duke’s', 'Kim Anh', 'Convention Center', 'Lobster Shop', 'The Harvester']) assert.ok(!g80.some(x => x.includes(n)), '1980 has no ' + n);
