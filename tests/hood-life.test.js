@@ -76,7 +76,7 @@ const school = 'S.cur=(()=>{for(let d=10;d<300;d++)if(isSchoolDay(d))return d;re
 const warm = 'S.cur=(()=>{for(let d=200;d<GAME.days;d++)if(["spring","summer"].includes(season(d)))return d;return 250})();S.t=S.cur*1440+420;';
 const SET = {
   hood_skipping: school, hood_schoolfight: school + 'S.age=15;', hood_bbq: warm + 'S.age=16;', hood_carjack: 'S.age=16;',
-  hood_juvie: 'window.HOOD.S().saw=true;', hood_record: 'window.HOOD.S().juvie=true;', hood_crewtarget: 'window.HOOD.S().g.rep=30;', hood_baby: 'S.age=25;',
+  hood_juvie: 'window.HOOD.S().saw=true;', hood_record: 'window.HOOD.S().juvie=true;', hood_crewtarget: 'window.HOOD.S().g.rep=30;if(S.gang)S.gang.rep=30;', hood_baby: 'S.age=25;',
   hood_color: '', hood_skipping_best: school,
 };
 const cases = ids => ids.map(id => ({ id, setup: 'S.cur=Math.max(S.cur,3);S.t=S.cur*1440+420;S.loc="home";S.money=300;' + (SET[id] || '') }));
@@ -110,7 +110,7 @@ module.exports = [
       for (const id of window.HOOD.ids) {
         const b = window.HOOD.band(id), r = [];
         for (const a of [11, 12, 13, 14, 15, 16, 17, 18, 19, 25, 30, 41, 60]) {
-          S.age = a; S.hood = Object.assign(window.HOOD.S(), { juvie: true, saw: true, g: { rep: 30, heat: 0, loyalty: 0 } });
+          S.age = a; S.hood = Object.assign(window.HOOD.S(), { juvie: true, saw: true, g: { rep: 30, heat: 0, loyalty: 0 } }); if (S.gang) S.gang.rep = 30;
           const inb = b.grow === isGrow() && a >= b.lo && a <= b.hi;
           S.ev.last = {}; S.ev.count = {}; EV.forEach(x => { if (x.id !== id) S.ev.count[x.id] = 9999; }); S.ev.pending = [];
           forceEvent(id); const c = { fired: [] }; fireHook('wake', c); closeModals(); S.ev.force = [];
@@ -216,6 +216,20 @@ module.exports = [
     const sec = t.slice(t.indexOf('Hard times on the block'));
     for (const s of ['Street Rep', 'Heat', 'safe choice', 'seal', 'Quick play']) assert.ok(sec.includes(s), 'mentions ' + s);
     assert.doesNotMatch(sec, BAD_GRAPHIC); assert.doesNotMatch(t, BAD_ROMANCE); assert.doesNotMatch(sec, BAD_FISH);
+    noErrors(errors);
+  } },
+  { name: 'integration with the gang path (62-gang.js): the meters move S.gang, and the glass studio opens its arts way out', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    await start(page, { grow: true, age: 12 });
+    const r = await page.evaluate(() => {
+      S.gang = null; S.cur = 40; S.t = S.cur * 1440 + 900;
+      EV.find(x => x.id === 'hood_lookout').choices().find(o => /Take the forty/.test(o.l)).fn();
+      const after = S.gang ? { rep: S.gang.rep, heat: S.gang.heat } : null;
+      EV.find(x => x.id === 'hood_glass').choices()[0].fn();
+      return { after, flag: eventFlag('hood_glass'), glass: S.hood.glass, real: !!window.gangAdj };
+    });
+    assert.ok(r.after && r.after.rep > 0 && r.after.heat > 0, 'S.gang Street Rep and Heat ' + JSON.stringify(r.after));
+    assert.strictEqual(r.flag, true, "eventFlag('hood_glass')"); assert.strictEqual(r.glass, true);
     noErrors(errors);
   } },
 ];

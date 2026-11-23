@@ -181,7 +181,7 @@ hev({id:'hood_sweep',band:'mid',tile:['🚓','A police sweep on your block','bad
 hev({id:'hood_glass',band:'mid',light:true,tile:['🫙','A spot in the glass studio','good'],dflt:1,moment:'Got a spot in the youth glass-art studio at People’s.',
   txt:'🫙 Coach Ray from People’s Community Center catches you by the gym door. The youth glass-art studio has one open spot: Tuesday and Thursday afternoons, free, with a real hot shop and real artists. “I think you’d be good at it. Want it?”',
   ch:()=>[
-    {ic:'🔥',l:'Take the spot',fx:{en:-5,fam:4,fr:2,st:-4,gr:2,rep:-3},then:()=>{H().glass=true},txt:'🔥 Your first afternoon you make a lopsided blue paperweight. Coach Ray puts it on his desk like it’s in a museum. You go back Thursday, and the Tuesday after that.'},
+    {ic:'🔥',l:'Take the spot',fx:{en:-5,fam:4,fr:2,st:-4,gr:2,rep:-3},then:()=>{H().glass=true;if(typeof setEventFlag==='function')setEventFlag('hood_glass',true)},txt:'🔥 Your first afternoon you make a lopsided blue paperweight. Coach Ray puts it on his desk like it’s in a museum. You go back Thursday, and the Tuesday after that.'},
     {ic:'🤔',l:'Say maybe later',fx:{st:1},txt:'🤔 “Door stays open,” Coach Ray says. He means it.'},
   ]});
 

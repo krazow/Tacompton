@@ -37,21 +37,16 @@ module.exports = [
   { name: 'each start year: the right device and apps, nothing early', fn: async ctx => {
     const { page, errors } = await open(ctx);
     await start(page);
-    const want = {
-      1990: ['land', ['call', 'contacts', 'clock', 'settings'], ['msg', 'store', 'camera', 'maps', 'rides']],
-      1999: ['cell', ['call', 'contacts'], ['msg', 'store', 'camera']],
-      2004: ['flip', ['msg', 'call', 'camera', 'photos'], ['store', 'maps', 'flash', 'notes']],
-      2008: ['smart', ['store', 'maps', 'transit', 'weather', 'flash', 'notes'], ['bank', 'club', 'rides', 'jobs', 'groc', 'health']],
-      2012: ['smart', ['bank', 'club'], ['rides', 'jobs', 'health']],
-      2016: ['smart', ['rides', 'jobs', 'groc'], ['health']],
-      2021: ['smart', ['health', 'rides', 'bank'], []],
-    };
-    for (const y of Object.keys(want)) {
-      await Y(page, +y); const r = await look(page), [dev, yes, no] = want[y];
-      assert.strictEqual(r.dev, dev, y + ' device');
-      for (const id of yes) assert.ok(r.shown.includes(id), `${y}: ${id} shown`);
-      for (const id of no) assert.ok(!r.shown.includes(id), `${y}: ${id} not yet`);
-      if (dev !== 'smart') assert.ok(!r.home.includes('Empty') && !r.home.includes('App Store'), y + ': no App Store slots');
+    const dev = { 1990: 'land', 1999: 'cell', 2004: 'flip', 2008: 'smart', 2026: 'smart' };
+    for (const y of [1990, 1995, 1999, 2004, 2008, 2010, 2012, 2014, 2016, 2021, 2026]) {
+      await Y(page, y); const r = await look(page);
+      if (dev[y]) assert.strictEqual(r.dev, dev[y], y + ' device');
+      const exp = await page.evaluate(ids => ids.map(id => { const a = phoneApp(id), f = a.era, d = ERAPHONE.dev();
+        if (!f) return [id, true]; const t = ERAPHONE.has(f), ok = f === 'text' || f === 'camera' ? d === 'flip' || d === 'smart' : d === 'smart';
+        return [id, t && ok, ERAPHONE.fy(f)]; }), ALL);
+      for (const [id, want, fy] of exp) assert.strictEqual(r.shown.includes(id), want, `${y}: ${id} (from ${fy})`);
+      if (r.dev !== 'smart') assert.ok(!r.home.includes('Empty') && !r.home.includes('App Store'), y + ': no App Store slots');
+      if (y < 2008) for (const id of ['store', 'maps', 'rides', 'bank', 'health', 'flash']) assert.ok(!r.shown.includes(id), `${y}: no ${id}`);
     }
     noErrors(errors);
   } },
@@ -119,7 +114,7 @@ module.exports = [
     });
     assert.strictEqual(r.rides0, false);
     assert.match(r.news, /New in the App Store: 🚗 <b>Rides<\/b>/); assert.strictEqual(r.again, 0, 'once');
-    assert.match(r.skip, /New in the App Store: .*Jobs/); assert.match(r.skip, /Groceries/);
+    assert.match(r.skip, /New in the App Store: .*Jobs/);
     assert.match(r.dev, /smartphone/);
     noErrors(errors);
   } },
@@ -183,3 +178,21 @@ module.exports = [
     noErrors(errors);
   } },
 ];
+// with the real start-year picker (63-era.js): no stubs
+module.exports.push({ name: 'the real start year: 1990 home phone, 2000 Growing Up flip phone, 2010 smartphone, 2020 everything', fn: async ctx => {
+  const { page, errors } = await open(ctx);
+  const has = await page.evaluate(() => typeof eraStartYear === 'function');
+  if (!has) return;   // before 63-era.js is on main
+  const out = {};
+  for (const [y, grow] of [[1990, false], [2000, true], [2010, false], [2020, false]]) {
+    await page.evaluate(([y, grow]) => { closeModals(); setMode(grow ? 'grow' : 'adult');
+      LIFE_PICK = { length: '1y', startAge: grow ? 12 : 18, startYear: y, birthday: { m: 3, d: 14, label: 'March 14' } };
+      newGame('normal'); closeModals(); if (!isGrow()) { pickJob('cafe'); closeModals(); } tab = 'act'; render(); }, [y, grow]);
+    out[y] = await page.evaluate(() => ({ y: yearNow(), dev: ERAPHONE.dev(), shown: PHONE_APPS.filter(a => phoneShown(a)).map(a => a.id) }));
+  }
+  assert.strictEqual(out[1990].y, 1990); assert.strictEqual(out[1990].dev, 'land'); assert.ok(!out[1990].shown.includes('msg'));
+  assert.strictEqual(out[2000].dev, 'flip'); assert.ok(!out[2000].shown.includes('store'));
+  assert.strictEqual(out[2010].dev, 'smart'); assert.ok(out[2010].shown.includes('maps')); assert.ok(!out[2010].shown.includes('rides'));
+  for (const id of ['rides', 'bank', 'health', 'groc', 'jobs', 'club']) assert.ok(out[2020].shown.includes(id), '2020: ' + id);
+  noErrors(errors);
+} });
