@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- 🧰 **Life in Tacoma:** odd jobs and a growing allowance for kids, a youth savings account at the credit union, saving goals tracked on the Week tab, a bike (Ride chip, lock, "borrowed" bikes), Juneteenth, the block party and the back-to-school giveaway every year, Tacoma moments (the mountain, the Tacoma Aroma by era, the Narrows, the Dome, the zoo), four local heroes with story arcs, seven everyday community events, and an adult garden plot, community lunch and mentoring; a new Help chapter
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed
