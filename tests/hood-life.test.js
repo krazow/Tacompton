@@ -214,7 +214,7 @@ module.exports = [
     const t = await page.evaluate(() => document.getElementById('tut-growup').innerText);
     assert.ok(t.includes('Hard times on the block'), 'the section');
     const sec = t.slice(t.indexOf('Hard times on the block'));
-    for (const s of ['Street Rep', 'Heat', 'safe choice', 'seal', 'Quick play']) assert.ok(sec.includes(s), 'mentions ' + s);
+    for (const s of ['Street Rep', 'Heat', 'safe choice', 'seal', 'Try it']) assert.ok(sec.includes(s), 'mentions ' + s);
     assert.doesNotMatch(sec, BAD_GRAPHIC); assert.doesNotMatch(t, BAD_ROMANCE); assert.doesNotMatch(sec, BAD_FISH);
     noErrors(errors);
   } },

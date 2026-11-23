@@ -12,7 +12,7 @@ const stNb=id=>NEIGHBORS.find(x=>x.id===id);
 // ---- title screen ----
 const TITLE={
   start:'🆕 New game',
-  intro:'Live a life on Hilltop, the old neighborhood up on the hill in Tacoma, Washington: Martin Luther King Jr. Way down the middle, murals on the walls and the mountain over everything. Start at 12, 15 or 18, in any year from 1980 to today, and play six months, a year, two years or a whole lifetime: school, work, rent, friends, family and the city changing around you. Or try Quick play: two weeks moving in at 18, or Growing Up’s first week at 12. The name is a wink at an old nickname for the city, said with a grin by people who grew up here; the game itself is a love letter to Hilltop: the people who built it, the people who stayed, and the people just arriving.',
+  intro:'Live a life on Hilltop, the old neighborhood up on the hill in Tacoma, Washington: Martin Luther King Jr. Way down the middle, murals on the walls and the mountain over everything. Start at 12, 15 or 18, in any year from 1980 to today, and play six months, a year, two years or a whole lifetime: school, work, rent, friends, family and the city changing around you. Play as a kid or start at 18. Not sure yet? Try it for 2 weeks first: a short taste, with no birthdays or time skips. The name is a wink at an old nickname for the city, said with a grin by people who grew up here; the game itself is a love letter to Hilltop: the people who built it, the people who stayed, and the people just arriving.',
   bullets:['🌱 <b>New life:</b> pick a length, a starting age and a start year. The important weeks play day by day; the time between is a summary with a choice.','🏫 Middle school, Hilltop High, a first job at 16, then work, college, a trade or the Army at 18.','🏠 Pay the rent, keep food in the fridge, your energy up and your stress down.','📱 A phone with texts, calls and apps, as the years allow.','🤝 Meet your neighbors, show up for the block, and watch Tacoma change.'],
   note:'A game about a real neighborhood. Businesses and neighbors in it are made up.',
   art:()=>`<svg viewBox="0 0 480 250" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%" aria-hidden="true"><defs><linearGradient id="tts" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1a97a"/><stop offset=".5" stop-color="#f8d9b0"/><stop offset="1" stop-color="#d7e6e6"/></linearGradient></defs>
@@ -68,7 +68,7 @@ function adultMorning(d){
   if(isFairDay(d)) say('🎪 The Hilltop Street Fair is on MLK today, 10 AM to 6 PM.');
   if(dayName(d)==='Sunday'&&d<GAME.days-1) say('⛪ Sunday. Church bells, then church choirs, all up and down the hill.');
   if(lifeLong()){if(!S.rent.paid&&d===S.rent.due)say(`🏁 Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);else if(!S.rent.paid&&d>=S.rent.due-3)say(`🧾 Rent is due ${rentBy()}: ${$(S.rent.amt)}. You have ${$(Math.round(S.money))}.`)}
-  else if(d===GAME.days-1) say(S.rent.paid?'🏁 Last day of your first two weeks. Rent is paid. Tonight you take stock.':`🏁 Last day. Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);
+  else if(d===GAME.days-1) say(S.rent.paid?'🏁 The last day of trying it out. Rent is paid. Tonight you take stock.':`🏁 Last day. Rent (${$(S.rent.amt)}) is due tonight. Pay it at home.`);
   else if(!S.rent.paid&&d>=10) say(`🧾 Rent is due Sunday night: ${$(S.rent.amt)}. You have ${$(Math.round(S.money))}.`);
 }
 function onNight(where,notes,d){
@@ -360,14 +360,14 @@ function todoItems(){
 }
 const SCORE_W={cash:0.5,community:20,standing:8,stress:5,shift:60,fair:100,early:100,unpacked:60,neighbors:100};   // cash counts half, so the better-paid job doesn't decide the grade
 const GRADE_CUTS=[3850,3000,2200,1500];   // A, B, C, D (the same on every difficulty; tuned with tools/sim.js)
-let RULES_HTML=`<p>Make it through your first two weeks on Hilltop, Mon Aug 3 to Sun Aug 16, 2026. It ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by Sunday night (or you’re more than $500 in the hole).</p><p>Score: half your cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
+let RULES_HTML=`<p>Make a life on Hilltop, one week at a time: hold down a job, make rent, keep food in the fridge and become part of the neighborhood. A game ends early if your job standing hits 0 (let go), your stress hits 100 (burnout), or rent isn’t paid by the night it’s due (or you’re more than $500 in the hole).</p><p>Score: half your cash + community × ${SCORE_W.community} + job × ${SCORE_W.standing} − stress × ${SCORE_W.stress} + shifts × ${SCORE_W.shift}, plus bonuses: the street fair, rent paid in the first week, all boxes unpacked, every neighbor met. Grades: A ${grp(GRADE_CUTS[0])}, B ${grp(GRADE_CUTS[1])}, C ${grp(GRADE_CUTS[2])}, D ${grp(GRADE_CUTS[3])}.</p>`;
 
 // ---- achievements: test(ctx) runs after every render ({}), each night ({night,where}) and at the end ({end,lost}) ----
 const ST_SEEN=id=>(S.ev.count[id]||0)>0;
 const ACH=[
   {id:'moved_in',ic:'🌙',n:'Moved In',d:'Make it through your first night on Hilltop.',test:c=>c.night},
   {id:'first_shift',ic:'💼',n:'Clocked In',d:'Work your first shift.',test:()=>S.stats.shifts>0},
-  {id:'punctual',ic:'⏰',n:'Always On Time',d:'Work every shift of the two weeks, none of them late.',test:c=>c.end&&!c.lost&&shiftDays().every(i=>S.worked[i]===0)},
+  {id:'punctual',ic:'⏰',n:'Always On Time',d:'Work every shift you play, none of them late.',test:c=>c.end&&!c.lost&&shiftDays().every(i=>S.worked[i]===0)},
   {id:'rent_early',ic:'🧾',n:'Ahead of It',d:'Pay rent in the first week.',test:()=>S.rent.paid&&rentEarly(S.rent.paidDay)},
   {id:'fair',ic:'🎪',n:'Street Fair',d:'Go to the Hilltop Street Fair.',test:()=>S.fair},
   {id:'neighborly',ic:'🤝',n:'Good Neighbor',d:'Meet 6 neighbors.',test:()=>metCount()>=6},
@@ -381,7 +381,7 @@ const ACH=[
   {id:'explorer',ic:'🧭',n:'All Over the Hill',d:'Visit every place on Hilltop.',test:()=>Object.keys(L).filter(k=>!L[k].hood).every(k=>S.visited[k])},
   {id:'tacoma',ic:'🗺️',n:'All Over Tacoma',d:'Visit every neighborhood.',test:()=>{if(typeof HOODS==='undefined')return false;const k=Object.keys(HOODS).filter(h=>!HOODS[h].county);return k.length>0&&k.every(h=>(S.hoods||{})[h])}},
   {id:'zen',ic:'🧘',n:'Easy Does It',d:'Finish with stress at 20 or below.',test:c=>c.end&&!c.lost&&S.stress<=20},
-  {id:'grade_a',ic:'🏆',n:'Hilltop Local',d:'Finish the two weeks with an A.',test:c=>c.end&&!c.lost&&scoreOf()>=GRADE_CUTS[0]},
+  {id:'grade_a',ic:'🏆',n:'Hilltop Local',d:'Finish a game with an A.',test:c=>c.end&&!c.lost&&scoreOf()>=GRADE_CUTS[0]},
 ];
 
 // ---- scoring and the end screen ----

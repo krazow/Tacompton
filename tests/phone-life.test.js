@@ -84,7 +84,7 @@ module.exports = [
       S.cur = 7; S.t = S.cur * 1440 + 600; S.worked = {}; phoneOpen('jobs'); o.shift = [...document.querySelectorAll('#phoneUI .ph-btn')].find(b => b.textContent.includes(PHONE_LIFE.GIGS[1].n)).textContent; phoneClose();
       return o;
     });
-    assert.match(q.txt, /Quick play you keep the job/); assert.doesNotMatch(q.txt, /Apply to/);
+    assert.match(q.txt, /Try it you keep the job/); assert.doesNotMatch(q.txt, /Apply to/);
     assert.ok(q.earned >= 40 && q.earned <= 60 && q.t === 120, 'a delivery run: ' + JSON.stringify(q));
     assert.ok(q.again, 'one gig a day'); assert.match(q.shift, /Your shift/);
     await start(page, { length: '1y' });
