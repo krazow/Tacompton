@@ -180,7 +180,7 @@ module.exports = [
     assert.strictEqual(r.role, 'dialog'); assert.match(r.title, /How to play/); assert.ok(r.inert, 'the game behind is inert');
     const want = ['Getting started', 'Your first day step by step', 'The HUD stats explained', 'Places on Hilltop', 'Your job and shifts', 'Food and the fridge',
       'Energy and stress', 'Rent', 'Neighbors and community', 'Events', 'The Week and Neighbors tabs', 'Winning, losing and the score', 'Tips and strategy',
-      'Settings, accessibility and saving', 'Installing the app', 'Growing Up (new)', 'Game lengths and ages', 'Growing up', 'Your phone', 'Choices and consequences', 'Pierce County', 'FAQ'];
+      'Settings, accessibility and saving', 'Installing the app', 'Growing Up (new)', 'Game lengths and ages', 'Growing up', 'Your phone', 'Choices and consequences', 'Money, a bike and the neighborhood', 'Pierce County', 'FAQ'];
     assert.deepStrictEqual(r.toc, want); assert.deepStrictEqual(r.heads, want);
     for (const h of r.hrefs) assert.ok(await page.$(h), 'TOC target ' + h);
     // real numbers from the game
