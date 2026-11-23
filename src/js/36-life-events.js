@@ -21,6 +21,7 @@ const LV=()=>S.lev||(S.lev={inv:{},jar:0,front:false,zip:false,locker:false,rout
 const flag=k=>typeof eventFlag==='function'?eventFlag(k):(S.ev.flags||{})[k];
 const setFlag=(k,v)=>{if(typeof setEventFlag==='function')setEventFlag(k,v);else (S.ev.flags=S.ev.flags||{})[k]=v};
 const long=()=>lifeLong();
+const pre=k=>typeof eraHas==='function'&&!eraHas(k);          // a start year before this thing existed (63-era.js)
 const lite=v=>long()?v:Math.max(1,Math.round(v*0.7));          // Quick play: lighter losses
 const out=k=>!!hoodOf(k);                                       // a place in the wider city (off Hilltop)
 const has=k=>!!LV().inv[k];
@@ -59,8 +60,8 @@ aev({id:'lev_wallet',hook:'travel',tile:['👛','A hand in your pocket','bad'],c
   choices:()=>[
     {ic:'🚨',l:'Report it to transit security at the station',s:'40 min, energy −5. Wallets often turn up without the cash.',fn:()=>{later('lev_wallet',40);adj('energy',-5);adj('stress',-4);
       say('🚨 The officer at the station takes your report, and an hour later a call: your wallet was in a bin by the platform. Cash gone, but your ID and cards are all there. Stress −4.')}},
-    {ic:'📱',l:'Freeze your card from your phone and move on',s:`5 min, stress +6. A replacement ID costs about ${$(rp(20))}.`,fn:()=>{later('lev_wallet',5);adj('stress',6);spend(rp(20));
-      say(`📱 Card frozen before the next stop. The ID is another story: ${$(rp(20))} and a morning at the licensing office, some other day.`)}},
+    {ic:pre('phoneBank')?'☎️':'📱',l:pre('phoneBank')?'Call the bank’s card line from a pay phone and move on':'Freeze your card from your phone and move on',s:`5 min, stress +6. A replacement ID costs about ${$(rp(20))}.`,fn:()=>{later('lev_wallet',5);adj('stress',6);spend(rp(20));
+      say(`${pre('phoneBank')?'☎️ A quarter, a long hold and a tired voice: card canceled before the next stop.':'📱 Card frozen before the next stop.'} The ID is another story: ${$(rp(20))} and a morning at the licensing office, some other day.`)}},
     {ic:'😮‍💨',l:'Let it go for today',s:'No time lost. Stress +10, and the ID still needs replacing.',fn:()=>{adj('stress',10);spend(rp(20));
       say('😮‍💨 You let it go. It sits in your stomach the rest of the day anyway, and the new ID costs what it costs.')}},
   ],dflt:2});
@@ -68,10 +69,24 @@ aev({id:'lev_wallet',hook:'travel',tile:['👛','A hand in your pocket','bad'],c
 // a phone grabbed at the Link stop downtown: a zipped pocket and the grab fails
 aev({id:'lev_phone',hook:'arrive',tile:['📱','A grab at the Link stop','bad'],chance:0.04,bad:true,cooldown:45,max:2,urgent:true,
   cond:c=>['dt_pacific','dt_dome'].includes(c.at)&&c.from&&!out(c.from)&&!(window.CAR&&CAR.driving())&&tod()>=600&&tod()<1320,
-  run:c=>{const z=LV().zip;S.ev.flags.levPhone=z?'safe':'gone';
+  run:c=>{const z=LV().zip;
+    if(pre('cell')){S.ev.flags.levPhone=z?'safe':'wallet';const x=z?0:lose(rp(lite(25)));
+      say(z?'👛 Stepping off the bus downtown, a guy brushes past and a hand tugs at your jacket. It finds a zipper, gives up, and he is gone into the crowd. Your wallet is right where you put it.'
+        :`👛 Stepping off the bus downtown, you’re reading the schedule on the pole when a guy on a bike snatches your wallet out of your back pocket and is gone down the block before you can shout. ${$(x)} cash and your bus pass. A zipped inside pocket would have made it a lot harder.`);return}
+    S.ev.flags.levPhone=z?'safe':'gone';
     say(z?'📱 Stepping off the T Line, a guy brushes past and a hand tugs at your jacket. It finds a zipper, gives up, and he is gone into the crowd. Your phone is right where you put it.'
       :'📱 Stepping off the T Line, you’re reading a text when a guy on a bike snatches the phone out of your hand and is gone down the block before you can shout. A zipped pocket would have made it a lot harder.')},
-  choices:()=>LV().zip?[
+  choices:()=>pre('cell')?(LV().zip?[
+    {ic:'👮',l:'Tell the transit cop at the stop',s:'15 min. Stress −4: it helps to say it out loud.',fn:()=>{later('lev_phone',15);adj('stress',-4);say('👮 The officer thanks you, radios a description to the next bus and tells you the zipped pocket is exactly the right habit.')}},
+    {ic:'🚶',l:'Shake it off and keep going',s:'Stress +6.',fn:()=>{adj('stress',6);say('🚶 You keep walking, a little faster, a hand on your pocket the whole way.')}},
+  ]:[
+    {ic:'🪪',l:`A new ID at the licensing office — ${$(rp(20))}`,s:'45 min. Stress +4. The pass is another day.',dis:S.money<rp(20),fn:()=>{later('lev_phone',45);spend(rp(20));adj('stress',4);LV().zip=true;
+      say('🪪 A number, a long bench and a photo that looks like you after a long day. The clerk suggests an inside pocket. You take the advice.')}},
+    {ic:'👝',l:`A zip-up pouch at the five-and-dime — ${$(rp(6))}`,s:'20 min. Stress +2. Yours from now on.',dis:S.money<rp(6),fn:()=>{later('lev_phone',20);spend(rp(6));adj('stress',2);LV().zip=true;
+      say('👝 A little brown pouch with a zipper that sticks. It rides inside your jacket from now on.')}},
+    {ic:'😮‍💨',l:'Go without for a few days',s:'Free. Stress +10, community −2: no pass, no change for the bus.',fn:()=>{adj('stress',10);adj('community',-2);
+      say('😮‍💨 You walk more than you planned. A neighbor spots you fare for the bus. It stings more than the money.')}},
+  ]):LV().zip?[
     {ic:'👮',l:'Tell the security officer on the platform',s:'15 min. Stress −4: it helps to say it out loud.',fn:()=>{later('lev_phone',15);adj('stress',-4);say('👮 The officer thanks you, radios a description down the line and tells you the zipped pocket is exactly the right habit.')}},
     {ic:'🚶',l:'Shake it off and keep going',s:'Stress +6.',fn:()=>{adj('stress',6);say('🚶 You keep walking, a little faster, a hand on your pocket the whole way.')}},
   ]:[
@@ -82,10 +97,11 @@ aev({id:'lev_phone',hook:'arrive',tile:['📱','A grab at the Link stop','bad'],
     {ic:'📵',l:'Go without a phone for a few days',s:'Free. Stress +12, community −2: nobody can reach you.',fn:()=>{adj('stress',12);adj('community',-2);
       say('📵 No phone. You miss two texts from neighbors and a call from home. It is quieter, and lonelier, than you expected.')}},
   ],dflt:1});
+{const e=EV.find(x=>x.id==='lev_phone'),t0=e&&e.tile;if(e)Object.defineProperty(e,'tile',{configurable:true,enumerable:true,get(){return pre('cell')?['👛','A grab at the bus stop','bad']:t0},set(){}})}
 
 // a package stolen off the porch: the corner market's pickup locker keeps it safe
 aev({id:'lev_package',hook:'wake',tile:['📦','The porch is empty','bad'],chance:0.05,bad:true,cooldown:30,max:2,
-  cond:()=>day()>0&&S.loc==='home',
+  cond:()=>day()>0&&S.loc==='home'&&!pre('grocery'),
   run:()=>{const L0=LV();say(L0.locker?'📦 Your new work shoes came yesterday, straight to the pickup locker at the corner market. Two porches down, somebody’s box disappeared overnight. Yours is safe behind a code.'
     :'📦 The tracking says your new work shoes were delivered yesterday afternoon. The porch says otherwise. The corner market has a pickup locker for exactly this.')},
   choices:()=>LV().locker?[
@@ -137,7 +153,7 @@ aev({id:'lev_rain',hook:'travel',tile:['☔','Caught in the rain','info'],chance
 // ================= MONEY AND HOME (adult) =================
 // a scam text about a failed rent payment: call the landlord and lose nothing
 aev({id:'lev_scam',hook:'wake',tile:['💬','“Your rent payment failed”','bad'],chance:0.06,bad:true,cooldown:40,max:2,
-  cond:()=>day()>0,
+  cond:()=>day()>0&&!pre('text'),
   run:()=>{say(`💬 A text at 6 AM: “URGENT: your rent payment FAILED. Pay ${$(rp(75))} late fee within 2 hrs to avoid eviction: [link].” The link is not your landlord’s portal. Your heart goes fast anyway.`)},
   choices:()=>{const ch=!!LV().chat;return [
     {ic:'📞',l:'Call the landlord to check',s:'15 min, energy −2. Stress −4 once you know.',fn:()=>{later('lev_scam',15);adj('energy',-2);adj('stress',-4);
@@ -209,7 +225,7 @@ aev({id:'lev_prowl',hook:'wake',tile:['🚗','Car prowlers on the block','bad'],
     {ic:'📱',l:'Warn the block',s:L0.chat?'10 min. Post it in the group chat: community +2.':'10 min. Knock on a few doors: community +1, energy −2.',fn:()=>{later('lev_prowl',10);if(L0.chat)adj('community',2);else{adj('community',1);adj('energy',-2)}say('📱 “Lock up and clear your seats, everybody.” Three people thank you before lunch.')}},
     {ic:'🚶',l:'Check your doors and go on with your day',s:'Stress −2. The habits paid off.',fn:()=>{adj('stress',-2);say('🚶 All locked, all whole. Clear seats and the streetlight spot: worth it.')}},
   ];const g=rp(250),dd=rp(100),up=rp(8);return [
-    {ic:'🧾',l:`File a police report online and pay for the glass — ${$(g)}`,s:`About 1½ hours with the glass shop. Stress +3. ${jarTxt(g)}`,dis:!canPay(g),fn:()=>{later('lev_prowl',90);payJar(g);adj('stress',3);L0.seats=true;
+    {ic:'🧾',l:`File a police report ${pre('onlineBank')?'at the precinct':'online'} and pay for the glass — ${$(g)}`,s:`About 1½ hours with the glass shop. Stress +3. ${jarTxt(g)}`,dis:!canPay(g),fn:()=>{later('lev_prowl',90);payJar(g);adj('stress',3);L0.seats=true;
       say(`🧾 A report number from the Tacoma police website, then the glass shop on South Tacoma Way: new window by noon. ${$(g)}. From now on nothing stays on the seats.`)}},
     {ic:'🩹',l:`Tape plastic over it for now — ${$(rp(6))}`,s:'20 min, stress +6. Replace it later (at home).',fn:()=>{later('lev_prowl',20);spend(rp(6));adj('stress',6);S.car.taped=true;L0.seats=true;
       say('🩹 A trash bag and a roll of packing tape from the corner market. It flaps at every speed over 25. It will do for now.')}},
@@ -265,7 +281,7 @@ aev({id:'lev_er',hook:'arrive',tile:['🚑','A ride to the ER','bad'],chance:0.0
   cond:c=>c.at==='home'&&tod()>=1080&&tod()<1350,
   run:()=>{say('🚑 Tito Ben from next door knocks, holding his wrist at a bad angle: he slipped on the back steps. Tita Rose is on a night shift and he can’t drive like this. St. Joseph’s emergency room is a short drive. He looks embarrassed to ask.')},
   choices:()=>{const c=rp(22);return [
-    {ic:'🚗',l:`Pay for a rideshare and go with him — ${$(c)}`,s:`About 2½ hours, energy −10, stress +4. Community +5. ${jarTxt(c)}`,dis:!canPay(c),fn:()=>{later('lev_er',150);const j=payJar(c);adj('energy',-10);adj('stress',4);adj('community',5);
+    {ic:'🚗',l:`Pay for a ${pre('rideshare')?'cab':'rideshare'} and go with him — ${$(c)}`,s:`About 2½ hours, energy −10, stress +4. Community +5. ${jarTxt(c)}`,dis:!canPay(c),fn:()=>{later('lev_er',150);const j=payJar(c);adj('energy',-10);adj('stress',4);adj('community',5);
       say(`🚗 You wait with him through triage, X-ray and a cast the color of a Mariners jersey. ${j>=c?'The jar paid for the ride, which is exactly what it’s for.':''} Tita Rose hugs you so hard at the door the next morning that your back pops.`)}},
     {ic:'📞',l:'Call his daughter and wait with him until she comes',s:'45 min. Community +2, stress +3.',fn:()=>{later('lev_er',45);adj('community',2);adj('stress',3);say('📞 His daughter drives up from Lakewood in twenty-five minutes. You sit with him on the stoop and talk about the Navy until she pulls up.')}},
     {ic:'🚕',l:'Help him call a cab and go back in',s:'10 min, stress +6.',fn:()=>{later('lev_er',10);adj('stress',6);say('🚕 You get him into a cab and stand on the curb as it pulls away. You think about him all evening.')}},
@@ -338,11 +354,12 @@ gev({id:'lev_g_linklost',hook:'travel',tile:['🚋','The first Link ride','info'
     say(m?'🚋 Your first ride down the hill on your own. You studied the route map at the Reading Room, so you count the stops and hop off at exactly the right one. Easy.'
       :'🚋 Your first ride down the hill on your own. You miss your stop, then the next one, and end up looking at a station sign you’ve never seen. +15 min. The route map at the Reading Room would have helped.')},
   choices:()=>LV().kmap?[
-    {ic:'📸',l:'Take a picture of the view from the train',s:'Mood +3.',fn:()=>{adj('mood',3);say('📸 The cranes, the Dome, the bay: one blurry, perfect picture from the window.')}},
-    {ic:'📱',l:'Text Mom that you made it',s:'Family +2.',fn:()=>{adj('family',2);say('📱 “Made it!” Mom sends back eleven hearts.')}},
+    {ic:pre('camera')?'🪟':'📸',l:pre('camera')?'Watch the view from the window':'Take a picture of the view from the train',s:'Mood +3.',fn:()=>{adj('mood',3);say(pre('camera')?'🪟 The cranes, the bay, the water: you watch it all slide by with your forehead on the glass.':'📸 The cranes, the Dome, the bay: one blurry, perfect picture from the window.')}},
+    pre('text')?{ic:'☎️',l:'Call Mom from a pay phone',s:'Family +2.',fn:()=>{adj('family',2);say('☎️ A quarter in the pay phone. “Made it!” Mom says she was already watching the clock.')}}
+      :{ic:'📱',l:'Text Mom that you made it',s:'Family +2.',fn:()=>{adj('family',2);say('📱 “Made it!” Mom sends back eleven hearts.')}},
   ]:[
     {ic:'🙋',l:'Ask the operator',s:'5 min, mood +2.',fn:()=>{later('lev_g_linklost',5);adj('mood',2);LV().kmap=true;say('🙋 The operator points at the map by the door. “Ride back two stops. Everybody does it once.”')}},
-    {ic:'📱',l:'Call Mom',s:'15 min, family +1, mood −2.',fn:()=>{later('lev_g_linklost',15);adj('family',1);adj('mood',-2);say('📱 Mom stays calm and talks you back to the right stop. She also says “next time, look at the map.”')}},
+    {ic:pre('cell')?'☎️':'📱',l:pre('cell')?'Find a pay phone and call Mom':'Call Mom',s:'15 min, family +1, mood −2.',fn:()=>{later('lev_g_linklost',15);adj('family',1);adj('mood',-2);say(`${pre('cell')?'☎️':'📱'} Mom stays calm and talks you back to the right stop. She also says “next time, look at the map.”`)}},
     {ic:'🗺️',l:'Figure it out from the station map',s:'10 min, energy −3. You’ll know it now.',fn:()=>{later('lev_g_linklost',10);adj('energy',-3);LV().kmap=true;say('🗺️ You trace the line with your finger, find yourself, and ride back. You will never miss this stop again.')}},
   ],dflt:0});
 
@@ -353,7 +370,7 @@ function adultActs(a){
   if(S.loc==='home'){
     a.push({ic:'🫙',l:`Put $20 in the savings jar (${$(L0.jar)} in it)`,s:'It pays for the surprises: a dead fridge, a ride to the ER.',cat:'money',dis:S.money<20,fn:()=>{money(-20);L0.jar+=20;pass(2);say(`🫙 Twenty dollars into the jar on top of the fridge. ${$(L0.jar)} saved for a bad day.`)}});
     if(L0.jar>=20)a.push({ic:'🫙',l:'Take $20 out of the savings jar',s:`${$(L0.jar)} in it.`,cat:'money',fn:()=>{money(20);L0.jar-=20;pass(2);say(`🫙 Twenty out of the jar. ${$(L0.jar)} left.`)}});
-    a.push({ic:'🤐',l:`Habit: phone in a zipped pocket on the go: ${onOff(L0.zip)}`,s:L0.zip?'Tap to stop. (Slower to answer texts, much harder to grab.)':'Tap to start. Slower to answer texts, much harder to grab.',cat:'here',fn:()=>{L0.zip=!L0.zip;say(L0.zip?'🤐 From now on your phone rides in the zipped inside pocket.':'🤐 Back to the easy pocket.')}});
+    const cl=pre('cell');a.push({ic:'🤐',l:`Habit: ${cl?'wallet':'phone'} in a zipped pocket on the go: ${onOff(L0.zip)}`,s:L0.zip?`Tap to stop. (${cl?'Slower to pay at the counter':'Slower to answer texts'}, much harder to grab.)`:`Tap to start. ${cl?'Slower to pay at the counter':'Slower to answer texts'}, much harder to grab.`,cat:'here',fn:()=>{L0.zip=!L0.zip;say(L0.zip?`🤐 From now on your ${cl?'wallet':'phone'} rides in the zipped inside pocket.`:'🤐 Back to the easy pocket.')}});
     if(S.car&&S.car.own){
       a.push({ic:'🧹',l:`Habit: nothing on the car seats: ${onOff(L0.seats)}`,s:'Bags in the trunk or inside, nothing in the cup holder. Tap to change.',cat:'here',fn:()=>{L0.seats=!L0.seats;say(L0.seats?'🧹 From now on the seats stay empty: bags in the trunk or upstairs.':'🧹 Back to tossing things on the back seat.')}});
       a.push({ic:'💡',l:`Park under the streetlight: ${onOff(L0.light)}`,s:'The spot by the light on your block. A few more steps from the door. Tap to change.',cat:'here',fn:()=>{L0.light=!L0.light;say(L0.light?'💡 You start leaving the car in the bright spot under the streetlight.':'💡 Back to the closest spot, light or not.')}});

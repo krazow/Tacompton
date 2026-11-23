@@ -3,6 +3,11 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+### Fixed
+- 🕰️ **Era fixes:** the Growing Up job at 16 pays (and says) the start year's minimum wage instead of 2026's, and Growing Up pocket money in text now matches what is paid. Before cell phones the grab downtown is a wallet grab at the bus stop (no phone, no Link), and a few life events (the card freeze, the rent scam text, the first ride downtown, a rideshare) use the old way in the early years.
+
 ## 0.4.1 (2026-11-22)
 
 ### Added

@@ -68,7 +68,9 @@ const GH_JOBS={
     pitch:'The shop by the museum doors: glass paperweights, art books, kids’ kits, and visitors from all over asking where the Hot Shop is. The shop lead, Mr. Ferreira, says the first rule is to carry everything with two hands.',
     work:['🔮 You wrap a glass bowl in four layers of tissue for a lady from Spokane. She says you have “museum hands.” You decide that’s a compliment.','🔮 Restocking paperweights, very slowly. A kid asks if they’re magic. You say “kind of.” His mom buys two.','🔮 A busy Saturday: tour groups, a field trip, a man who wants a receipt for a postcard. Between rushes you watch the glassblowers through the window.','🔮 Mr. Ferreira teaches you the register’s secret button. There is no secret button. It’s a joke he does with every new hire.']},
 };
-const ghWage=()=>{const y=dateOf(day()).y;return y<=2026?17.13:y===2027?17.73:Math.round(17.73*Math.pow(1.03,y-2027)*100)/100};   // Washington's minimum wage (L&I): $17.13 in 2026, $17.73 in 2027; 16- and 17-year-olds get the full rate
+// the wage is already the year's own dollars: money() must not scale it a second time
+const ghEarn=c=>{if(typeof ERA_RAW==='undefined')return gEarn(c);const o=ERA_RAW;ERA_RAW=true;try{gEarn(c)}finally{ERA_RAW=o}};
+const ghWage=()=>{const y=dateOf(day()).y;if(y<=2026&&typeof eraOld==='function'&&eraOld())return eraMinWage(y);return y<=2026?17.13:y===2027?17.73:Math.round(17.73*Math.pow(1.03,y-2027)*100)/100};   // Washington's minimum wage (L&I): $17.13 in 2026, $17.73 in 2027; 16- and 17-year-olds get the full rate
 const ghJob=()=>{const g=ghS();return g.job?GH_JOBS[g.job.id]:null};
 function ghShift(d=day()){const g=ghS(),J=ghJob();if(!J||d<g.job.since)return null;return J.shifts[((d%7)+7)%7]||null}
 const ghDays=J=>Object.keys(J.shifts).map(k=>DAYS[k].slice(0,3)).join(', ');
@@ -87,7 +89,7 @@ function ghJobActs(loc,d,m){
       if(sh&&!done&&m<sh[1]-60){const late=Math.max(0,m-sh[0]);
         a.push({ic:J.ic,l:`Work your shift (${fmt(sh[0])}–${fmt(sh[1])})`,s:m<sh[0]?`Starts in ${sh[0]-m} min: you wait in the back. ${$(wage)}/hr.`:late<=5?`On time. ${$(wage)}/hr, energy −${Math.round((sh[1]-m)/30)}.`:`You’re ${late} min late. Go in now.`,cat:'work',cls:'primary',
           fn:()=>{if(tod()<sh[0])pass(sh[0]-tod());const st=tod(),lt=Math.max(0,st-sh[0]-5),mins=sh[1]-st,pay=Math.round(mins/60*wage);pass(mins);
-            g.worked[d]=lt;g.shifts++;g.paid+=pay;gEarn(pay);adj('energy',-Math.round(mins/30));adj('mood',2);
+            g.worked[d]=lt;g.shifts++;g.paid+=pay;ghEarn(pay);adj('energy',-Math.round(mins/30));adj('mood',2);
             say(`${pick(J.work)} You earn <b>${$(pay)}</b> for ${Math.round(mins/6)/10} hours${lt?`, and the ${lt} minutes late get a look. A nice look, but a look`:''}.`)}});
       }else if(sh&&done) a.push({ic:'✔️',l:'Shift done',s:`Next: ${ghDays(J)}.`,cat:'work',dis:true,fn:()=>{}});
       a.push({ic:'👋',l:`Give your notice at ${J.n}`,s:`You work ${J.when}. ${g.shifts} shift${g.shifts===1?'':'s'} so far, ${$(g.paid)} earned.`,cat:'work',fn:()=>{g.job=null;say(`${J.ic} You give your notice. The crew signs a card. You can come back any time, they say, and they mean it.`)}});
@@ -254,7 +256,7 @@ function ghAnnounce(lines){
 LIFE_HOOKS.skip.push((from,to,ch,notes)=>{if(!isGrow()||S.age>=18)return;const g=ghS(),J=ghJob();if(!J)return;
   const wk=Math.floor((to-from+1)/7);if(wk<1)return;
   const pay=ch==='work'?0:Math.round(wk*4*ghWage());   // the "extra shifts" choice is paid by 10-life.js; otherwise about one shift a week
-  if(pay){gEarn(pay);g.shifts+=wk;g.paid+=pay}
+  if(pay){ghEarn(pay);g.shifts+=wk;g.paid+=pay}
   notes.push(`${J.ic} ${ch==='work'?'Extra':'Your'} shifts at ${J.n}${pay?`: ${$(pay)} into your Money`:''}.`)});
 
 // ---- kid-appropriate things that happen in the neighborhoods: choices (gOpt, gPass and gWatch are in 31-grow-story.js) ----
@@ -310,5 +312,5 @@ ACH.push(...[
   if(i>=0){const ks=Object.keys(L).filter(k=>!L[k].hidden);r[i]=['Places visited',`${ks.filter(k=>S.visited[k]).length} of ${ks.length}`]}
   const g=ghS();if(g.shifts)r.push(['First job',`${g.job?GH_JOBS[g.job.id].n:'done'}: ${g.shifts} shift${g.shifts===1?'':'s'}, ${$(g.paid)}`]);return r}}
 
-GROW.hoods={open:ghOpen,OPEN:GH_OPEN,JOBS:GH_JOBS,wage:ghWage,shift:ghShift,state:()=>ghS(),FARE:GH_FARE};
+GROW.hoods={earn:ghEarn,open:ghOpen,OPEN:GH_OPEN,JOBS:GH_JOBS,wage:ghWage,shift:ghShift,state:()=>ghS(),FARE:GH_FARE};
 })();

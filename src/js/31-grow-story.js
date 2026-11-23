@@ -20,7 +20,7 @@ GROW.onMorning=d=>{
   if(d===0) return;
   const o=dateOf(d),late=o.m===8&&o.d>=20;   // the end-of-summer line only in late August
   say(`${gLong(d)}, ${fmt(S.t)}. ${d===gSchoolDay()?'🎒 Today is the day.':pick(late?G_MORNING:G_MORNING.slice(1))}`);
-  if(d===gSat()){gEarn(10);say('💵 Saturday: allowance day. Dad leaves $10 on the counter under the salt shaker. The back-to-school giveaway is at People’s, 10 AM to 2 PM, and Tavita’s family across the street is firing up the grill tonight.')}
+  if(d===gSat()){gEarn(10);say(`💵 Saturday: allowance day. Dad leaves ${$(gAmt(10))} on the counter under the salt shaker. The back-to-school giveaway is at People’s, 10 AM to 2 PM, and Tavita’s family across the street is firing up the grill tonight.`)}
   else if(d===6) say('☀️ Sunday. The last day of summer. Church bells all over the hill, then a long, slow afternoon.');
   else if(d===gSchoolDay()) say(`🏫 The first day of ${gGradeWord()} grade at ${gSchool()}. The bell rings at ${fmt(G_BELL)}, and it’s ${travelMins('home','school')} minutes up the hill.`);
   else if(gWeekday(d)) say('🏥 Mom and Dad are at work until 5:30. You’re in charge of you (and the house key on a shoelace).');
