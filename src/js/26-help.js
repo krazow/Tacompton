@@ -417,8 +417,11 @@ function helpChapters(){
     ${hTip('Kitchen players','You have mornings free. Swim, volunteer and talk on the corner before your 2:00 PM shift, and remember the staff meal saves groceries.')}`],
   ['settings','Settings, accessibility and saving',`
     <p>Open <b>⚙️ Settings</b> from the gear on the title screen or in the game.</p>
-    <ul><li><b>👤 Change name</b>, <b>🔊 Sound</b>, <b>💡 Tips</b> (one short tip at a time) and <b>🔔 Event pop-ups</b>.</li>
-    <li><b>♿ Accessibility:</b> text size (Normal, Large, Extra large), high contrast, and reduce motion.</li>
+    <ul><li><b>👤 Change name</b>, <b>💡 Tips</b> (one short tip at a time) and <b>🔔 Event pop-ups</b>.</li>
+    <li><b>🔊 Sound and music:</b> sound effects (chimes, taps, 💰 money, the 🔔 T Line bell, 🌧️ rain on a rainy morning) and gentle <b>🎵 music</b> that follows the time of day, each with its own volume. Music is off until you turn it on. It’s all made inside the game, so it works offline, and nothing plays until you tap something. With Reduce motion on, taps and rain stay quiet and the music is a soft hum with no tune.</li>
+    <li><b>♿ Accessibility:</b> text size (Normal, Large, Extra large), high contrast, reduce motion, and <b>🗣️ Read aloud</b>: off at first; turn it on and the morning report, events and pop-ups are read to you with a voice on this device (pick the voice and the speed). Each pop-up gets a <b>🔊</b> button to hear it again. Nothing goes over the internet.</li>
+    <li><b>📔 Memory book</b> (on the 📅 Week tab and the last screen): every moment you collect across a life, by year: birthdays, graduation, first jobs and promotions, the first time in each neighborhood, and your 📷 photos with their captions. It’s saved with your game.</li>
+    <li><b>🌟 Lifetime achievements:</b> for a whole life, not one week: graduating, a first car, ten years at one job, raising a family, 100 hours of helping out, every neighborhood, three decades and more. They’re kept for your name on this device across all your games, listed here and under 🏅 Best scores.</li>
     <li><b>⌨️ Keyboard:</b> on a computer, 1–9 press the numbered buttons, a tab’s first letter opens it, Enter presses the highlighted button, Esc closes a pop-up (and this guide), and ? lists the shortcuts.</li>
     <li><b>🎮 Game options</b> (during a game): the game’s length, difficulty, week play and more. See <b>Game lengths and ages</b>.</li>
     <li><b>🏆 Achievements</b> and <b>❓ Help</b> (this guide).</li></ul>
