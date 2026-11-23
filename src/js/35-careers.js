@@ -135,6 +135,7 @@ function careerReview(C,d,ann,out){
 function careerPromoCheck(C,d,j,out){
   const R=CAREER_LADDERS[C.k].r[C.r+1];if(!R||S.life.parttime||C.prog)return;
   if((d-C.since)/365.25<R.yrs-0.01||j.st<R.st||!j.ok)return;
+  if(R.prog&&typeof crimeHasRecord==='function'&&crimeHasRecord())return;   // 60-crime.js: nursing programs run a background check
   if(R.prog&&!C.done[R.prog.id]){if(C.offer!==R.prog.id){C.offer=R.prog.id;out.push(`🎓 Your manager pulls you aside: you’d make a good ${R.t}. ${R.prog.n} is open to you (${R.prog.mo} months, ${$(priceAmt(R.prog.fee))} a month, and fewer shifts while you study). Choose it in a time skip.`)}return}
   careerPromote(C,d,out);
 }
