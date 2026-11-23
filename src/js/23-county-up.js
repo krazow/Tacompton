@@ -4,8 +4,8 @@
 //  County Library branch on Bridgeport Way, Curran Apple Orchard park (county parkland in the early 1990s, the city's after
 //  University Place incorporated in 1995) and the Bridgeport Way shops (invented). Prefix up_. county:true (72-county.js
 //  decides when the county is open to you; until then these places stay hidden). Opening dates are in ERA below.
-//  TODO(66-tacoma-places.js): Pizza & Pipes at 19th & Mildred belongs to University Place; when that file is on main,
-//  set its entry's hood to 'univplace' in its table.
+//  Pizza & Pipes at 19th & Mildred (1974 to the fire of Aug 3, 1999) is a stop here too: its entry in 66-tacoma-places.js
+//  has hood 'univplace', and Chambers Bay is listed there for the guide's timeline.
 // ============================================================
 (function(){
 const KEY='univplace';
