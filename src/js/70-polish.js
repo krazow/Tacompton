@@ -67,7 +67,7 @@ const lachJobYears=()=>{const J=(S.life&&S.life.jobs)||[];if(!J.length||isGrow()
   while(i>0&&J[i-1].job===k)i--;return S.age-J[i].age};
 const lachDecades=()=>{const y0=S.startYear||2026,y1=typeof yearNow==='function'?yearNow():y0;return Math.floor(y1/10)-Math.floor(y0/10)+1};
 const lachParentYears=()=>{const st=((S.life&&S.life.stages)||[]).find(x=>/Parent/.test(x.stage));return st?S.age-st.age:-1};
-const lachHoods=()=>{const B=S.mbook;if(typeof HOODS==='undefined'||!B)return false;const k=Object.keys(HOODS);return k.length>0&&k.every(h=>B.hoods[h]||(S.hoods||{})[h])};
+const lachHoods=()=>{const B=S.mbook;if(typeof HOODS==='undefined'||!B)return false;const k=Object.keys(HOODS).filter(h=>!HOODS[h].county);return k.length>0&&k.every(h=>B.hoods[h]||(S.hoods||{})[h])};
 const lachItems=re=>((S.mbook&&S.mbook.items)||[]).filter(x=>re.test(x.t)).length;
 const LACH=[
   {id:'graduated',ic:'🎓',n:'Graduated',d:'Finish high school at Hilltop High.',test:()=>!!(S.life&&S.life.graduated)||lachItems(/^Graduated/)>0},

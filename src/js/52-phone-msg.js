@@ -100,7 +100,7 @@ function msgRideMins(a,b){const ha=hoodOf(a),hb=hoodOf(b);if(ha===hb)return null
 {const hf=hoodFare;hoodFare=function(a,b){return PH_RIDE?0:hf(a,b)}}
 {const oa=onArrive;onArrive=function(dest,from){const r=PH_RIDE;try{return oa.apply(this,arguments)}finally{if(r){PH_RIDE=null;say(`🚗 ${r.n} drops you off at ${L[dest].name}. “Text me if you need a ride back.”`)}}}}
 if(window.CAR){const dr=CAR.driving;CAR.driving=()=>!!PH_RIDE||dr()}   // in a friend's car, not on the bus
-function msgRideDests(){const out=[];for(const h of Object.keys(HOODS)){const k=HOODS[h].hub;if(L[k]&&hoodOf(S.loc)!==h)out.push(k)}if(hoodOf(S.loc))out.unshift('link');return out.filter(k=>L[k])}
+function msgRideDests(){const out=[];for(const h of Object.keys(HOODS)){const k=HOODS[h].hub;if(L[k]&&!L[k].hidden&&hoodOf(S.loc)!==h)out.push(k)}if(hoodOf(S.loc))out.unshift('link');return out.filter(k=>L[k])}
 function msgRideGo(k){const M=MSG(),r=M.ride;if(!r||S.t>r.until||!L[k])return;delete M.ride;PH_RIDE={n:msgFirst(r.id)};phoneClose();go(k)}
 function msgLiftDo(){const M=MSG(),f=M.lift;if(!f||f.d!==day()||S.loc!=='home')return;delete M.lift;const n=msgFirst(f.id);pass(60);adj('stress',-6);adj('energy',-4);if(!isGrow())adj('community',1);msgCloser(f.id,1);
   say(pick([`📦 ${n} takes the heavy end. The couch goes up the stairs, the dresser goes against the other wall, and the bed frame finally stops wobbling. An hour, half the work, twice the laughs.`,
