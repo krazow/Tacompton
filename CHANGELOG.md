@@ -3,7 +3,7 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
-## Unreleased
+## 0.4.0 (2026-11-22)
 
 ### Added
 - 🎭 Choices in Downtown, the Eastside, Fern Hill, Northeast Tacoma and Old Town: all 22 events there now let you decide. Join in, stop by briefly or keep going; calm moments offer a one-tap "Stop and watch". Saying yes to Camila's quinceañera invitation changes what happens at the Family Hall garden, and working the Fern Hill cleanup changes the ice-cream social.
@@ -42,6 +42,7 @@ are taken from it.
 - Kid-friendly happenings around town (a frisbee game, a harbor seal, the glassblowers, a lost little kid), Running Start at TCC at 16, and two achievements: Youth ORCA and First Paycheck. Growing Up's Go somewhere groups places by neighborhood, like the adult game.
 - 📖 The guide has two new chapters: **Game lengths and ages** (Quick play to Lifetime, the key weeks and the summaries between them, starting ages 12, 15 and 18, changing the length later in ⚙️ Settings → 🎮 Game options, the other options, scores per month and how a Lifetime ends) and **Growing up** (middle school and Hilltop High, school days and homework, the school-year events, birthdays, curfew, neighborhoods by age with free youth rides, first jobs at 16, graduation and the choice at 18, seasons and the changing city), with numbers taken from the game.
 - 🔞 Adults only (18+): an optional mode for adult relationships, off by default. Turn it on from the start page after a one-time "This mode is for players 18 and older" check, or any time in ⚙️ Settings → 🎮 Game options → 🔞 18+ mode. Under 18 it waits for your 18th (and your own place) or starts a new adult save; nothing of it ever shows in Growing Up. Turning it off hides it all and pauses relationships. The end screen and life summary list every switch.
+- 📖 With 18+ mode on, the guide gets its own **18+ mode** chapter (turning it on and off, meeting people, the dates with their costs and times, consent, relationships, setbacks and the ❤️ tab). It never shows with the mode off, in Growing Up or under 18.
 - ❤️ Meet people around Tacoma (the Link, a show at the Dome, the Proctor farmers market, a party down the hall, work) or on a dating app at home: a match or two a week. Twelve invented adults, 23 to 45, each with an age, a job, a neighborhood and interests; friends from Growing Up join only once you're both adults. Interest and chemistry follow shared interests and how you treat people.
 - 🌹 Dates with real costs and time (tacos at the truck lot, a movie at the Starlite, Owen Beach at sunset, the Museum of Glass, Wright Park), flirting that's playful, sincere or bold, and a ❤️ Romance tab. Then going exclusive, meeting the friends and the family, moving in (shared rent and chores), engagement and a wedding at the Seymour Conservatory or the courthouse, or choosing not to marry; kids in Lifetime games.
 - Consent is part of the game: anyone can say no, and the game takes it gracefully. Nothing explicit, ever: a fade to black and a morning-after line. Consequences: jealousy, cheating found out, breakups with a sad week, a pregnancy scare handled at the clinic, and a partner's job changing your plans.
