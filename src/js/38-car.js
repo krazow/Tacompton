@@ -15,6 +15,12 @@ const CAR_TIERS={
   corolla:{n:'a 2016 Toyota Corolla',ic:'🚙',price:7500,ins:110,rep:1,d:'98,000 miles, one owner, new tires.'},
   rav4:{n:'a 2017 Toyota RAV4',ic:'🚙',price:11000,ins:130,rep:0.7,d:'80,000 miles, room for a couch cushion and three friends.'},
 };
+// the same three cars, as old as they are in 2026, in the year you're shopping (63-era.js yearNow; prices follow rp())
+{const Y=()=>typeof yearNow==='function'?yearNow():2026;
+  Object.defineProperty(CAR_TIERS.civic,'n',{get(){return `a ${Y()-17} Honda Civic`}});
+  Object.defineProperty(CAR_TIERS.corolla,'n',{get(){return `a ${Y()-10} Toyota Corolla`}});
+  Object.defineProperty(CAR_TIERS.rav4,'n',{get(){const y=Y()-9;return y>=1996?`a ${y} Toyota RAV4`:`a ${y} Chevy Blazer`}});}
+window.CAR_TIERS=CAR_TIERS;
 const CS=()=>S.car||(S.car={lic:(S.startAge||18)>=18,practice:0,tests:0,testDay:-1,lesson:-1,own:null,ins:0,billed:null,down:false,taped:false,trips:0,gas:0});
 const owns=()=>!!S&&!!S.car&&!!S.car.own;
 const adultOn=()=>!!S&&!isGrow()&&lifeLong()&&(S.age||18)>=18;

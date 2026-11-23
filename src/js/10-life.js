@@ -139,8 +139,11 @@ function lifeHook(name,...a){(LIFE_HOOKS[name]||[]).forEach(f=>{try{f(...a)}catc
 // ---- the life part of a save ----
 function lifeBlank(x){return {weekPlay:'full',diffWk:-1,snaps:[],moments:[],stages:[{stage:x.stage,age:x.age,d:0}],jobs:[],family:60,tot:{},
   rentHelp:0,rentHelpLeft:0,path:null,parttime:false,prog:0,done:false,retired:false,graduated:false,schoolDays:0,ended:null,grow:null,lastSkip:null}}
+// the first morning of a life that starts in year y (63-era.js: the same Monday as 2026's, in that year)
+function lifeStartFor(age,y){return typeof eraStartDate==='function'?eraStartDate(age,y||2026):LIFE_START[age]}
 function lifeSetup(x,p){
-  x.length=p.length;x.startAge=p.startAge;x.age=p.startAge;x.birthday=p.birthday;x.startDate=LIFE_START[p.startAge];
+  x.length=p.length;x.startAge=p.startAge;x.age=p.startAge;x.birthday=p.birthday;
+  x.startYear=p.length!=='quick'&&p.startYear?p.startYear:2026;x.startDate=lifeStartFor(p.startAge,x.startYear);   // Quick play is always 2026
   x.stage=stage(x.age);x.lengthLog=[];x.keyWeeks=lifeBuild(p.length,x);x.kwi=0;x.life=lifeBlank(x);
   const k=x.keyWeeks[0];k.from=k.start;k.to=k.end;
 }
@@ -438,12 +441,12 @@ window.bestScoresModal=bestScoresModal;
 }}
 function lifeEndExtras(){const e=document.querySelector('.end');if(!e||e.querySelector('#bestBtn'))return;const b=[...e.querySelectorAll('button')].pop();
   if(b)b.insertAdjacentHTML('beforebegin','<button id="bestBtn" class="act" style="margin-top:10px;justify-content:center" onclick="bestScoresModal()"><span class="tx" style="text-align:center"><b>🏅 Best scores</b></span></button>')}
-window.lifeAgain=()=>{const p={length:S.length,startAge:S.startAge,birthday:lifeRandBirthday()};lifeStartWith(p)};
+window.lifeAgain=()=>{const p={length:S.length,startAge:S.startAge,startYear:S.startYear||2026,birthday:lifeRandBirthday()};lifeStartWith(p)};
 
 // ---- the start screen: pick a length and a starting age ----
-let LP={length:'6m',startAge:18,birthday:null};
+let LP={length:'6m',startAge:18,startYear:2026,birthday:null};
 function lifePlanText(p){
-  const o={startDate:LIFE_START[p.startAge],startAge:p.startAge,birthday:p.birthday},w=lifeBuild(p.length,o),e=w[w.length-1].end;
+  const o={startDate:lifeStartFor(p.startAge,p.length==='quick'?2026:p.startYear),startAge:p.startAge,birthday:p.birthday},w=lifeBuild(p.length,o),e=w[w.length-1].end;
   const endAge=p.startAge+[...Array(90)].findIndex((_,j)=>lifeBday(o,p.startAge+j+1)>e);
   return {weeks:w.length,end:`${dAt(o.startDate,e).label}, ${dAt(o.startDate,e).y}`,start:`${dAt(o.startDate,0).label}, ${dAt(o.startDate,0).y}`,endAge};
 }
@@ -454,17 +457,18 @@ function lifeStartModal(){
   const body=`<div class="sect">How long?</div><div class="lchips">${LIFE_ORDER.map(k=>chip('length',k,`${LIFE_LEN[k].ic} ${LIFE_LEN[k].n}`,LP.length===k)).join('')}</div>
     <p class="lnote">${LIFE_LEN[LP.length].d}</p>
     <div class="sect">Starting age</div><div class="lchips">${LIFE_AGES.map(a=>chip('startAge',a,`${a}`,LP.startAge===a)).join('')}</div>
-    <p class="lnote">${setup}</p>
+    <p class="lnote">${setup}</p>${typeof eraYearChips==='function'?eraYearChips(LP):''}
     <div class="lplan"><div class="kv"><span>🎂 Your birthday</span><b>${LP.birthday.label} <button class="lchip sm" onclick="lifePick('birthday','')" aria-label="Pick another birthday">🎲</button></b></div>
     <div class="kv"><span>📅 Starts</span><b>${t.start}</b></div><div class="kv"><span>🏁 Ends</span><b>${t.end}${LP.length==='quick'?'':` (age ${t.endAge})`}</b></div>
     <div class="kv"><span>⭐ Key weeks</span><b>${t.weeks}${LP.length==='quick'?' (one long stretch)':', with a summary between them'}</b></div></div>`;
-  const btns=[{l:'▶️ Start this life',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP))},{l:'Cancel',fn:()=>{}}];
+  const yr=LP.length==='quick'?2026:LP.startYear||2026;
+  const btns=[{l:'▶️ Start this life',s:`${LIFE_LEN[LP.length].n}, starting at ${LP.startAge}${yr!==2026?` in ${yr}`:''}. Next: pick a difficulty.`,fn:()=>lifeStartWith(Object.assign({},LP,{startYear:yr}))},{l:'Cancel',fn:()=>{}}];
   const el=document.getElementById('mbg');
   if(el&&el.dataset.life){SWAPOK=true;try{modalSwap('🌱 Start a new life',body,btns)}finally{SWAPOK=false}el.dataset.life='1';return}
   modal('🌱 Start a new life',body,btns);const m=document.getElementById('mbg');if(m)m.dataset.life='1';
 }
 window.lifeStartModal=lifeStartModal;
-window.lifePick=(k,v)=>{if(k==='birthday')LP.birthday=lifeRandBirthday();else LP[k]=k==='startAge'?+v:v;lifeStartModal()};
+window.lifePick=(k,v)=>{if(k==='birthday')LP.birthday=lifeRandBirthday();else LP[k]=k==='startAge'||k==='startYear'?+v:v;lifeStartModal()};
 function lifeStartWith(p){
   const run=k=>{setMode(p.startAge<18?'grow':'adult');LIFE_PICK=p;newGame(k);render()};
   const pd=()=>{setMode(p.startAge<18?'grow':'adult');diffModal(run)};

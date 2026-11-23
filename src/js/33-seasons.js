@@ -199,7 +199,7 @@ function cityCatchUp(to,out){
   const C=cityState(),lines=[];
   const y0=dateOf(0).y,y1=dateOf(to).y;
   if(!isGrow()&&C.rentAp==null)C.rentAp=C.rentF;   // the first adult lease is what it is (at 18, or after graduation): raises count from there
-  for(let y=Math.max(2027,y0);y<=y1;y++){const id='rent'+y;if(C.done[id]||dayIndexOf(y,8,1)>to||dayIndexOf(y,8,1)<=0)continue;
+  for(let y=y0;y<=y1;y++){const id='rent'+y;if(C.done[id]||dayIndexOf(y,8,1)>to||dayIndexOf(y,8,1)<=0)continue;
     C.done[id]=true;
     const p=cityRentPct(y);C.rentF*=1+p/100;   // no cap: wages rise too now (raises and promotions, 35-careers.js)
     lines.push(isGrow()?`🏠 Your parents’ lease renews with rent up ${p}%. Dad does the math at the kitchen table twice. Rents are climbing all over Hilltop.`:`__rent${p}`);}
