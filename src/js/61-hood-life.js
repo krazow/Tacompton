@@ -29,6 +29,8 @@ const H=()=>{const h=S.hood||(S.hood={});
 const long=()=>typeof lifeLong==='function'&&lifeLong();
 const age=()=>(S&&S.age)||(isGrow()?12:18);
 const R=c=>isGrow()?gRp(c):rp(c);
+// the start-year builder's eras (63-era.js): phones only where the year has them (2026 if there's no start year)
+const era=f=>{try{return typeof eraHas==='function'?!!eraHas(f):true}catch(e){return true}};
 
 // ---- the meters, the same words in both modes ----
 function fam(n){if(isGrow())adj('family',n);else if(S.life)S.life.family=clamp(Math.round(S.life.family+n),0,100)}
@@ -108,12 +110,12 @@ hev({id:'hood_gunshots',band:'mid',light:true,tile:['🌙','Pops in the night','
   ]});
 
 hev({id:'hood_lookout',band:'mid',tile:['💵','A $40 offer','bad'],dflt:0,
-  txt:'💵 An older kid from the corner by the car wash calls you over. Forty dollars, he says, just to stand at the end of the block after school and text him if a police car comes. “Easy money. Nobody looks at a kid.”',
+  txt:()=>`💵 An older kid from the corner by the car wash calls you over. Forty dollars, he says, just to stand at the end of the block after school and ${era('text')?'text him':'give a whistle'} if a police car comes. “Easy money. Nobody looks at a kid.”`,
   ch:()=>[
     {ic:'🙅',l:'Say no and keep walking',fx:{st:3,rep:-1},txt:'🙅 “No thanks.” He shrugs like it doesn’t matter. Your heart doesn’t slow down until you’re home.'},
     {ic:'🏠',l:'Say no, and tell Dad tonight',fx:{fam:4,st:-2,rep:-2},txt:'🏠 Dad goes quiet, then hugs you hard. For a week he’s at the bus stop when you get off, “just because.”'},
     {ic:'💵',l:'Take the forty',fx:{$:R(40),rep:6,heat:5,fam:-6,st:6},crime:['hood_lookout',{label:'Being a lookout',sev:1,kid:true}],
-      txt:'💵 You stand at the end of the block for an hour, phone in your hand, heart going. Nothing happens. The forty feels heavier than it should. Two days later Mom finds the folded bills in your jeans and asks where they came from. You don’t have a good answer.'},
+      txt:'💵 You stand at the end of the block for an hour, watching every car, heart going. Nothing happens. The forty feels heavier than it should. Two days later Mom finds the folded bills in your jeans and asks where they came from. You don’t have a good answer.'},
   ]});
 
 hev({id:'hood_cousin',band:'mid',tile:['🧢','Your cousin and “the set”','info'],dflt:1,
@@ -170,7 +172,7 @@ hev({id:'hood_graffiti',band:'mid',light:true,tile:['🎨','A wall war on the co
   ]});
 
 hev({id:'hood_sweep',band:'mid',tile:['🚓','A police sweep on your block','bad'],dflt:0,
-  txt:'🚓 After school, three police cars pull up at the end of your block, lights on, and officers start talking to everyone on the corner. Mom texts: “Come straight home.”',
+  txt:'🚓 After school, three police cars pull up at the end of your block, lights on, and officers start talking to everyone on the corner. Mom calls: “Come straight home.”',
   ch:()=>[
     {ic:'🏠',l:'Stay inside with Nia',fx:{fam:3,st:2},txt:'🏠 You and Nia watch from behind the curtain until the cars leave. Mom gets home and hugs you both a little too long.'},
     {ic:'👀',l:'Go see what’s happening',fx:{rep:2,heat:3,st:5,fam:-4},then:()=>{H().saw=true},txt:'👀 You stand at the edge of the crowd. An officer tells you to go home, not unkindly, and writes down your name. Mom has called four times. She isn’t happy.'},
@@ -196,7 +198,7 @@ hev({id:'hood_driveby',band:'high',tile:['🏠','Kept inside for three days','ba
   txt:'🏠 Shots on the next street last night: a car went by, and by morning the news says two people are in the hospital. Mom says nobody is going anywhere for three days but school and straight home.',
   ch:()=>[
     {ic:'🎲',l:'Make the most of it with family',fx:{fam:6,fr:-2,st:-2,en:4},txt:'🎲 Board games, Dad’s chili and Nia beating everyone at Uno three nights running. It’s the most you’ve all talked in months.'},
-    {ic:'📱',l:'Spend it on the phone with friends',fx:{fr:3,fam:-1,st:2},txt:'📱 Three nights of group calls. Everybody heard something different about what happened. Nobody knows anything for sure.'},
+    {ic:'📱',l:'Spend it on the phone with friends',fx:{fr:3,fam:-1,st:2},txt:'📱 Three nights of long phone calls. Everybody heard something different about what happened. Nobody knows anything for sure.'},
     {ic:'📚',l:'Catch up on homework',fx:{gr:4,st:1},txt:'📚 Three nights at the kitchen table. You finish everything you were behind on, plus the extra credit.'},
   ]});
 
@@ -244,8 +246,8 @@ hev({id:'hood_og',band:'high',tile:['🧓','“Don’t end up like me”','good'
 hev({id:'hood_carstolen',band:'high',tile:['🚗','The car is gone','bad'],dflt:0,
   txt:'🚗 Dad comes back in from the driveway at six in the morning with an empty look. The car is gone. Mom has a shift at Tacoma General at seven.',
   ch:()=>[
-    {ic:'🚌',l:'Help Mom figure out the bus',fx:{fam:5,en:-4,st:2},txt:'🚌 You find her the route on your phone and walk her to the stop. She makes it with four minutes to spare and texts you a thumbs-up from the break room.'},
-    {ic:'📱',l:'Post it in the block club group chat',fx:{fr:3,fam:2},txt:'📱 Ms. Lorraine shares it to everyone. Three days later her nephew spots the car in a lot by the Tacoma Mall. It comes back with a broken ignition and a pile of fast-food bags, but it comes back.'},
+    {ic:'🚌',l:'Help Mom figure out the bus',fx:{fam:5,en:-4,st:2},txt:()=>`🚌 You find her the route ${era('maps')?'on your phone':'on the bus schedule in the kitchen drawer'} and walk her to the stop. She makes it with four minutes to spare and ${era('text')?'texts you a thumbs-up':'calls home'} from the break room.`},
+    {ic:'📱',get l(){return era('nextdoor')?'Post it in the block club group chat':'Tell the block club'},fx:{fr:3,fam:2},txt:'📱 Ms. Lorraine gets the word to everyone. Three days later her nephew spots the car in a lot by the Tacoma Mall. It comes back with a broken ignition and a pile of fast-food bags, but it comes back.'},
     {ic:'🔎',l:'Go looking for it with your cousin',fx:{rep:3,heat:4,fam:-3,st:5},txt:'🔎 Jalen says he knows who takes cars around here. You spend the afternoon riding around with him, asking the wrong people. Dad finds out where you went and tells you, very quietly, to stay out of it.'},
   ]});
 
@@ -310,7 +312,7 @@ hev({id:'hood_outreach',band:'high',tile:['🤝','A youth leadership program','g
 hev({id:'hood_homie',band:'young',tile:['🚪','Dre comes home','info'],dflt:1,
   txt:()=>`🚪 Dre, ${S.life&&S.life.grow?'from your old block':'Ms. Lorraine’s grandson'}, is out after five years. He’s thinner and quiet, sleeping on his aunt’s couch, and he needs a job by the end of the month for his parole officer. The old crew already has an offer for him. And for you.`,
   ch:()=>[
-    {ic:'💼',l:'Help him find work',fx:{min:120,en:-8,fr:4,st:2,rep:-3,loy:-2},txt:'💼 You spend a Saturday morning with him at the WorkSource office downtown and an afternoon walking resumes up MLK. A kitchen hires him for prep. A week later he texts you a picture of his first paycheck.'},
+    {ic:'💼',l:'Help him find work',fx:{min:120,en:-8,fr:4,st:2,rep:-3,loy:-2},txt:'💼 You spend a Saturday morning with him at the WorkSource office downtown and an afternoon walking resumes up MLK. A kitchen hires him for prep. A week later he shows you his first paycheck like it’s a diploma.'},
     {ic:'🛋️',l:'Lend him a little and stay out of the rest',fx:{$:-R(40),fr:2,st:4},txt:'🛋️ Forty dollars and a bag of groceries. “I got you,” you say, and mean it about that much.'},
     {ic:'🔁',l:'Get pulled back in with him',fx:{$:R(150),rep:8,heat:10,loy:8,st:12,fam:-6},crime:['hood_backin',{label:'Back in with the old crew',sev:2,kid:false}],txt:'🔁 It’s like he never left, and like you never did. The money is quick. You start checking your mirrors again.'},
   ]});
@@ -347,7 +349,7 @@ hev({id:'hood_baby',band:'young',lo:20,hi:40,tile:['👶','Your baby is born','g
   txt:'👶 Your baby is born at Tacoma General at 4:12 in the morning: seven pounds even, a full head of hair and a very loud opinion about the lights. Your mom is in the waiting room before the nurses have finished. Everything is different now.',
   ch:()=>[
     {ic:'🍼',l:'Take the week off and stay home',fx:{en:-8,fam:8,st:-4,$:-R(150)},txt:'🍼 A week of no sleep, tiny socks and your mom showing up with food every single day. You learn every sound the baby makes.'},
-    {ic:'🛣️',l:'Make yourself a promise: a different road',fx:{fam:5,st:-3,rep:-8,loy:-10,heat:-5},then:()=>{H().out=true},txt:()=>member()||rep()>=20?'🛣️ You text the old crew one line: “I’m done. I have a kid now.” Then you turn your phone face down and pick the baby back up.':'🛣️ Holding the baby at the window, you make yourself a promise about the road you’ll walk. You mean to keep it.'},
+    {ic:'🛣️',l:'Make yourself a promise: a different road',fx:{fam:5,st:-3,rep:-8,loy:-10,heat:-5},then:()=>{H().out=true},txt:()=>member()||rep()>=20?'🛣️ You call the old crew and say one line: “I’m done. I have a kid now.” Then you hang up and pick the baby back up.':'🛣️ Holding the baby at the window, you make yourself a promise about the road you’ll walk. You mean to keep it.'},
     {ic:'💼',l:'Pick up extra shifts for diapers',fx:{$:R(150),en:-10,st:6,fam:2},txt:'💼 Extra shifts, a car seat, and a lot of diapers. You fall asleep sitting up more than once.'},
   ]});
 
