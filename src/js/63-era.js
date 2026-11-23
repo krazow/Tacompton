@@ -92,9 +92,10 @@ window.eraPriceF=eraPriceF;window.eraPayF=eraPayF;
   const seen=new Set();
   const fix=J=>{if(!J||seen.has(J))return;seen.add(J);
     const own=Object.getOwnPropertyDescriptor(J,'pay');if(own&&own.get)return;
-    let pay=J.pay,tips=J.tips;
+    let pay=J.pay;const td=Object.getOwnPropertyDescriptor(J,'tips');let tips=td&&!td.get?td.value:null;
+    const tg=td&&td.get?()=>td.get.call(J):()=>tips;   // 35-careers.js: the café's tips already follow the cost-of-living raises
     Object.defineProperty(J,'pay',{configurable:true,enumerable:true,get(){return eraOld()?Math.round(pay*eraPayF()):pay},set(v){pay=v}});
-    if(tips)Object.defineProperty(J,'tips',{configurable:true,enumerable:true,get(){const f=eraPayF();return f===1?tips:tips.map(x=>Math.max(1,Math.round(x*f)))},set(v){tips=v}});
+    if(td)Object.defineProperty(J,'tips',{configurable:true,enumerable:true,get(){const t=tg(),f=eraPayF();return f===1||!t?t:t.map(x=>Math.max(1,Math.round(x*f)))},set(v){tips=v}});
     Object.defineProperty(J,'pay0',{configurable:true,enumerable:false,get(){return pay}});};
   Object.getOwnPropertyNames(JOBS).forEach(k=>fix(JOBS[k]));
   if(typeof CAREER_JOBS!=='undefined')Object.values(CAREER_JOBS).forEach(fix);
