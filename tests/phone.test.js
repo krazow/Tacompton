@@ -219,4 +219,11 @@ module.exports = [
     assert.doesNotMatch(r.t, /\b(romance|romantic|dat(e|es|ing)|boyfriends?|girlfriends?|fish\w*)\b/i);
     noErrors(errors);
   } },
+  { name: 'phone: a first-time tip on the home screen, gone after Got it', fn: async ctx => {
+    const { page, errors } = await open(ctx);
+    const r = await page.evaluate(() => { setMode('adult'); newGame('normal'); closeModals(); PH().plan = 'prepaid'; phoneOpen();
+      const a = document.body.innerText.includes('Your phone.'); PH().tipSeen = 1; phoneRender(); const b = document.body.innerText.includes('Your phone.'); phoneClose(); return [a, b]; });
+    assert.deepStrictEqual(r, [true, false]);
+    noErrors(errors);
+  } },
 ];
