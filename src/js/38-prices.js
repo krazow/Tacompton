@@ -40,7 +40,7 @@ LIFE_HOOKS.weekStart.push(()=>priceDay(day(),null));
 // a skipped day's everyday spending
 let PRICE_SKIP=null;
 function lifeLiving(ch,d){
-  const c=typeof ch==='string'&&ch.startsWith('prog:')?'save':ch,lv=priceLv(),cost=DF().cost||1;
+  const c=typeof ch==='string'&&ch.startsWith('prog:')?'save':ch,lv=priceLv()*eraPF(),cost=DF().cost||1;
   const need=(PRICES.need*cost*(c==='save'?0.75:1)+(c==='friends'?25/7:0))*lv;
   let inc=0;
   if(S.life.retired)inc=typeof careerPension==='function'?careerPension():500/7;
@@ -67,5 +67,5 @@ window.lifeLiving=lifeLiving;
 {const sr=lifeSnapRows;lifeSnapRows=function(){const r=sr();if(priceOn())r.push(['🛒 Prices since your own place',Math.round(priceLv()*100),v=>`${v>100?'+':''}${v-100}%`,true]);return r}}
 // retirement: Social Security, savings and the senior rent programs together always cover rent and everyday costs with a
 // little to spare (rents rise faster than pensions, and the cushion above is a few months, not a nest egg)
-function pensionFloor(){return priceOn()?(S.rent.amt*12/365+PRICES.need*(DF().cost||1)*priceLv())*1.15:0}
+function pensionFloor(){return priceOn()?(S.rent.amt*12/365+PRICES.need*(DF().cost||1)*priceLv()*eraPF())*1.15:0}
 window.pensionFloor=pensionFloor;
