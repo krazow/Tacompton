@@ -5,6 +5,9 @@ are taken from it.
 
 ## Unreleased
 
+### Added
+- Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
+
 ### Fixed
 - 🕰️ **Era fixes:** the Growing Up job at 16 pays (and says) the start year's minimum wage instead of 2026's, and Growing Up pocket money in text now matches what is paid. Before cell phones the grab downtown is a wallet grab at the bus stop (no phone, no Link), and a few life events (the card freeze, the rent scam text, the first ride downtown, a rideshare) use the old way in the early years.
 
