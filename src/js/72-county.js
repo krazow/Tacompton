@@ -5,7 +5,7 @@
 //  game sheet, the county job listings and the guide's Pierce County chapter.
 //
 //  ---- CONTRACT (stable API; pack files: guard every call with typeof, and call these at run time, not at load) ----
-//    countyOn()          → true when the county is open: the longer games (not Quick play), as an adult, or 16+ in Growing Up
+//    countyOn()          → true when the county is open: the longer games (not the Try it teaser), as an adult, or 16+ in Growing Up
 //                          (a Youth ORCA card or the family car once you have a license). Your own home town is always open.
 //    COUNTY_KEYS         → the keys of every pack with county:true (a live list, read it when you need it)
 //    countyIs(key)       → true for a county pack's key
@@ -252,7 +252,7 @@ function startChips(p){
   const q=p.length==='quick',cur=q?'hilltop':(P.some(x=>x.key===p.startPlace)?p.startPlace:'hilltop');
   const chips=P.map(x=>`<button class="lchip${x.key===cur?' on':''}" aria-pressed="${x.key===cur}"${q&&x.key!=='hilltop'?' disabled':''} onclick="lifePick('startPlace','${x.key}')">${x.ic} ${esc(x.name)}</button>`).join('');
   const X=P.find(x=>x.key===cur)||P[0],H=HOODS[cur],kid=p.startAge<18;
-  const note=q?'Quick play always starts on Hilltop. Pick a longer game to start somewhere else in Pierce County.':
+  const note=q?'The 🧪 Try it game always starts on Hilltop. Pick a length to start somewhere else in Pierce County.':
     cur==='hilltop'?`${X.d}`:`${X.d} ${kid?`Your family’s home and your school are in ${X.name}`:`Your own apartment is in ${X.name}`}; rent there is ${START_RENT(cur)>1.02?'a little higher':START_RENT(cur)<0.98?'a little lower':'about the same'} than on Hilltop. Hilltop and the rest of Tacoma are ${countyRide(cur)?countyRide(cur).mins:30} minutes away by bus.`;
   return `<div class="sect">Where you start</div><div class="lchips">${chips}</div><p class="lnote">${note}</p>`;
 }
@@ -268,7 +268,7 @@ if(typeof GROW!=='undefined'&&GROW.actionsHere){const ah=GROW.actionsHere;GROW.a
 
 // ============================================================
 //  County jobs: extra listings in the longer adult games (the phone's Jobs app and the first-day job sheet), each with its
-//  own career ladder (35-careers.js). Not in JOBS' enumerable keys, so the three day-one jobs and Quick play stay as they are.
+//  own career ladder (35-careers.js). Not in JOBS' enumerable keys, so the three day-one jobs and the Try it game stay as they are.
 //  Pay is a shift's take-home in 2026 dollars, like the base jobs (scaled to the start year's minimum wage below).
 // ============================================================
 const COUNTY_JOBS={
@@ -405,7 +405,7 @@ function countyGuideHTML(){
   const tip=typeof hTip==='function'?hTip:(a,b)=>`<p><b>${a}</b> ${b}</p>`;
   const rows=K.map(k=>{const H=HOODS[k],r=H.ride0||{};return [`${H.ic} ${H.name}`,`${r.mins} min${r.ptOut?` (a transfer from ${r.ptOut})`:''}`,
     [r.express?`🚍 express from ${r.express.from}`:'',r.sounder?`🚆 Sounder from ${r.sounder.from}`:''].filter(Boolean).join(', ')||'—',`${r.drive} min${H.narrows?' + toll':''}`]});
-  return `<p>Tacoma sits in <b>Pierce County</b>: Lakewood and Joint Base Lewis-McChord to the south, the Puyallup valley and its farms to the east, and the Gig Harbor Peninsula across the Narrows to the west. In the longer games the county opens up beyond Tacoma’s neighborhoods. Quick play stays in Tacoma.</p>
+  return `<p>Tacoma sits in <b>Pierce County</b>: Lakewood and Joint Base Lewis-McChord to the south, the Puyallup valley and its farms to the east, and the Gig Harbor Peninsula across the Narrows to the west. In the longer games the county opens up beyond Tacoma’s neighborhoods. The 🧪 Try it game stays in Tacoma.</p>
     <ul><li><b>Who can go:</b> adults in the 6 months, 1 year, 2 years and Lifetime games. In Growing Up the county opens at <b>16</b>; younger kids go with family.</li>
     <li><b>🧭 Go somewhere</b> lists places under two headings, <b>🏙️ Tacoma</b> and <b>🌲 Pierce County</b>, and so do the phone’s 🗺️ Maps and 🚌 Transit apps.</li></ul>
     <h3>Getting around the county</h3>

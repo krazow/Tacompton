@@ -63,7 +63,7 @@ module.exports = [
     await growGame(page, 'quick', 12);
     await page.evaluate(() => gameOptionsModal());
     let b = await sheetBtn(page, /Skip to 18/, true);
-    assert.ok(b && b.dis); assert.match(b.s, /Quick play/);
+    assert.ok(b && b.dis); assert.match(b.s, /Try it/);
     await growGame(page, 'life', 18);
     await page.evaluate(() => gameOptionsModal());
     b = await sheetBtn(page, /Skip to 18/, true);

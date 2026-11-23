@@ -17,7 +17,7 @@ function skip18Plan(){
 }
 function skip18Why(){
   if(!S||S.over)return 'No game is running.';
-  if(!lifeLong())return 'Quick play is one short stretch. Skip to 18 is for the longer games.';
+  if(!lifeLong())return '🧪 Try it is one short stretch. Skip to 18 is for the longer games.';
   if(!isGrow()||S.age>=18||(S.life&&S.life.graduated))return `You’re ${S.age}: already 18 or older.`;
   if(!skip18Plan())return `This game ends ${fullDate(lifeEndDay(S))}, before you turn 18. Lengthen it to 🌳 Lifetime first (📏 Game length).`;
   return null;
