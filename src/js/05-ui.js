@@ -64,7 +64,7 @@ function actView(){
   let lastH=null;
   dests.forEach(k=>{const m=travelMins(S.loc,k),i=ACTS.push(()=>go(k))-1,hk=hood(k);
     if(grouped&&hk!==lastH){lastH=hk;const H=hk&&typeof HOODS!=='undefined'?HOODS[hk]:null;h+=`<div class="gohood">${H?`${H.ic} ${H.name} <span>${H.ride.via}</span>`:'🏘️ Hilltop'}</div>`}
-    h+=`<div class="dest compact"><div class="dn"><b>${L[k].ic} ${L[k].name}</b><span>${L[k].hours?hoursTxt(k):L[k].desc||''}</span></div><div class="chips"><button class="chip" onclick="ACT(${i})" aria-label="Go to ${esc(L[k].name)} · ${m} min">Go · ${m} min</button></div></div>`});
+    h+=`<div class="dest compact"><div class="dn"><b>${L[k].ic} ${L[k].name}</b><span>${L[k].hours?hoursTxt(k):L[k].desc||''}</span></div><div class="chips"><button class="chip" onclick="ACT(${i})" aria-label="Go to ${esc(L[k].name)} · ${m} min">Go · ${m} min</button>${typeof driveChip==='function'?driveChip(k):''}</div></div>`});
   return h+'</details>';
 }
 window.ACT=i=>{uiNarr=[];ART_NARR=null;sfx('tap');const f=ACTS[i];f&&f();afterAction();if(S&&!S.over&&!document.querySelector('.title,.end'))render()};

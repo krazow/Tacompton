@@ -3,6 +3,10 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+- 🚗 Driving: driving lessons with a parent and the license test at the DOL office from 16 in Growing Up; in the longer adult games a used car (three price tiers) with monthly insurance, gas, downtown parking and repairs, a faster 🚗 Drive option to the other neighborhoods, and a car prowl life event (nothing on the seats and parking under the streetlight keep the window whole).
+
 ## 0.4.0 (2026-11-22)
 
 ### Added

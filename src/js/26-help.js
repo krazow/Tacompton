@@ -144,6 +144,9 @@ function helpGrowing(){
     <h3>Birthdays</h3>
     <ul><li>Every year, played or skipped: a small family celebration (Family +3, Mood +5), and birthday money from the family when it falls in a time skip.</li>
     <li><b>14:</b> high school, curfew moves to ${fmt(G_CURFEW_HIGH)}, and a Youth ORCA card. <b>16:</b> a learner’s permit, and you can work. <b>18:</b> graduation.</li></ul>
+    <h3>Learning to drive at 16</h3>
+    <ul><li>From 16, at home after school or on a weekend: <b>🚗 A driving lesson with Mom or Dad</b>, an hour, once a day (practice +1, Family +2). Each time skip adds a few Sunday lessons in the Tacoma Dome parking lot.</li>
+    <li><b>🪪 Take the driver’s license test at the DOL office:</b> about two hours, once a day. The more lessons you have had, the better your odds (the button shows them). Pass and the license comes with you into the adult game, where you can buy a car.</li></ul>
     <h3>Curfew</h3>
     <p>Be home by <b>${fmt(G_CURFEW)}</b> in middle school and <b>${fmt(G_CURFEW_HIGH)}</b> from 14. Miss it and Mom calls you home: Family −12, Mood −3. Across town, Mom texts when it’s getting close, and a <b>🏠 Head home</b> button shows when to leave.</p>
     <h3>Tacoma opens up</h3>
@@ -239,6 +242,7 @@ function helpChapters(){
       return `<p class="tut-place"><b>${p.ic} ${nm}.</b> ${H}</p>`}).join('')}
     ${typeof HOODS!=='undefined'&&Object.keys(HOODS).length?`<h3>Around Tacoma</h3>
     <p>Hilltop is home, but the rest of Tacoma is a walk, a free Link ride or a bus ride away. Each neighborhood has its own places, people and things to do. Trips across town take longer and the bus costs a fare, so plan them around your shifts.</p>
+    <p><b>🚗 A car</b> (the longer games): at home, <b>🔑 Shop for a used car</b> on South Tacoma Way, from an old Civic (about ${$(rp(4000))}) to a used RAV4 (about ${$(rp(11000))}). Insurance comes out on the 1st of every month, with gas on every drive, a downtown parking lot (${$(rp(6))}) and the odd repair. Then every other neighborhood gets a <b>🚗 Drive</b> button next to <b>Go</b>: faster than the bus or the Link, no fare, just gas. At home the car parks on the street, so clear the seats and park under the streetlight (both are habits you set at home).</p>
     ${hTable(['Neighborhood','Getting there','From home','Fare'],Object.values(HOODS).map(h=>[`${h.ic} ${h.name}`,h.ride.via,travelMins('home',h.hub)+' min',h.ride.fare?$(rp(h.ride.fare)):'Free']))}
     ${Object.values(HOODS).map(h=>`<p class="tut-place"><b>${h.ic} ${h.name}.</b> ${h.blurb} Places: ${Object.values(h.places).map(p=>p.name).join(', ')}.</p>`).join('')}`:''}
     <h3>Walking times (minutes)</h3>
