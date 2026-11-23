@@ -8569,7 +8569,8 @@ function phoneScreen(){
   const built=PHONE_APPS.filter(a=>a.builtin&&phoneShown(a)),mine=P.apps.map(phoneApp).filter(a=>a&&phoneShown(a));
   const empty=Array.from({length:Math.max(0,PHONE_SLOTS-P.apps.length)},()=>`<button class="ph-app ph-empty" onclick="${phoneApp('store')?"phoneGo('store')":''}" aria-label="Empty app slot"><span class="ph-ic">＋</span><span class="ph-nm">Empty</span></button>`);
   const warn=P.cut?`<div class="ph-card warn" style="color:var(--ink)">📵 <b>No service:</b> the phone bill (${$(P.owe)}) is unpaid. Pay it in ⚙️ Settings or at home.</div>`:'';
-  return `<div class="ph-body ph-home">${warn}<div class="ph-grid">${built.map(icon).join('')}</div><div class="ph-sect">Your apps · ${P.apps.length}/${PHONE_SLOTS}</div><div class="ph-grid">${mine.map(icon).join('')}${empty.join('')}</div></div>`;
+  const tip=P.tipSeen?'':`<div class="ph-card">💡 <b>Your phone.</b> Tap an app to open it. ⬇️ The bottom row holds ${PHONE_SLOTS} apps you add from 🛍️ App Store. Texts and calls need battery${isGrow()?'':' and a paid bill'}; it charges overnight at home. ❓ Help → Your phone has the rest. <button class="ph-btn" onclick="PH().tipSeen=1;phoneRender()">Got it</button></div>`;
+  return `<div class="ph-body ph-home">${warn}${tip}<div class="ph-grid">${built.map(icon).join('')}</div><div class="ph-sect">Your apps · ${P.apps.length}/${PHONE_SLOTS}</div><div class="ph-grid">${mine.map(icon).join('')}${empty.join('')}</div></div>`;
 }
 function phoneRender(){
   if(!PH_OPEN||!S||S.over||!phoneOwned()){PH_OPEN=false;const el=document.getElementById('phoneUI');el&&el.remove();return}
