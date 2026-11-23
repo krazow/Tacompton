@@ -273,7 +273,7 @@ function schMorning(d){
 // the first morning of every key week: what’s coming up at school; graduation week gets its own line
 LIFE_HOOKS.weekStart.push(kw=>{
   if(!isGrow())return;
-  if(kw.kind==='graduation'&&S.age<19){say('🎓 Graduation week. Caps and gowns are in the Hilltop High front office, the seniors are signing everything that holds still, and the ceremony is at the end of the week.');return}
+  if(kw.kind==='graduation'&&S.age<19){say('🎓 Graduation week. Caps and gowns are in the Hilltop High front office, the seniors are signing everything that holds still, and the ceremony is the day you turn 18.');return}
   const l=schWeekList();
   if(l.length)say(`⭐ Coming up this week: ${l.map(x=>`${x.t.ic} ${x.t.n} (${dateOf(x.d).label})`).join(' · ')}.`);
 });

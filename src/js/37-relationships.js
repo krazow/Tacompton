@@ -405,6 +405,16 @@ function relAutoCheck(){const R=S&&S.rel;if(R&&R.auto18&&!R.on&&!isGrow()&&S.age
   if(p&&!R.livein&&R.day[p]!==d&&d%2===0)relBump(p,'int',R.ld>=0?-2:-1);
   if(p&&relSt(p).int<=12)notes.push(relBreakup(p,'them'))}}
 LIFE_HOOKS.weekStart.push(()=>relAutoCheck());
+// 18 in a save that started younger (73-adult-unlock.js, the 🎉 You're 18 sheet): on as asked (S.rel.auto18, or the start page's
+// setting), with a line; otherwise offered with one tap, through this device's age check. Never on without the player's say.
+function relAt18(back){const R=relS();
+  if(!R.on&&(R.auto18||relPrefOn())&&relAgeOK()&&!isGrow()&&S.age>=18){R.auto18=false;relSetOn(true,'at 18');say('🔞 18+ mode is on now, as you asked: you’re 18 and in your own place.')}
+  if(R.on)return {line:'🔞 18+ mode is on in this save, as you asked. Turn it off any time in ⚙️ Settings → 🎮 Game options.',btns:[]};
+  const on=()=>{relSetOn(true,'at 18');say('🔞 18+ mode is on in this save.');saveGame();render()};
+  return {line:'🔞 18+ mode is off. It’s optional, for players 18 and older, and you can turn it on later in ⚙️ Settings → 🎮 Game options.',
+    btns:[{l:'🔞 Turn on 18+ mode',s:relAgeOK()?'Adult relationships, for players 18 and older.':'For players 18 and older: you confirm your age first.',np:true,fn:()=>relAgeOK()?on():relAgeCheck(on,back)}]};
+}
+window.relAt18=relAt18;
 LIFE_HOOKS.skip.push((from,to,choice,notes)=>{if(!relActive())return;const R=S.rel,p=relPartner(),wk=Math.max(1,Math.round((to-from+1)/7));
   for(const id in R.people){const st=R.people[id];if(id!==p&&['talking','dating','casual'].includes(st.stage)){st.int=clamp(st.int-wk*3,0,100);if(st.int<20){st.stage='met';notes.push(`📱 You and ${relN(id)} drift apart. No hard feelings.`)}}}
   if(!p)return;const st=relSt(p),n=relN(p);
