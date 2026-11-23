@@ -31,14 +31,14 @@ module.exports = [
     const r = await page.evaluate(() => {
       lifeStartModal(); lifePick('length', '1y'); lifePick('startAge', '12'); LP.birthday = { m: 3, d: 14, label: 'March 14' }; lifePick('startYear', '1980');
       const m = document.getElementById('mbg').innerText;
-      lifePick('length', 'quick'); const q = document.getElementById('mbg').innerText, dis = [...document.querySelectorAll('#mbg .lchip')].filter(b => b.disabled).length;
+      const tmp = document.createElement('div'); tmp.innerHTML = eraYearChips({ length: 'quick', startAge: 12, startYear: 1980, birthday: LP.birthday }); const q = tmp.innerText || tmp.textContent, dis = [...tmp.querySelectorAll('.lchip')].filter(b => b.disabled).length;
       return { m, q, dis };
     });
     for (const y of YEARS) assert.ok(r.m.includes(String(y)), 'chip ' + y);
     assert.ok(r.m.includes('Born in 1968'), r.m);
     assert.ok(r.m.includes('1980'), 'starts in 1980');
     assert.ok(/Mon Aug 25, 1980/.test(r.m), 'the start day in 1980: ' + r.m);
-    assert.ok(r.q.includes('Quick play is always 2026') && r.dis === 5, 'Quick play: 2026 only');
+    assert.ok(r.q.includes('Try it is always 2026') && r.dis === 5, 'Try it: 2026 only');
     noErrors(errors);
   } },
   { name: 'each start year starts on a Monday and plays a week, at 18 and at 12', fn: async ctx => {

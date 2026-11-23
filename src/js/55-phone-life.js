@@ -91,7 +91,7 @@ const GIGS=[
   {k:'yard',ic:'🍂',n:'Yard cleanup',d:'Leaves, blackberry vines and a full yard-waste bin for a neighbor off 11th.',mins:90,pay:36,e:-8,st:1},
 ];
 const jobsOpen=()=>lifeLong()&&adult()&&!mil()&&!(S.life&&S.life.retired)&&!!S.jobPicked&&!!JOBS[S.job]&&Object.keys(JOBS).includes(S.job);
-const jobsWhyNot=()=>!lifeLong()?'In Quick play you keep the job you came for. Gigs are open.':mil()?'On active duty: the Army is your job until your enlistment ends.':S.life&&S.life.retired?'You’re retired. Gigs are still open, if you want them.':
+const jobsWhyNot=()=>!lifeLong()?'In 🧪 Try it you keep the job you came for. Gigs are open.':mil()?'On active duty: the Army is your job until your enlistment ends.':S.life&&S.life.retired?'You’re retired. Gigs are still open, if you want them.':
   !Object.keys(JOBS).includes(S.job)?`You have a career job (${job().role}). These listings would be a step back.`:'';
 function gigBlock(g){const m=tod(),J=job(),d=day();
   if(PH().jobs&&PH().jobs.gig===d)return 'One gig a day: more tomorrow.';

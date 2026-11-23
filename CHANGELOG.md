@@ -6,6 +6,7 @@ are taken from it.
 ## Unreleased
 
 ### Added
+- Try it for 2 weeks: the two-week game is no longer a length; it's a teaser on the New game sheet (2 weeks at 18, Growing Up's first week at 12 or 15) with a "Trying it out: N days left" HUD tag and a "Liked it? Start a new life" end button. Lengths are 6 months, 1 year, 2 years and Lifetime (default 1 year). The guide, title, rules, achievements and end screens no longer describe the game as two weeks. The age question is "Play as a kid" (12 or 15) or "Start at 18" everywhere a new game asks it.
 - Polish: a 📔 Memory book (moments, birthdays, photos and places by year, saved with the game), 🌟 lifetime achievements kept per profile across games, 🗣️ read-aloud with the device's speech voices, and generated 🔊 sound effects and 🎵 time-of-day music with volumes (music off by default, nothing before a tap).
 
 ### Fixed

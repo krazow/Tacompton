@@ -25,7 +25,7 @@ module.exports = [
     const { page, errors } = await open(ctx);
     const t = await chapter(page, 'lengths');
     assert.ok(t, 'the chapter is there');
-    for (const s of ['Quick play', '6 months', '1 year', '2 years', 'Lifetime', 'Starting ages', 'Mon Aug 24, 2026', 'Mon Aug 3, 2026', 'Summit View', 'Hilltop High',
+    for (const s of ['Try it', '6 months', '1 year', '2 years', 'Lifetime', 'Starting ages', 'Mon Aug 24, 2026', 'Mon Aug 3, 2026', 'Summit View', 'Hilltop High',
       '8:30 PM', '10:00 PM', 'Key weeks', 'While you were away', 'Game options', 'Lengthen', 'Shorten', 'Too short now', 'Finish here', 'Highlights', 'Difficulty',
       'per month', 'Best scores', '67', 'A life on Hilltop', '80th birthday']) assert.ok(t.includes(s), 'mentions ' + s);
     // the key-week counts come from the scheduler

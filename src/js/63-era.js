@@ -129,7 +129,7 @@ if(typeof MIL!=='undefined'){const m0=MIL.mha;Object.defineProperty(MIL,'mha',{c
 function eraYearChips(p){
   const q=p.length==='quick',y=q?2026:(p.startYear||2026);
   const chips=ERA_YEARS.map(v=>`<button class="lchip${v===y?' on':''}" aria-pressed="${v===y}"${q&&v!==2026?' disabled':''} onclick="lifePick('startYear','${v}')">${v}</button>`).join('');
-  const note=q?'Quick play is always 2026. Pick a longer game to start in another year.':
+  const note=q?'🧪 Try it is always 2026. Pick a length to start in another year.':
     {1980:'1980: K Street, the smelter smoke over Ruston, cash and checks, a pay phone on the corner. No Tacoma Dome yet.',
      1990:'1990: pagers, the new UW Tacoma, and the hard years on Hilltop. The Dome is a bus ride downtown.',
      2000:'2000: dial-up and the first cell phones, the Sonics, and no Link yet: downtown is a bus ride.',
@@ -282,7 +282,7 @@ function eraGuideHTML(){
   const T=(h,r)=>typeof hTable==='function'?hTable(h,r):`<table>${r.map(x=>`<tr>${x.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
   const money=ERA_YEARS.map(y=>[String(y),`${Math.round(eraCpiF(y)*100)}%`,`${$(Math.round(1150*eraRentF(y)/5)*5)}`,`$${eraMinWage(y).toFixed(2)}`]);
   return `<h3>Start year</h3>
-    <p>On the 🌱 New life sheet, pick the year your life begins: <b>${ERA_YEARS.join(', ')}</b>. The sheet shows the year you were born: starting ages are still 12, 15 and 18, so a 1980 start at 12 was born in 1968 or before. Quick play and Growing Up’s first week are always 2026.</p>
+    <p>On the 🌱 New life sheet, pick the year your life begins: <b>${ERA_YEARS.join(', ')}</b>. The sheet shows the year you were born: starting ages are still 12, 15 and 18, so a 1980 start at 12 was born in 1968 or before. 🧪 Try it and Growing Up’s first week are always 2026.</p>
     <ul><li>The calendar counts from your year, with the right weekdays, birthdays, seasons and sunsets, and keeps going past 2026.</li>
     <li>Things arrive in the year they did: a line in the city news in the summary between key weeks, then they’re part of the game. Nothing from a later year shows up early.</li>
     <li>Money starts at that year’s level, then prices rise every January, rents every August and pay with raises, the same as today’s game.</li>

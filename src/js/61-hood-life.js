@@ -368,7 +368,7 @@ if(typeof helpGrowing==='function'){const hg=helpGrowing;helpGrowing=function(){
     <li>Real people help: Mom and Dad, Mr. Harris, Coach Ray and the youth glass studio at People’s, Ms. Tasha’s youth leadership program, and a diversion program instead of court.</li>
     <li>🧥 Keep a plain hoodie in your bag (a habit at home) for the block where a color matters.</li>
     <li>As a young adult: an old friend home after five years, a background check (Washington lets you ask the court to seal a juvenile record), and a peace walk down MLK Jr Way.</li>
-    <li>A life sees some of these, never all. Quick play has at most one, and a light one.</li></ul>`}}
+    <li>A life sees some of these, never all. 🧪 Try it has at most one, and a light one.</li></ul>`}}
 
 window.hoodWaysOut=()=>{if(!S)return [];const h=H();return ['glass','og','lead','diversion','kid','job'].filter(k=>h[k])};
 window.hoodNoCna=()=>!!(S&&S.hood&&S.hood.noCna);

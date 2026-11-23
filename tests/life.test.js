@@ -58,12 +58,13 @@ module.exports = [
     assert.match(await page.textContent('.title button.big'), /New game/);
     await page.click('#lifeBtn');
     const sheet = await page.textContent('#mbg');
-    for (const t of ['Quick play', '6 months', '1 year', '2 years', 'Lifetime', 'Starting age', 'Your birthday', 'Key weeks']) assert.ok(sheet.includes(t), t);
+    for (const t of ['Try it for 2 weeks', 'Play as a kid', 'Start at 18', '6 months', '1 year', '2 years', 'Lifetime', 'Starting age', 'Your birthday', 'Key weeks']) assert.ok(sheet.includes(t), t);
     await page.click('#mbg .lchip:has-text("1 year")');
+    await page.click('#mbg .lchip:has-text("Play as a kid")');
     await page.click('#mbg .lchip:text-is("15")');
     const s2 = await page.textContent('#mbg');
     assert.match(s2, /Hilltop High/); assert.match(s2, /Mon Aug 24, 2026/);
-    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '15|📅 1 year|2026');
+    assert.strictEqual(await page.$$eval('#mbg .lchip.on', b => b.map(x => x.textContent.trim()).join('|')), '🎒 Play as a kid|15|📅 1 year|2026');
     await page.click('#mbg button.act:has-text("Start the game")');
     await page.waitForSelector('#mbg');
     assert.match(await page.textContent('#mbg'), /difficulty/i);
@@ -150,12 +151,12 @@ module.exports = [
     await page.evaluate(() => { lifeSetLength('1y'); lifeFF(2); });
     const c = await page.evaluate(() => ({ kwi: S.kwi, quick: !!lifePlan('quick'), six: !!lifePlan('6m'), life: !!lifePlan('life') }));
     assert.deepStrictEqual(c, { kwi: 2, quick: false, six: true, life: true });
-    // the Game length sheet grays Quick play out with a reason, and offers Finish here
+    // the Game length sheet never offers the Try it teaser (it isn't a length), and offers Finish here
     await page.evaluate(() => { closeModals(); render(); openSettings(); });
     await page.click('#mbg button.act:has-text("Game options")');
     await page.click('#mbg button.act:has-text("Game length")');
     const q = await page.$eval('#mbg', m => [...m.querySelectorAll('button.act')].map(b => ({ t: b.textContent, dis: b.disabled })));
-    const qp = q.find(x => /Quick play/.test(x.t)); assert.ok(qp && qp.dis && /Too short now/.test(qp.t), JSON.stringify(qp));
+    assert.ok(!q.some(x => /Try it|Quick play/.test(x.t)), JSON.stringify(q));
     assert.ok(q.some(x => /Shorten to 🍂 6 months/.test(x.t) && !x.dis)); assert.ok(q.some(x => /Lengthen to 🌳 Lifetime/.test(x.t) && !x.dis));
     // lengthen to Lifetime through the confirmation sheet: it shows the new end and the key weeks left
     await page.click('#mbg button.act:has-text("Lengthen to 🌳 Lifetime")');

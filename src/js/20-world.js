@@ -430,7 +430,7 @@ let EXTRA_TABS=[
 ];
 function weekView(){
   const J=job(),d0=day();
-  return `<div class="sect">${lifeLong()?`This week · ${kwName(lifeKw())}`:'Your two weeks'} · ${J.ic} ${J.n}</div>`+lifeWeekDays().map(i=>{
+  return `<div class="sect">${lifeLong()?`This week · ${kwName(lifeKw())}`:'🧪 Trying it out'} · ${J.ic} ${J.n}</div>`+lifeWeekDays().map(i=>{
     const sd=isShiftDay(i),w=S.worked[i];
     let s=sd?(i in S.worked?(w?`worked, ${w} min late`:'worked, on time'):i<d0?'missed work':`work ${fmt(J.start)}–${fmt(J.end)}`):(S.extra[i]?'day off (picked up extra hours)':'day off');
     if(isFairDay(i)) s+=` · 🎪 street fair${S.fair?' (went)':''}`;
