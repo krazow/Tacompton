@@ -1,7 +1,7 @@
 // Service worker: offline-first app shell, runtime-cached Google Fonts and illustrations.
 // tools/build.py keeps VERSION in step with GAME.version, so every release replaces the old cache.
 const CACHE_PREFIX = 'tacompton-';
-const VERSION = CACHE_PREFIX + '0.4.1';
+const VERSION = CACHE_PREFIX + '0.4.2';
 const FONTS = CACHE_PREFIX + 'fonts';
 // Illustrations (art/, see art/README.md) are never precached: each image is cached the first time it is shown, in its own cache
 // that outlives releases (the URLs carry ?v=<content hash>) and keeps only the ART_MAX most recently added images.

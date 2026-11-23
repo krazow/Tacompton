@@ -70,7 +70,7 @@ function maybeUpdateNotice(){
 // the newest few open and the rest folded under "Show older updates". With {from:'1.12.1'} (from the update pop-up) every version
 // since that one is open and the older ones are folded. {back:fn} adds a Back button (Settings, Help); otherwise Close.
 // Opening it from inside another sheet (Help's link) replaces that sheet: still one pop-up.
-const WN_DATES={'0.4.1':'2026-11-22','0.4.0':'2026-11-22','0.2.0':'2026-11-19','0.1.1':'2026-11-19','0.1.0':'2026-11-19'};   // version → release date (YYYY-MM-DD) from CHANGELOG.md; no date is made up
+const WN_DATES={'0.4.2':'2026-11-23','0.4.1':'2026-11-22','0.4.0':'2026-11-22','0.2.0':'2026-11-19','0.1.1':'2026-11-19','0.1.0':'2026-11-19'};   // version → release date (YYYY-MM-DD) from CHANGELOG.md; no date is made up
 const WN_OPEN=3;   // versions shown before "Show older"
 function wnDate(v){const d=WN_DATES[v];if(!d)return '';const [y,m,dd]=d.split('-').map(Number);
   return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]} ${dd}, ${y}`}
