@@ -274,8 +274,8 @@ function lifeSimulate(from,to,ch){
         if(ch==='extra'&&wd===(J.days[0]===0?5:0))money(J.pay*pf*0.9);
       }else money(typeof careerPension==='function'?careerPension():500/7);   // 35-careers.js: a pension that follows your last pay
       money(-(typeof lifeLiving==='function'?lifeLiving(ch,d):((45+40+20)/7*(DF().cost||1)*(ch==='save'?0.75:1)+(ch==='friends'?25/7:0))));   // 38-prices.js
-      if(o.d===1){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));rentN++;rentAmt+=S.rent.amt;helpAmt+=help;if(help)S.life.rentHelpLeft--;
-        if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-priceAmt(S.life.path==='college'?380:120))}
+      if(o.d===1){const r=lifePayRent(d,notes);if(r){rentN++;rentAmt+=r.amt;helpAmt+=r.help}
+        if(S.life.path&&!S.life.done&&S.life.path!=='job')money(-lifePathFee())}
       if(isFairDay(d)){fair=true;S.fair=true;S.fairYear=o.y}
       f.standing=num('standing')+(75-num('standing'))*0.01+(ch==='extra'&&!S.life.retired?0.15:0);
       const tgt=ch==='extra'?(S.life.retired?30:50):ch==='save'?28:22;f.stress=num('stress')+(tgt-num('stress'))*0.03;
@@ -297,6 +297,11 @@ function lifeSimulate(from,to,ch){
   const dm=Math.round(S.money-cash0);notes.push(`💵 ${dm>=0?'Saved':'Spent down'} ${$(Math.abs(dm))} over these weeks.`);
   return notes;
 }
+// the first of the month in a time skip: rent (with the family's help in the first year); null when there's no rent to pay
+// (38-paths.js: barracks housing, a cheaper room, and one warning before an eviction)
+function lifePayRent(d,notes){const help=S.life.rentHelpLeft>0?Math.min(S.life.rentHelp,S.rent.amt):0;money(-(S.rent.amt-help));if(help)S.life.rentHelpLeft--;return {amt:S.rent.amt,help}}
+// a month of school after 18: college at UW Tacoma (after financial aid, 38-paths.js) or the trade program
+function lifePathFee(){return priceAmt(S.life.path==='college'?380:120)}
 // after a time skip: whole numbers on every stat (the day-by-day simulation adds fractions, e.g. friendship +0.1 a day)
 function lifeRound(){
   for(const k of ['money','energy','mood','family','grades','stress','standing','community','food'])if(typeof S[k]==='number')S[k]=Math.round(S[k]);
@@ -331,8 +336,9 @@ function lifeGraduation(next){
 function lifePathSheet(next){
   modalSwap('🧭 What comes next?','<p>You’re moving into your own apartment on Hilltop. What do you do with the next few years?</p>',[
     {l:'💼 Go to work',s:'Pick one of the three jobs and start full-time.',np:true,stay:true,fn:()=>modalSwap('💼 Which job?','<p>Full-time, right away.</p>',Object.entries(JOBS).map(([k,j])=>({l:`${j.ic} ${j.n}`,s:`${fmt(j.start)}–${fmt(j.end)} · ${$(j.pay)} a shift`,np:true,stay:true,fn:()=>lifeHandoff('job',k,next)})),true)},
-    {l:'🎓 College: UW Tacoma',s:'Four years downtown. Tuition about $380 a month after aid, and a part-time job at a Hilltop café.',np:true,stay:true,fn:()=>lifeHandoff('college','cafe',next)},
-    {l:'🔧 A trade program',s:'A one-year electrical pre-apprenticeship ($120 a month), evenings on the line at a soul-food spot on MLK.',np:true,stay:true,fn:()=>lifeHandoff('trade','kitchen',next)}],true);
+    {l:'🎓 College: UW Tacoma',s:'Four years downtown. Financial aid (a Pell Grant and a Washington College Grant) brings tuition to about $120 a month, with a part-time job at a Hilltop café.',np:true,stay:true,fn:()=>lifeHandoff('college','cafe',next)},
+    {l:'🔧 A trade program',s:'A one-year electrical pre-apprenticeship ($120 a month), evenings on the line at a soul-food spot on MLK.',np:true,stay:true,fn:()=>lifeHandoff('trade','kitchen',next)},
+    ...(typeof milRecruiter==='function'?[{l:'🎖️ Enlist in the Army',s:'A recruiter visit downtown, basic training, then four years based at Joint Base Lewis-McChord, just south of Tacoma. Pay, housing and promotions on a schedule.',np:true,stay:true,fn:()=>milRecruiter(next)}]:[])],true);
 }
 function lifeHandoff(path,jk,next){
   const fam=S.family,fr=gFriends(),gr=S.grades==null?gReady():S.grades,b=gBest();
@@ -389,7 +395,7 @@ function lifeSummaryHTML(){
   const L1=S.life,sect=(h,b)=>b?`<div class="sect" style="margin-top:14px">${h}</div>${b}`:'',kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
   const stg={middle:'🏫 Middle school',high:'🎓 High school',adult:'🏠 Adult'};
   const stages=L1.stages.map((x,j)=>kv(stg[x.stage]||x.stage,`from age ${x.age} (${fullDate(x.d).slice(4)})`)).join('');
-  const jobs=L1.jobs.map(j=>kv(`${j.ic||JOBS[j.job].ic} ${cap(j.t||JOBS[j.job].role0||JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
+  const jobs=L1.jobs.map(j=>kv(`${j.ic||JOBS[j.job].ic} ${cap(j.t||JOBS[j.job].role0||JOBS[j.job].role)}`,`from age ${j.age}${j.path==='college'?', with college':j.path==='trade'?', with a trade program':j.path==='army'?', enlisted in the Army':j.path==='gi'?', with the GI Bill':''}`)).join('')+(L1.retired?kv('🎉 Retired','at 67'):'');
   const kids=L1.grow?L1.grow.kids:(typeof KIDS!=='undefined'&&S.kids?KIDS.filter(k=>S.kids[k.id]&&S.kids[k.id].met).map(k=>({n:k.n,f:Math.round(S.kids[k.id].f)})):[]);
   const nb=typeof NEIGHBORS!=='undefined'&&S.met?NEIGHBORS.filter(x=>S.met[x.id]).map(x=>x.n):[];
   const people=(kids.length?kv('🤝 Friends from growing up',kids.map(k=>k.n).join(', ')):'')+(L1.grow&&L1.grow.best?kv('⭐ Best friend',L1.grow.best):'')+(nb.length?kv('🏘️ Neighbors',nb.slice(0,8).join(', ')+(nb.length>8?` and ${nb.length-8} more`:'')):'')+kv('🏠 Family',isGrow()?S.family:Math.round(L1.family));

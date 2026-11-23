@@ -202,7 +202,7 @@ LIFE_HOOKS.weekEnd.push(()=>{if(!careerOn()||S.life.retired)return;const C=caree
 {const wv=weekView;weekView=function(){let h=wv();try{if(!careerOn())return h;const C=careerS(),J=job(),kv=(k,v)=>`<div class="kv"><span>${k}</span><b style="text-align:right">${v}</b></div>`;
   const R=CAREER_LADDERS[C.k].r[C.r+1],up=C.start?Math.round((careerShift()/C.start-1)*100):0;
   let next='';if(S.life.retired)next='';else if(C.prog)next=kv('🎓 In school',`${CAREER_LADDERS[C.k].r[C.r+1].prog.t}, until ${fullDate(C.prog.end)}`);
-  else if(R)next=kv('⬆️ Next step',`${R.t}: ${R.yrs} year${R.yrs===1?'':'s'} as ${careerRung(C).t}, Job ${R.st}+, on time${R.prog&&!C.done[R.prog.id]?`, then ${R.prog.t}`:''}${C.offer?' (offered: choose it in a time skip)':''}`);
+  else if(R)next=kv('⬆️ Next step',`${R.t}: ${R.yrs<1?`${Math.round(R.yrs*12)} months`:`${R.yrs} year${R.yrs===1?'':'s'}`} as ${careerRung(C).t}, Job ${R.st}+, on time${R.reup?', after you re-enlist':''}${R.prog&&!C.done[R.prog.id]?`, then ${R.prog.t}`:''}${C.offer?' (offered: choose it in a time skip)':''}`);
   else next=kv('⬆️ Next step','the top of this ladder: raises from here');
   h+=`<div class="sect">💼 Your career</div>${kv('Title',S.life.retired?'retired':careerTitle())}${S.life.retired?kv('Pension',`${$(Math.round(careerPension()*30.44))} a month`):kv('Pay',`${$(careerShift())} a shift${J.tips?' plus tips':''}${up?` (${up>0?'+':''}${up}% since you started)`:''}`)}
     ${S.life.retired?'':kv('📋 Next review',fullDate(careerRevDay(C,C.n+1)))}${next}
