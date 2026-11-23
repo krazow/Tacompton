@@ -16,7 +16,7 @@
 const GH_FARE=0;
 const GH_OPEN={stadium:14,downtown:14,proctor:15,ruston:15,southend:15,oldtown:16,westend:16,eastside:16,fernhill:17,netacoma:17};
 const ghAge=()=>(typeof S!=='undefined'&&S&&S.age)||12;
-const ghOpen=h=>typeof S!=='undefined'&&!!S&&isGrow()&&!!HOODS[h]&&GH_OPEN[h]!=null&&ghAge()>=GH_OPEN[h];
+const ghOpen=h=>typeof S!=='undefined'&&!!S&&isGrow()&&!!HOODS[h]&&GH_OPEN[h]!=null&&(ghAge()>=GH_OPEN[h]||(h==='downtown'&&typeof lsFree==='function'&&lsFree('downtown')));   // downtown early: a freedom (67-life-school.js)
 function ghS(){const g=S.gh||(S.gh={hoods:{},told:{},done:{},job:null,worked:{},miss:0,shifts:0,paid:0,orca:0,rs:false});
   if(!g.toldInit){g.toldInit=true;for(const h in GH_OPEN)if(ghOpen(h))g.told[h]=true}   // a save that is already old enough: no announcement
   return g}
