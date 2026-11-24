@@ -301,7 +301,7 @@ function cev(e){CEV.push(e.id);const c0=e.cond,ch=e.p;
       if(!forced&&CB().evDay===day())return false;
       if(c0&&!c0(ctx))return false;
       if(forced)return true;
-      const p=typeof ch==='function'?ch(ctx):ch;return roll(`${e.id}|${day()}|${ctx.at||''}|${ctx.hook||''}`)<p},
+      const p=(typeof ch==='function'?ch(ctx):ch)*(typeof crimeEvMul==='function'?crimeEvMul(e.id,ctx):1);return roll(`${e.id}|${day()}|${ctx.at||''}|${ctx.hook||''}`)<p},
     run:ctx=>{CB().evDay=day();return e.run(ctx)}}));
 }
 const onHill=k=>!hoodK(k);

@@ -3,6 +3,10 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
+## Unreleased
+
+- 🚨 Crime event odds by neighborhood and year, from public data (Tacoma Police reported crime by Neighborhood Council District, 2018–2026, and the Pierce County Sheriff's past 12 months): car prowls, phone and wallet grabs, porch and bike thefts and the hard-times events on the block happen more or less often by where you are (or where you live) and the year. Hilltop plays about as before.
+
 ## 0.4.2 (2026-11-23)
 
 ### Added
