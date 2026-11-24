@@ -87,7 +87,8 @@ const hash=s=>{let x=2166136261>>>0;for(let i=0;i<s.length;i++){x^=s.charCodeAt(
 // one roll a morning per event; together the eligible events share W (about 0.15 a morning for a kid, 0.06 as an adult, 0.05 in Quick play)
 function roll(e){const n=HL.filter(x=>(S.ev.count[x.id]||0)<1&&ok(x)).length||1;
   const W=!long()?0.05:isGrow()?0.15:0.06;
-  return hash(`${H().salt}|${day()}|${e.id}`)<W/n}
+  const k=typeof crimeEvMul==='function'?crimeEvMul(e.id):1;   // 74-crime-odds.js: how often this happens where you live
+  return hash(`${H().salt}|${day()}|${e.id}`)<W/n*k}
 function hev(e){HL.push(e);
   defEvent({id:e.id,hook:'wake',tile:e.tile,chance:1,cooldown:0,max:1,urgent:!!e.urgent,dflt:e.dflt,
     cond:ctx=>ok(e,ctx)&&(S.ev.force.includes(e.id)||(gate()&&roll(e))),
