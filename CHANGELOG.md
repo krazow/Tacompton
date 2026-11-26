@@ -3,9 +3,10 @@
 Release notes for Tacompton. `/releasenow` adds a section here for every release, and the GitHub release notes
 are taken from it.
 
-## Unreleased
+## 0.4.3 (2026-11-26)
 
-- 🚨 Crime event odds by neighborhood and year, from public data (Tacoma Police reported crime by Neighborhood Council District, 2018–2026, and the Pierce County Sheriff's past 12 months): car prowls, phone and wallet grabs, porch and bike thefts and the hard-times events on the block happen more or less often by where you are (or where you live) and the year. Hilltop plays about as before.
+### Changed
+- 🚨 Crime events now follow real public crime data: car prowls, phone and wallet grabs, pickpockets, porch and bike thefts and the hard-times events on the block happen more or less often depending on the neighborhood or town you're in (or live in) and the year. Gig Harbor and Northeast Tacoma are much calmer, downtown and the South End busier, and Hilltop plays about as before. Tacoma's 2021–2023 peak shows up in those years. Based on Tacoma Police reported crime (2018–2026) and the Pierce County Sheriff's last 12 months, as totals only; your safety habits still work on top.
 
 ## 0.4.2 (2026-11-23)
 
